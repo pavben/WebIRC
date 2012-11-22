@@ -1,0 +1,98 @@
+@font-face {
+	font-family:'Signika';
+	font-style:normal;
+	font-weight:400;
+	src:local('Signika-Regular'), url('Signika.woff') format('woff');
+}
+body {
+	background-color:#F4F4F4;
+	color:#303030;
+	font-family:'Signika', sans-serif;
+	padding:0px 0px 0px 0px;
+	margin:0px 0px 0px 0px;
+	line-height:1;
+}
+input {
+	border:0;
+	padding:0;
+	outline:none;
+}
+a:link, a:visited {
+	color:#006DA3;
+	text-decoration:none;
+}
+a:hover, a:active {
+	color:#006DA3;
+	text-decoration:underline;
+}
+.fixedtable {
+	display:table;
+	table-layout:fixed;
+	width:100%;
+}
+.tablerow {
+	display:table-row;
+}
+.outerwrapper {
+	padding:10px;
+}
+.chatlogwrappercell {
+	display:table-cell;
+}
+.mainspacercell {
+	display:table-cell;
+	width:10px;
+}
+.nicklistcell {
+	width:200px;
+	display:table-cell;
+	background:purple;
+}
+.chatlog {
+	padding:1px 10px 3px 6px;
+	background-color:#F4F4F4;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	overflow-x:hidden;
+	overflow-y:auto;
+	white-space:pre-wrap;
+	word-wrap: break-word;
+}
+.chatboxwrapper {
+	margin-top:10px;
+	background:lightgreen;
+}
+.chatboxwrapper {
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	padding:3px 3px 3px 3px;
+	margin-top:9px;
+	background-color:#F4F4F4;
+	overflow:hidden;
+}
+.chatbox, .chatboxshadow {
+	padding:0px 0px 0px 0px;
+	border:0px;
+	line-height:22px;
+	font-family:'Signika', sans-serif;
+	font-size:18px;
+	resize:none;
+	background-color:#F4F4F4;
+	color:#303030;
+	outline:none;
+	vertical-align:top;
+}
+.chatbox {
+	width:100%;
+}
+.chatboxshadow {
+	width:200px;
+	position:absolute;
+	top:-9999px;
+	left:-9999px;
+	white-space: pre-wrap;      /* CSS3 */   
+	white-space: -moz-pre-wrap; /* Firefox */    
+	white-space: -pre-wrap;     /* Opera <7 */   
+	white-space: -o-pre-wrap;   /* Opera 7 */    
+	word-wrap: break-word;      /* IE */
+}
