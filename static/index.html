@@ -5,6 +5,7 @@
 	<title>WebIRC</title>
 	<link href="css/webirc.css" rel="stylesheet" type="text/css" />
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
 	<script src="js/webirc.js"></script>
 </head>
 <body>
@@ -23,7 +24,7 @@
 			</div>
 		</div>
 		<div id="chatboxwrapper" class="chatboxwrapper">
-			<textarea id="chatbox" class="chatbox" placeholder="Type your message here and press Enter to send."></textarea>
+			<textarea id="chatbox" class="chatbox"></textarea>
 		</div>
 	</div>
 </body>

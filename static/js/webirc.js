@@ -1,6 +1,4 @@
 $(window).bind('load', function() {
-	console.log('hey');
-
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chatbox'), $('#chatboxwrapper'));
 
@@ -9,6 +7,8 @@ $(window).bind('load', function() {
 	onResize();
 
 	$('#chatlog').css('transition', 'all .5s ease');
+
+	var sio = io.connect();
 });
 
 function onResize() {
