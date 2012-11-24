@@ -33,22 +33,21 @@ a:hover, a:active {
 .tablerow {
 	display:table-row;
 }
+.tablecell {
+	display:table-cell;
+}
 .outerwrapper {
 	padding:10px;
-}
-.chatlogwrappercell {
-	display:table-cell;
 }
 .mainspacercell {
 	display:table-cell;
 	width:10px;
 }
-.nicklistcell {
-	width:200px;
+.userlistcell {
 	display:table-cell;
-	background:purple;
+	width:200px;
 }
-.chatlog {
+.chatlog, .userlist {
 	padding:1px 10px 3px 6px;
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
@@ -57,6 +56,9 @@ a:hover, a:active {
 	overflow-y:auto;
 	white-space:pre-wrap;
 	word-wrap: break-word;
+}
+.userlist {
+	height:100%;
 }
 .chatboxwrapper {
 	margin-top:10px;

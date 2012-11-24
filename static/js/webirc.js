@@ -70,26 +70,34 @@ function getTargetHeightForMaincell() {
 	);
 }
 
-function addChatWindow(windowId) {
-	/*
-	<div id="chatandnicktable" class="fixedtable">
-		<div class="tablerow">
-			<div class="chatlogwrappercell">
-				<div id="chatlog" class="chatlog">
-				</div>
-			</div>
-			<div class="mainspacercell">
-			</div>
-			<div class="nicklistcell">
-				nicklist
-			</div>
-		</div>
-	</div>
-	*/
+function addChatWindow(windowId, windowType) {
+	var maincellContent = null;
+	switch(windowType) {
+		case 'pm':
+			maincellContent = $('<div/>').attr('id', 'chatlog_' + windowId).addClass('chatlog');
+			break;
+		case 'channel':
+			maincellContent = $('<div/>').addClass('fixedtable').append(
+				$('<div/>').addClass('tablerow').append(
+					$('<div/>').addClass('tablecell').append(
+						$('<div/>').attr('id', 'chatlog_' + windowId).addClass('chatlog')
+					)
+				).append(
+					$('<div/>').addClass('mainspacercell')
+				).append(
+					$('<div/>').addClass('userlistcell').append(
+						$('<div/>').attr('id', 'userlist_' + windowId).addClass('userlist')
+					)
+				)
+			);
+			break;
+		default:
+			console.log('Unknown windowType in addChatWindow');
+			return;
+	}
+
 	$('#maincell').append(
-		$('<div/>').attr('id', 'maincell_' + windowId).addClass('maincell_chatwindow_TODO').hide().append(
-			$('<div/>').attr('id', 'chatlog_' + windowId).addClass('chatlog')
-		)
+		$('<div/>').attr('id', 'maincell_' + windowId).hide().append(maincellContent)
 	);
 
 	setVisibleWindowId(windowId);
