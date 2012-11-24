@@ -1,3 +1,5 @@
+var visibleWindowId = null;
+
 $(window).bind('load', function() {
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chatbox'), $('#chatboxwrapper'));
@@ -6,41 +8,101 @@ $(window).bind('load', function() {
 
 	onResize();
 
-	$('#chatlog').css('transition', 'all .5s ease');
+	//$('#chatlog').css('transition', 'all .5s ease');
 
 	var sio = io.connect();
 });
 
 function onResize() {
-	// disable scrolling as it interferes with calculations and causes visual glitches
+	var maincellDiv = $('#maincell');
+	if (visibleWindowId !== null) {
+		updateChatlogHeight(visibleWindowId);
+		maincellDiv.css('height', 'auto');
+	} else {
+		// disable scrolling as it causes scrollbar flickering
+		$('body').css('overflow-y', 'hidden');
+
+		var targetMaincellHeight = getTargetHeightForMaincell();
+
+		if (targetMaincellHeight < 300) {
+			targetMaincellHeight = 300;
+			// if the scrollbars are needed, enable them
+			$('body').css('overflow-y', 'auto');
+		}
+		maincellDiv.css('height', targetMaincellHeight);
+	}
+
+	$('#chatbox').focus();
+}
+
+function updateChatlogHeight(windowId) {
+	// disable scrolling as it causes scrollbar flickering
 	$('body').css('overflow-y', 'hidden');
-	//var chatAndNickTable = $('#chatandnicktable');
-	var chatlogDiv = $('#chatlog');
-	var outerWrapper = $('#outerwrapper');
-	var chatboxWrapper = $('#chatboxwrapper');
-	var newChatlogHeight = $(window).height() // start with the full height
-		- chatlogDiv.offset().top // remove all up to the start of chatlog
+
+	var chatlogDiv = windowIdToObject('#chatlog_', windowId);
+	var newChatlogHeight = getTargetHeightForMaincell()
 		- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
 		- stripPx(chatlogDiv.css('padding-bottom'))
 		- stripPx(chatlogDiv.css('border-top-width')) // same for border
-		- stripPx(chatlogDiv.css('border-bottom-width'))
-		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
-		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
-		- stripPx($('#outerwrapper').css('padding-bottom')); // remove the height of the spacer below the chatbox
-	;
+		- stripPx(chatlogDiv.css('border-bottom-width'));
 
-	if (newChatlogHeight < 400) {
-		newChatlogHeight = 400;
+	if (newChatlogHeight < 200) {
+		newChatlogHeight = 200;
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
-
 	chatlogDiv.css('height', newChatlogHeight);
 
 	// scroll the chatlog to the bottom, if possible
 	//instantScrollChatlogToBottom(chatlogDiv);
+}
 
-	//$('#chat_chatbox').focus();
+function getTargetHeightForMaincell() {
+	var maincellDiv = $('#maincell');
+	var chatboxWrapper = $('#chatboxwrapper');
+	var outerWrapper = $('#outerwrapper');
+
+	return ($(window).height()
+		- maincellDiv.offset().top
+		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
+		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
+		- stripPx(outerWrapper.css('padding-bottom'))
+	);
+}
+
+function addChatWindow(windowId) {
+	/*
+	<div id="chatandnicktable" class="fixedtable">
+		<div class="tablerow">
+			<div class="chatlogwrappercell">
+				<div id="chatlog" class="chatlog">
+				</div>
+			</div>
+			<div class="mainspacercell">
+			</div>
+			<div class="nicklistcell">
+				nicklist
+			</div>
+		</div>
+	</div>
+	*/
+	$('#maincell').append(
+		$('<div/>').attr('id', 'maincell_' + windowId).addClass('maincell_chatwindow_TODO').hide().append(
+			$('<div/>').attr('id', 'chatlog_' + windowId).addClass('chatlog')
+		)
+	);
+
+	setVisibleWindowId(windowId);
+}
+
+function setVisibleWindowId(windowId) {
+	windowIdToObject('#maincell_', visibleWindowId).hide();
+
+	visibleWindowId = windowId;
+
+	windowIdToObject('#maincell_', visibleWindowId).show();
+
+	onResize();
 }
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
@@ -94,8 +156,20 @@ function bindTextChangeEvents(field, checkForChangeFunction) {
 		'change': checkForChangeFunction
 	});
 }
+
+function windowIdToObject(prefix, windowId) {
+	var divId = prefix;
+	if (windowId !== null) {
+		divId += windowId;
+	} else {
+		divId += 'none';
+	}
+
+	return $(divId);
+}
+
 function stripPx(text) {
-	return text.replace('px', '');
+	return parseInt(text.replace('px', ''), 10);
 }
 
 function log(msg) {
