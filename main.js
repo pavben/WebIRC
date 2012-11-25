@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var http = require('http');
 var io = require('socket.io');
+var irc = require('./irc.js');
 
 var Config = {
 	sessionSecret: 'notsecret',
@@ -35,3 +36,6 @@ sio.configure(function() {
 		console.log(data.headers.cookie);
 	});
 });
+
+irc.blah();
+
