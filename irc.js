@@ -1,16 +1,33 @@
 var net = require('net');
 
+var serverCommandHandlers = {
+	'001': handle001,
+	'PING': handlePing
+}
+
+function handle001(serverSocket, origin, getNextArg) {
+	sendToServer(serverSocket, 'JOIN #test');
+}
+
+function handlePing(serverSocket, origin, getNextArg) {
+	var nextArg = getNextArg();
+
+	if (nextArg !== null) {
+		sendToServer(serverSocket, 'PONG :' + nextArg.arg);
+	}
+}
+
 exports.blah = function() {
-	var client = net.connect({host: 'test.server', port: 6667},
+	var serverSocket = net.connect({host: 'test.server', port: 6667},
 		function() {
 			console.log('connected');
-			sendToServer('NICK webirc');
-			sendToServer('USER webirc webirc test.server :webirc');
+			sendToServer(serverSocket, 'NICK webirc');
+			sendToServer(serverSocket, 'USER webirc webirc test.server :webirc');
 		}
 	);
 
 	var readBuffer = '';
-	client.on('data', function(data) {
+	serverSocket.on('data', function(data) {
 		readBuffer += data;
 
 		while(true) {
@@ -27,7 +44,7 @@ exports.blah = function() {
 		}
 	});
 
-	client.on('end', function() {
+	serverSocket.on('end', function() {
 		console.log('disconnected');
 	});
 
@@ -53,84 +70,77 @@ exports.blah = function() {
 			command = firstArg.arg;
 		}
 
-		switch(command) {
-			case '001':
-				handle001();
-				break;
-			case 'PING':
-				handlePing(getNextArg);
-				break;
-		}
-
-		console.log('Origin: ' + origin + ' Command: ' + command);
-	}
-
-	function handle001() {
-		sendToServer('JOIN #test');
-	}
-
-	function handlePing(getNextArg) {
-		var nextArg = getNextArg();
-
-		if (nextArg !== null) {
-			sendToServer('PONG :' + nextArg.arg);
+		if (command in serverCommandHandlers) {
+			serverCommandHandlers[command](serverSocket, (origin !== null ? parseNickUserHost(origin) : null), getNextArg);
+		} else {
+			//console.log('No handler for command ' + command);
 		}
 	}
+}
 
-	function sendToServer(data) {
-		console.log('SEND: ' + data);
-		client.write(data + '\r\n');
-	}
+function sendToServer(serverSocket, data) {
+	console.log('SEND: ' + data);
+	serverSocket.write(data + '\r\n');
+}
 
-	function getNextArgGen(str) {
-		var firstArg = true;
-		var buf = str;
+function getNextArgGen(str) {
+	var firstArg = true;
+	var buf = str;
 
-		return function() {
-			if (buf === null) {
-				return null;
-			}
+	return function() {
+		if (buf === null) {
+			return null;
+		}
 
-			var arg = null;
-			var isColon = false;
+		var arg = null;
+		var isColon = false;
 
-			if (buf.length >= 1 && buf.charAt(0) === ':') {
-				isColon = true;
+		if (buf.length >= 1 && buf.charAt(0) === ':') {
+			isColon = true;
 
-				if (firstArg) {
-					firstArg = false;
+			if (firstArg) {
+				firstArg = false;
 
-					// first arg starts with a :
-					var spaceAt = str.indexOf(' ');
+				// first arg starts with a :
+				var spaceAt = str.indexOf(' ');
 
-					if (spaceAt !== -1) {
-						arg = buf.substring(1, spaceAt);
-						buf = buf.substring(spaceAt + 1);
-					} else {
-						arg = buf.substring(1);
-						buf = null;
-					}
+				if (spaceAt !== -1) {
+					arg = buf.substring(1, spaceAt);
+					buf = buf.substring(spaceAt + 1);
 				} else {
-					// multiword arg
 					arg = buf.substring(1);
 					buf = null;
 				}
 			} else {
-				firstArg = false;
-
-				var spaceAt = buf.indexOf(' ');
-
-				if (spaceAt !== -1) {
-					arg = buf.substring(0, spaceAt);
-					buf = buf.substring(spaceAt + 1);
-				} else {
-					arg = buf;
-					buf = null;
-				}
+				// multiword arg
+				arg = buf.substring(1);
+				buf = null;
 			}
+		} else {
+			firstArg = false;
 
-			return {arg: arg, last: (buf === null), colon: isColon};
-		};
+			var spaceAt = buf.indexOf(' ');
+
+			if (spaceAt !== -1) {
+				arg = buf.substring(0, spaceAt);
+				buf = buf.substring(spaceAt + 1);
+			} else {
+				arg = buf;
+				buf = null;
+			}
+		}
+
+		return {arg: arg, last: (buf === null), colon: isColon};
+	};
+}
+
+// note: we only validate the nick!user@host format and not what characters can or cannot be in each
+function parseNickUserHost(str) {
+	var match;
+	if (match = str.match(/^([^!]+?)!([^@]+?)@(.+?)$/)) {
+		return {nick: match[1], user: match[2], host: match[3]};
+	} else {
+		return null;
 	}
 }
 
