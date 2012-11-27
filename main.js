@@ -1,10 +1,27 @@
 var express = require('express');
 var app = express();
 var http = require('http');
+var connect = require('connect');
+var cookie = require('cookie');
 var io = require('socket.io');
 var irc = require('./irc.js');
 
-var Config = {
+function User(username, password, servers) {
+	this.username = username;
+	this.password = password;
+	this.activeWebSockets = [];
+}
+
+function Server(host, port, desiredNickname, username, desiredChannels) {
+	this.host = host;
+	this.port = port;
+	this.nickname = null;
+	this.desiredNickname = desiredNickname;
+	this.username = username;
+	this.desiredChannels = desiredChannels;
+}
+
+var config = {
 	sessionSecret: 'notsecret',
 	sessionKey: 'sid'
 }
@@ -15,9 +32,9 @@ app.configure(function() {
 	app.use(express.cookieParser());
 	app.use(express.session({
 		store: sessionStore,
-		secret: Config.sessionSecret,
+		secret: config.sessionSecret,
 		maxAge: 24 * 60 * 60,
-		key: Config.sessionKey
+		key: config.sessionKey
 	}));
 	app.use(express.static(__dirname + '/static'));
 });
@@ -33,9 +50,34 @@ var sio = io.listen(server);
 
 sio.configure(function() {
 	sio.set('authorization', function(data, accept) {
-		console.log(data.headers.cookie);
+		var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.sessionSecret);
+
+		if ('sid' in cookies) {
+			sessionStore.get(cookies['sid'], function(err, session) {
+				// TODO LOW: if the session cannot be looked up, tell the client to refresh, creating a new session (implicitly, of course)
+				if (session && !err) {
+					data.sessionId = cookies['sid'];
+
+					accept(null, true);
+				} else {
+					accept('Session lookup failed -- invalid sid received from client during WebSocket authorization', false);
+				}
+			});
+		} else {
+			accept('No sid in cookie', false);
+		}
+	});
+
+	sio.sockets.on('connection', function(socket) {
+		console.log('A socket with sessionId ' + socket.handshake.sessionId + ' connected.');
+
+		socket.emit('CurrentState', {test: 'Yeah!'});
+
+		socket.on('disconnect', function() {
+			console.log('WebSocket disconnected');
+		});
 	});
 });
 
-irc.blah();
+//irc.blah();
 

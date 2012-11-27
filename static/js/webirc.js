@@ -10,7 +10,11 @@ $(window).bind('load', function() {
 
 	//$('#chatlog').css('transition', 'all .5s ease');
 
-	var sio = io.connect();
+	var socket = io.connect();
+
+	socket.on('CurrentState', function(data) {
+		console.log(data);
+	});
 });
 
 function onResize() {

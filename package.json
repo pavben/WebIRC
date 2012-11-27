@@ -3,10 +3,13 @@
 	"version" : "0.0.1",
 	"author": "Pavel Bennett",
 	"dependencies": {
-		"express": "*",
-		"socket.io": "*"
+		"express": ">= 3.0.3",
+		"socket.io": ">= 0.9.11",
+		"connect": ">= 2.7.0",
+		"http": "*",
+		"cookie": "*"
 	},
 	"engines": {
-		"node": ">=0.6"
+		"node": ">= 0.6"
 	}
 }
