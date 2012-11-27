@@ -1,86 +1,121 @@
 var net = require('net');
+var data = require('./data.js');
 
 var serverCommandHandlers = {
 	'001': handle001,
-	'PING': handlePing
+	'PING': handlePing,
+	'JOIN': handleJoin,
 }
 
-function handle001(serverSocket, origin, getNextArg) {
-	sendToServer(serverSocket, 'JOIN #test');
+function handle001(user, server, origin, getNextArg) {
+	var myNicknameArg = getNextArg();
+	if (myNicknameArg !== null) {
+		server.nickname = myNicknameArg.arg;
+
+		server.desiredChannels.forEach(function(channel) {
+			sendToServer(server, 'JOIN ' + channel);
+		});
+	} else {
+		console.log('Invalid 001 message from server: No nickname argument');
+	}
 }
 
-function handlePing(serverSocket, origin, getNextArg) {
+function handlePing(user, server, origin, getNextArg) {
 	var nextArg = getNextArg();
 
 	if (nextArg !== null) {
-		sendToServer(serverSocket, 'PONG :' + nextArg.arg);
+		sendToServer(server, 'PONG :' + nextArg.arg);
 	}
 }
 
-exports.blah = function() {
-	var serverSocket = net.connect({host: 'test.server', port: 6667},
-		function() {
-			console.log('connected');
-			sendToServer(serverSocket, 'NICK webirc');
-			sendToServer(serverSocket, 'USER webirc webirc test.server :webirc');
-		}
-	);
+function handleJoin(user, server, origin, getNextArg) {
+	if (origin !== null && server.nickname !== null) {
+		var channelArg = getNextArg();
 
-	var readBuffer = '';
-	serverSocket.on('data', function(data) {
-		readBuffer += data;
+		if (channelArg !== null) {
+			if (origin.nick === server.nickname) {
+				// the server is confirming that we've joined some channel
+				server.channels.push(channelArg.arg);
 
-		while(true) {
-			var lineEndIndex = readBuffer.indexOf('\r\n');
-			if (lineEndIndex === -1) {
-				break;
+				console.log('Successfully joined ' + channelArg.arg);
 			}
-
-			var line = readBuffer.substring(0, lineEndIndex);
-
-			readBuffer = readBuffer.substring(lineEndIndex + 2);
-
-			processLineFromServer(line);
-		}
-	});
-
-	serverSocket.on('end', function() {
-		console.log('disconnected');
-	});
-
-	function processLineFromServer(line) {
-		console.log('Line: ' + line);
-
-		var origin = null;
-		var command = null;
-
-		var getNextArg = getNextArgGen(line);
-
-		var firstArg = getNextArg();
-		if (firstArg.colon) {
-			origin = firstArg.arg;
-
-			if (!firstArg.last) {
-				command = getNextArg().arg;
-			} else {
-				console.log('Line started with a colon, but no command arg provided.');
-				return;
-			}
-		} else {
-			command = firstArg.arg;
-		}
-
-		if (command in serverCommandHandlers) {
-			serverCommandHandlers[command](serverSocket, (origin !== null ? parseNickUserHost(origin) : null), getNextArg);
-		} else {
-			//console.log('No handler for command ' + command);
 		}
 	}
 }
 
-function sendToServer(serverSocket, data) {
+exports.run = function() {
+	data.users.forEach(function(user) {
+		user.servers.forEach(function(server) {
+			var serverSocket = net.connect({host: server.host, port: server.port},
+				function() {
+					console.log('connected');
+					server.socket = serverSocket;
+					sendToServer(server, 'NICK ' + server.desiredNickname);
+					sendToServer(server, 'USER ' + server.username + ' ' + server.username + ' ' + server.host + ' :' + server.realName);
+				}
+			);
+
+			var readBuffer = '';
+			serverSocket.on('data', function(data) {
+				readBuffer += data;
+
+				while(true) {
+					var lineEndIndex = readBuffer.indexOf('\r\n');
+					if (lineEndIndex === -1) {
+						break;
+					}
+
+					var line = readBuffer.substring(0, lineEndIndex);
+
+					readBuffer = readBuffer.substring(lineEndIndex + 2);
+
+					processLineFromServer(user, server, line);
+				}
+			});
+
+			serverSocket.on('end', function() {
+				console.log('disconnected');
+			});
+		});
+	});
+}
+
+function sendToServer(server, data) {
 	console.log('SEND: ' + data);
-	serverSocket.write(data + '\r\n');
+	if (server.socket !== null) {
+		server.socket.write(data + '\r\n');
+	} else {
+		console.log('sendToServer received server with null socket');
+	}
+}
+
+function processLineFromServer(user, server, line) {
+	console.log('Line: ' + line);
+
+	var origin = null;
+	var command = null;
+
+	var getNextArg = getNextArgGen(line);
+
+	var firstArg = getNextArg();
+	if (firstArg.colon) {
+		origin = firstArg.arg;
+
+		if (!firstArg.last) {
+			command = getNextArg().arg;
+		} else {
+			console.log('Line started with a colon, but no command arg provided.');
+			return;
+		}
+	} else {
+		command = firstArg.arg;
+	}
+
+	if (command in serverCommandHandlers) {
+		serverCommandHandlers[command](user, server, (origin !== null ? parseNickUserHost(origin) : null), getNextArg);
+	} else {
+		//console.log('No handler for command ' + command);
+	}
 }
 
 function getNextArgGen(str) {

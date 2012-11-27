@@ -5,21 +5,7 @@ var connect = require('connect');
 var cookie = require('cookie');
 var io = require('socket.io');
 var irc = require('./irc.js');
-
-function User(username, password, servers) {
-	this.username = username;
-	this.password = password;
-	this.activeWebSockets = [];
-}
-
-function Server(host, port, desiredNickname, username, desiredChannels) {
-	this.host = host;
-	this.port = port;
-	this.nickname = null;
-	this.desiredNickname = desiredNickname;
-	this.username = username;
-	this.desiredChannels = desiredChannels;
-}
+var data = require('./data.js');
 
 var config = {
 	sessionSecret: 'notsecret',
@@ -79,5 +65,22 @@ sio.configure(function() {
 	});
 });
 
-//irc.blah();
+data.users.push(
+	new data.User(
+		'u',
+		'p',
+		[
+			new data.Server(
+				'test.server',
+				6667,
+				'webirc',
+				'webirc',
+				'webirc',
+				['#test']
+			)
+		]
+	)
+);
+
+irc.run();
 
