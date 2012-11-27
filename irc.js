@@ -8,16 +8,9 @@ var serverCommandHandlers = {
 }
 
 function handle001(user, server, origin, getNextArg) {
-	var myNicknameArg = getNextArg();
-	if (myNicknameArg !== null) {
-		server.nickname = myNicknameArg.arg;
-
-		server.desiredChannels.forEach(function(channel) {
-			sendToServer(server, 'JOIN ' + channel);
-		});
-	} else {
-		console.log('Invalid 001 message from server: No nickname argument');
-	}
+	server.desiredChannels.forEach(function(channel) {
+		sendToServer(server, 'JOIN ' + channel);
+	});
 }
 
 function handlePing(user, server, origin, getNextArg) {
@@ -49,8 +42,11 @@ exports.run = function() {
 			var serverSocket = net.connect({host: server.host, port: server.port},
 				function() {
 					console.log('connected');
+
 					server.socket = serverSocket;
-					sendToServer(server, 'NICK ' + server.desiredNickname);
+					server.nickname = server.desiredNickname;
+
+					sendToServer(server, 'NICK ' + server.nickname);
 					sendToServer(server, 'USER ' + server.username + ' ' + server.username + ' ' + server.host + ' :' + server.realName);
 				}
 			);

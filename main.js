@@ -4,6 +4,7 @@ var http = require('http');
 var connect = require('connect');
 var cookie = require('cookie');
 var io = require('socket.io');
+var cloneextend = require('cloneextend');
 var irc = require('./irc.js');
 var data = require('./data.js');
 
@@ -57,7 +58,30 @@ sio.configure(function() {
 	sio.sockets.on('connection', function(socket) {
 		console.log('A socket with sessionId ' + socket.handshake.sessionId + ' connected.');
 
-		socket.emit('CurrentState', {test: 'Yeah!'});
+		data.users.forEach(function(user) {
+			// if socket.handshake.sessionId is in user.loggedInSessions
+			// if (user.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
+			if (true)
+			{
+				user.activeWebSockets.push(socket);
+
+				// then they're already authenticated
+				socket.emit('CurrentState', {
+					username: user.username,
+					servers: user.servers.map(function(server) {
+						// copy the server object
+						var serverCopy = cloneextend.clone(server);
+
+						// and remove the fields that should not be sent
+						delete serverCopy.socket;
+
+						return serverCopy;
+					})
+				});
+			} else {
+				socket.emit('NeedLogin', {});
+			}
+		});
 
 		socket.on('disconnect', function() {
 			console.log('WebSocket disconnected');

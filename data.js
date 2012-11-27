@@ -1,8 +1,9 @@
 function User(username, password, servers) {
 	this.username = username;
 	this.password = password;
-	this.activeWebSockets = [];
 	this.servers = servers;
+	this.activeWebSockets = [];
+	this.loggedInSessions = [];
 }
 
 function Server(host, port, desiredNickname, username, realName, desiredChannels) {
