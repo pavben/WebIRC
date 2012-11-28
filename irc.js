@@ -3,16 +3,17 @@ var data = require('./data.js');
 
 var serverCommandHandlers = {
 	'001': handleCommandRequireArgs(0, handle001),
-//	'353': handle353, // RPL_NAMREPLY
-//	'366': handle366, // RPL_ENDOFNAMES
+	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
+	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
 	'PING': handleCommandRequireArgs(1, handlePing),
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 }
 
 function handleCommandRequireArgs(requiredNumArgs, handler) {
-	return function(numArgs, args) {
+	// note: allArgs includes user, server, and origin -- these are not counted in numArgs as numArgs represends the number of args after the command
+	return function(numArgs, allArgs) {
 		if (numArgs >= requiredNumArgs) {
-			return handler.apply(null, args);
+			return handler.apply(null, allArgs);
 		} else {
 			// invalid number of arguments
 			console.log('Error: Invalid number of arguments in command handler: ' + handler.toString());
@@ -27,20 +28,92 @@ function handle001(user, server, origin) {
 	});
 }
 
+function handle353(user, server, origin, myNickname, channelType, channelName, namesList) {
+	withChannel(server, channelName,
+		function(channel) {
+			// build a list of UserlistEntry
+			var userlistEntries = namesList.trim().split(' ').map(parseUserlistEntry);
+			console.log('ulentries: %j', userlistEntries);
+
+			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
+		},
+		silentFailCallback
+	);
+}
+
+// &owner, @op, %halfop, +voice, regular
+// combinations possible, e.g. &@name
+function parseUserlistEntry(nickWithFlags) {
+	var userlistEntry = new data.UserlistEntry();
+
+	for(var i = 0; i < nickWithFlags.length; i++) {
+		switch(nickWithFlags.charAt(i)) {
+			case '&':
+				userlistEntry.owner = true;
+				break;
+			case '@':
+				userlistEntry.op = true;
+				break;
+			case '%':
+				userlistEntry.halfop = true;
+				break;
+			case '+':
+				userlistEntry.voice = true;
+				break;
+			default:
+				userlistEntry.nick = nickWithFlags.substring(i);
+				return userlistEntry;
+		}
+	}
+
+	// if here, we got an empty name
+	return null;
+}
+
+function handle366(user, server, origin, myNickname, channelName) {
+	withChannel(server, channelName,
+		function(channel) {
+			// swap tempUserlist for userlist and clear it
+			channel.userlist = channel.tempUserlist;
+			channel.tempUserlist = [];
+		},
+		silentFailCallback
+	);
+}
+
 function handlePing(user, server, origin, arg) {
 	sendToServer(server, 'PONG :' + arg);
 }
 
-function handleJoin(user, server, origin, channel) {
-	if (origin !== null && server.nickname !== null) {
-		// if the nickname of the joiner matches ours
-		if (origin.nick === server.nickname) {
-			// the server is confirming that we've joined some channel
-			server.channels.push(channel);
+function handleJoin(user, server, origin, channelName) {
+	// if the nickname of the joiner matches ours
+	if (origin !== null && server.nickname !== null && origin.type === 'client' && origin.nick === server.nickname) {
+		// the server is confirming that we've joined some channel
+		server.channels.push(new data.Channel(channelName));;
 
-			console.log('Successfully joined ' + channel);
-		}
+		console.log('Successfully joined ' + channelName);
 	}
+}
+
+function withChannel(server, channelName, successCallback, failureCallback) {
+	var success = !server.channels.every(function(channel) {
+		if (channel.name === channelName) {
+			successCallback(channel);
+
+			return false; // break out
+		} else {
+			return true; // continue
+		}
+	});
+
+	if (!success && typeof failureCallback !== 'undefined') {
+		failureCallback();
+	}
+}
+
+function silentFailCallback() {
+	// silent fail (not so silent just yet)
+	console.log('silentFailCallback');
 }
 
 exports.run = function() {

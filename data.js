@@ -20,13 +20,13 @@ function Server(host, port, desiredNickname, username, realName, desiredChannels
 
 function Channel(name) {
 	this.name = name;
+	this.tempUserlist = []; // built while NAMES entries are coming in (353) and copied to userlist on 366
 	this.userlist = [];
 	this.eventHistory = [];
 }
 
-function UserlistEntry(nick, flags) {
-	this.nick = nick;
-	this.flags = (typeof flags === 'undefined' ? '' : flags); // optional: default to ''
+function UserlistEntry() {
+	this.nick = null;
 }
 
 function EventHistoryJoin(who) {
@@ -37,5 +37,7 @@ var users = [];
 
 exports.User = User;
 exports.Server = Server;
+exports.Channel = Channel;
+exports.UserlistEntry = UserlistEntry;
 exports.users = users;
 
