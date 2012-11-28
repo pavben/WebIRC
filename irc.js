@@ -32,8 +32,15 @@ function handle353(user, server, origin, myNickname, channelType, channelName, n
 	withChannel(server, channelName,
 		function(channel) {
 			// build a list of UserlistEntry
-			var userlistEntries = namesList.trim().split(' ').map(parseUserlistEntry);
-			console.log('ulentries: %j', userlistEntries);
+			var userlistEntries = [];
+			
+			namesList.trim().split(' ').forEach(function(nickWithFlags) {
+				var userlistEntryMaybe = parseUserlistEntry(nickWithFlags);
+
+				if (userlistEntryMaybe !== null) {
+					userlistEntries.push(userlistEntryMaybe);
+				}
+			});
 
 			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
 		},
@@ -96,13 +103,13 @@ function handleJoin(user, server, origin, channelName) {
 }
 
 function withChannel(server, channelName, successCallback, failureCallback) {
-	var success = !server.channels.every(function(channel) {
+	var success = server.channels.some(function(channel) {
 		if (channel.name === channelName) {
 			successCallback(channel);
 
-			return false; // break out
+			return true; // break out
 		} else {
-			return true; // continue
+			return false; // continue
 		}
 	});
 
