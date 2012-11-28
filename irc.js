@@ -2,36 +2,43 @@ var net = require('net');
 var data = require('./data.js');
 
 var serverCommandHandlers = {
-	'001': handle001,
-	'PING': handlePing,
-	'JOIN': handleJoin,
+	'001': handleCommandRequireArgs(0, handle001),
+//	'353': handle353, // RPL_NAMREPLY
+//	'366': handle366, // RPL_ENDOFNAMES
+	'PING': handleCommandRequireArgs(1, handlePing),
+	'JOIN': handleCommandRequireArgs(1, handleJoin),
 }
 
-function handle001(user, server, origin, getNextArg) {
+function handleCommandRequireArgs(requiredNumArgs, handler) {
+	return function(numArgs, args) {
+		if (numArgs >= requiredNumArgs) {
+			return handler.apply(null, args);
+		} else {
+			// invalid number of arguments
+			console.log('Error: Invalid number of arguments in command handler: ' + handler.toString());
+			return false;
+		}
+	};
+}
+
+function handle001(user, server, origin) {
 	server.desiredChannels.forEach(function(channel) {
 		sendToServer(server, 'JOIN ' + channel);
 	});
 }
 
-function handlePing(user, server, origin, getNextArg) {
-	var nextArg = getNextArg();
-
-	if (nextArg !== null) {
-		sendToServer(server, 'PONG :' + nextArg.arg);
-	}
+function handlePing(user, server, origin, arg) {
+	sendToServer(server, 'PONG :' + arg);
 }
 
-function handleJoin(user, server, origin, getNextArg) {
+function handleJoin(user, server, origin, channel) {
 	if (origin !== null && server.nickname !== null) {
-		var channelArg = getNextArg();
+		// if the nickname of the joiner matches ours
+		if (origin.nick === server.nickname) {
+			// the server is confirming that we've joined some channel
+			server.channels.push(channel);
 
-		if (channelArg !== null) {
-			if (origin.nick === server.nickname) {
-				// the server is confirming that we've joined some channel
-				server.channels.push(channelArg.arg);
-
-				console.log('Successfully joined ' + channelArg.arg);
-			}
+			console.log('Successfully joined ' + channel);
 		}
 	}
 }
@@ -88,90 +95,100 @@ function sendToServer(server, data) {
 function processLineFromServer(user, server, line) {
 	console.log('Line: ' + line);
 
-	var origin = null;
-	var command = null;
+	parseResult = parseLine(line);
 
-	var getNextArg = getNextArgGen(line);
+	if (parseResult !== null) {
+		if (parseResult.command in serverCommandHandlers) {
+			// TODO: origin can be a server
 
-	var firstArg = getNextArg();
-	if (firstArg.colon) {
-		origin = firstArg.arg;
-
-		if (!firstArg.last) {
-			command = getNextArg().arg;
+			serverCommandHandlers[parseResult.command](
+				parseResult.args.length,
+				[
+					user,
+					server,
+					(parseResult.origin !== null ? parseOrigin(parseResult.origin) : null)
+				].concat(parseResult.args)
+			);
 		} else {
-			console.log('Line started with a colon, but no command arg provided.');
-			return;
+			//console.log('No handler for command ' + command);
 		}
 	} else {
-		command = firstArg.arg;
-	}
-
-	if (command in serverCommandHandlers) {
-		serverCommandHandlers[command](user, server, (origin !== null ? parseNickUserHost(origin) : null), getNextArg);
-	} else {
-		//console.log('No handler for command ' + command);
+		console.log('Invalid line from server: ' + line);
 	}
 }
 
-function getNextArgGen(str) {
-	var firstArg = true;
-	var buf = str;
+// returns: { origin, command, args[] }
+function parseLine(line) {
+	var origin = null;
+	var command = null;
+	var args = [];
 
-	return function() {
-		if (buf === null) {
+	if (line.length === 0) {
+		// empty line is not valid
+		return null;
+	}
+
+	var spaceAt;
+
+	// first, parse the origin (if any)
+	if (line.charAt(0) === ':') {
+		spaceAt = line.indexOf(' ');
+		if (spaceAt !== -1) {
+			origin = line.substring(1, spaceAt);
+			line = line.substring(spaceAt + 1);
+		} else {
+			// one word that starts with a : is not valid
 			return null;
 		}
+	}
 
-		var arg = null;
-		var isColon = false;
+	if (line.length === 0) {
+		// no command? invalid line
+		return null;
+	}
 
-		if (buf.length >= 1 && buf.charAt(0) === ':') {
-			isColon = true;
+	// second, parse the command
+	spaceAt = line.indexOf(' ');
+	if (spaceAt !== -1) {
+		command = line.substr(0, spaceAt);
+		line = line.substring(spaceAt + 1);
+	} else {
+		command = line;
+		line = null;
+	}
 
-			if (firstArg) {
-				firstArg = false;
-
-				// first arg starts with a :
-				var spaceAt = str.indexOf(' ');
-
-				if (spaceAt !== -1) {
-					arg = buf.substring(1, spaceAt);
-					buf = buf.substring(spaceAt + 1);
-				} else {
-					arg = buf.substring(1);
-					buf = null;
-				}
-			} else {
-				// multiword arg
-				arg = buf.substring(1);
-				buf = null;
-			}
+	// now parse the args
+	while (line !== null && line.length > 0) {
+		if (line.charAt(0) === ':') {
+			args.push(line.substring(1));
+			line = null;
 		} else {
-			firstArg = false;
-
-			var spaceAt = buf.indexOf(' ');
-
+			spaceAt = line.indexOf(' ');
 			if (spaceAt !== -1) {
-				arg = buf.substring(0, spaceAt);
-				buf = buf.substring(spaceAt + 1);
+				args.push(line.substring(0, spaceAt));
+				line = line.substring(spaceAt + 1);
 			} else {
-				arg = buf;
-				buf = null;
+				args.push(line);
+				line = null;
 			}
 		}
+	}
 
-		return {arg: arg, last: (buf === null), colon: isColon};
+	return {
+		origin: origin,
+		command: command,
+		args: args
 	};
 }
 
 // note: we only validate the nick!user@host format and not what characters can or cannot be in each
-function parseNickUserHost(str) {
+// on failure to match, we assume str is a server origin
+function parseOrigin(str) {
 	var match;
 	if (match = str.match(/^([^!]+?)!([^@]+?)@(.+?)$/)) {
-		return {nick: match[1], user: match[2], host: match[3]};
+		return {type: 'client', nick: match[1], user: match[2], host: match[3]};
 	} else {
-		return null;
+		return {type: 'server', name: str};
 	}
 }
 

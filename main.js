@@ -61,8 +61,7 @@ sio.configure(function() {
 		data.users.forEach(function(user) {
 			// if socket.handshake.sessionId is in user.loggedInSessions
 			// if (user.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
-			if (true)
-			{
+			if (true) {
 				user.activeWebSockets.push(socket);
 
 				// then they're already authenticated
@@ -85,6 +84,18 @@ sio.configure(function() {
 
 		socket.on('disconnect', function() {
 			console.log('WebSocket disconnected');
+
+			// remove the socket from activeWebSockets of the user
+			var socketRemoved = false;
+			data.users.forEach(function(user) {
+				var socketIndex = user.activeWebSockets.indexOf(socket);
+				if (socketIndex !== -1) {
+					user.activeWebSockets.splice(socketIndex, 1);
+					socketRemoved = true;
+				}
+			});
+
+			assert(socketRemoved, 'Disconnected WebSocket not found for removal');
 		});
 	});
 });

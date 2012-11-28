@@ -18,6 +18,21 @@ function Server(host, port, desiredNickname, username, realName, desiredChannels
 	this.socket = null;
 }
 
+function Channel(name) {
+	this.name = name;
+	this.userlist = [];
+	this.eventHistory = [];
+}
+
+function UserlistEntry(nick, flags) {
+	this.nick = nick;
+	this.flags = (typeof flags === 'undefined' ? '' : flags); // optional: default to ''
+}
+
+function EventHistoryJoin(who) {
+	this.who = who;
+}
+
 var users = [];
 
 exports.User = User;
