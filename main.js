@@ -1,3 +1,4 @@
+var assert = require('assert');
 var express = require('express');
 var app = express();
 var http = require('http');
@@ -36,6 +37,9 @@ server.listen(28081);
 var sio = io.listen(server);
 
 sio.configure(function() {
+	// TODO LOW: experiment with other socket.io transports and make sure they all pass sid correctly
+	sio.set('log level', 2);
+
 	sio.set('authorization', function(data, accept) {
 		var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.sessionSecret);
 
@@ -83,6 +87,7 @@ sio.configure(function() {
 		});
 
 		socket.on('disconnect', function() {
+			// TODO LOW: support connection timeouts
 			console.log('WebSocket disconnected');
 
 			// remove the socket from activeWebSockets of the user
@@ -100,22 +105,25 @@ sio.configure(function() {
 	});
 });
 
-data.users.push(
-	new data.User(
-		'u',
-		'p',
-		[
-			new data.Server(
-				'test.server',
-				6667,
-				'webirc',
-				'webirc',
-				'webirc',
-				['#test']
-			)
-		]
+var newUser = new data.User(
+	'u',
+	'p',
+	[]
+);
+
+newUser.servers.push(
+	new data.Server(
+		'test.server',
+		6667,
+		'webirc',
+		'webirc',
+		'webirc',
+		['#test'],
+		newUser.getNextWindowId()
 	)
 );
+
+data.users.push(newUser);
 
 irc.run();
 

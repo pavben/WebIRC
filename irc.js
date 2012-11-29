@@ -94,12 +94,36 @@ function handlePing(user, server, origin, arg) {
 
 function handleJoin(user, server, origin, channelName) {
 	// if the nickname of the joiner matches ours
-	if (origin !== null && server.nickname !== null && origin.type === 'client' && origin.nick === server.nickname) {
-		// the server is confirming that we've joined some channel
-		server.channels.push(new data.Channel(channelName));;
+	if (origin !== null && origin.type === 'client') {
+		if (server.nickname !== null && server.nickname === origin.nick) {
+			// the server is confirming that we've joined some channel
+			server.channels.push(new data.Channel(channelName, user.getNextWindowId()));
 
-		console.log('Successfully joined ' + channelName);
+			console.log('Successfully joined ' + channelName);
+		} else {
+			// someone joined one of the channels we should be in
+			withChannel(server, channelName,
+				function(channel) {
+					var newUserlistEntry = new data.UserlistEntry();
+
+					newUserlistEntry.nick = origin.nick;
+					newUserlistEntry.user = origin.user;
+					newUserlistEntry.host = origin.host;
+
+					channel.userlist.push(newUserlistEntry);
+
+					//sendToWeb(user, ...
+				},
+				silentFailCallback
+			);
+		}
 	}
+}
+
+function sendToWeb(user, msgId, data) {
+	user.activeWebSockets.forEach(function(socket) {
+		socket.emit(msgId, data);
+	});
 }
 
 function withChannel(server, channelName, successCallback, failureCallback) {
