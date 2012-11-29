@@ -112,12 +112,30 @@ function handleJoin(user, server, origin, channelName) {
 
 					channel.userlist.push(newUserlistEntry);
 
-					//sendToWeb(user, ...
+					enterActivityForChannel(user, channel, 'Join', {
+						who: newUserlistEntry
+					}, true);
 				},
 				silentFailCallback
 			);
 		}
 	}
+}
+
+function enterActivityForChannel(user, channel, activityType, activity, affectsHistory) {
+	// first, set the type
+	activity.type = activityType;
+
+	// if this event is one that should be stored in the activity log (such as a message or a join), push it
+	if (affectsHistory) {
+		channel.activityLog.push(activity);
+	}
+
+	sendActivityForWindow(user, channel.windowId, activity);
+}
+
+function sendActivityForWindow(user, windowId, activity) {
+	sendToWeb(user, 'Activity', {windowId: windowId, data: activity });
 }
 
 function sendToWeb(user, msgId, data) {

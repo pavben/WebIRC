@@ -15,6 +15,10 @@ $(window).bind('load', function() {
 	socket.on('CurrentState', function(data) {
 		console.log(data);
 	});
+
+	socket.on('Activity', function(data) {
+		console.log(data);
+	});
 });
 
 function onResize() {

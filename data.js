@@ -33,19 +33,25 @@ function Channel(name, windowId) {
 	this.name = name;
 	this.tempUserlist = []; // built while NAMES entries are coming in (353) and copied to userlist on 366
 	this.userlist = [];
-	this.eventHistory = [];
+	this.activityLog = [];
 	this.windowId = windowId;
 }
 
+/*
+ * join - log and userlist add
+ * part - log and userlist remove
+ * mode - log and a bunch of userlist changes possibly
+ * quit - log in every applicable channel and remove from userlist in all
+ * kick - same as part
+ * topic - log and update topic, if we care
+ * invite - log in active window
+ * list - create a special list window, keep the list in server.channelList, send them to the browser at some interval
+ */
+
 function UserlistEntry() {
 	this.nick = null;
-	//this.user = null;
-	//this.host = null;
-}
-
-function EventHistoryJoin(who) {
-	this.eventId = 1;
-	this.who = who;
+	
+	// optional: user, host, owner, op, halfop, voice
 }
 
 var users = [];
