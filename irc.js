@@ -53,8 +53,8 @@ function handle353(user, server, origin, myNickname, channelType, channelName, n
 function parseUserlistEntry(nickWithFlags) {
 	var userlistEntry = new data.UserlistEntry();
 
-	for(var i = 0; i < nickWithFlags.length; i++) {
-		switch(nickWithFlags.charAt(i)) {
+	for (var i = 0; i < nickWithFlags.length; i++) {
+		switch (nickWithFlags.charAt(i)) {
 			case '&':
 				userlistEntry.owner = true;
 				break;
@@ -135,7 +135,7 @@ function enterActivityForChannel(user, channel, activityType, activity, affectsH
 }
 
 function sendActivityForWindow(user, windowId, activity) {
-	sendToWeb(user, 'Activity', {windowId: windowId, data: activity });
+	sendToWeb(user, 'Activity', {windowId: windowId, activity: activity });
 }
 
 function sendToWeb(user, msgId, data) {
