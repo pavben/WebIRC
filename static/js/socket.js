@@ -1,7 +1,5 @@
 var socket = null;
 
-var state = null;
-
 function startWebSocketConnection() {
 	socket = io.connect();
 
@@ -22,6 +20,11 @@ function startWebSocketConnection() {
 
 				// we no longer need the activity log, since they have all been displayed
 				delete channel.activityLog;
+
+				// build the userlist divs
+				channel.userlist.forEach(function(user) {
+					Userlist.addUser(channel, user, false);
+				});
 			});
 		});
 	});
@@ -44,11 +47,99 @@ function handleActivity(windowId, activity, isNew) {
 
 var activityHandlers = {
 	'Join': function(windowId, activity, isNew) {
-		var chatlogDiv = windowIdToObject('#chatlog_', windowId);
+		withChannelByWindowId(windowId, function(channel) {
+			// TODO: abstract appending to the chatlog
+			var chatlogDiv = windowIdToObject('#chatlog_', windowId);
 
-		chatlogDiv.append(
-			$('<div/>').text(activity.who.nick + ' has joined')
-		);
+			chatlogDiv.append(
+				$('<div/>').text('Join: ' + activity.who.nick)
+			);
+
+			if (isNew) {
+				Userlist.addUser(channel, activity.who, true);
+			}
+		},
+		silentFailCallback);
+	},
+	'Part': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			// TODO: abstract appending to the chatlog
+			var chatlogDiv = windowIdToObject('#chatlog_', windowId);
+
+			chatlogDiv.append(
+				$('<div/>').text('Part: ' + activity.who.nick)
+			);
+
+			if (isNew) {
+				Userlist.removeUser(channel, activity.who, true);
+			}
+		},
+		silentFailCallback);
 	}
 };
+
+function silentFailCallback() {
+	console.log('silentFailCallback');
+}
+
+function withChannelByWindowId(windowId, successCallback, failureCallback) {
+	var ret = getObjectByWindowId(windowId);
+
+	if (ret.type === 'channel') {
+		successCallback(ret.object);
+	} else {
+		failureCallback();
+	}
+}
+
+function getObjectByWindowId(windowId) {
+	if (state === null) {
+		return null;
+	}
+
+	for (serverIdx in state.servers) {
+		var server = state.servers[serverIdx];
+
+		if (server.windowId === windowId) {
+			return {type: 'server', object: server};
+		}
+		
+		for (channelIdx in server.channels) {
+			var channel = server.channels[channelIdx];
+
+			if (channel.windowId === windowId) {
+				return {type: 'channel', object: channel};
+			}
+		}
+	}
+
+	// windowId not found
+	return null;
+}
+
+var Userlist = {
+	addUser: function(channel, userlistEntry, isNew) {
+		if (isNew) {
+			channel.userlist.push(userlistEntry);
+		}
+
+		var userlistDiv = windowIdToObject('#userlist_', channel.windowId);
+
+		userlistDiv.append(
+			$('<div/>').attr('id', 'userlist_' + channel.windowId + '_' + userlistEntry.nick).text(userlistEntry.nick)
+		);
+	},
+	removeUser: function(channel, userlistEntry, isNew) {
+		if (isNew) {
+			// filter the userlist leaving only the elements without matching nicknames
+			channel.userlist = channel.userlist.filter(function(currentUserlistEntry) {
+				return (currentUserlistEntry.nick !== userlistEntry.nick);
+			});
+		}
+
+		var userlistEntryDiv = $('#userlist_' + channel.windowId + '_' + userlistEntry.nick);
+
+		userlistEntryDiv.remove();
+	}
+}
 

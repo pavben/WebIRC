@@ -3,7 +3,7 @@ var visibleWindowId = null;
 function onResize() {
 	var maincellDiv = $('#maincell');
 	if (visibleWindowId !== null) {
-		updateChatlogHeight(visibleWindowId);
+		updateChatlogAndUserlistHeight(visibleWindowId);
 		maincellDiv.css('height', 'auto');
 	} else {
 		// disable scrolling as it causes scrollbar flickering
@@ -22,23 +22,21 @@ function onResize() {
 	$('#chatbox').focus();
 }
 
-function updateChatlogHeight(windowId) {
+function updateChatlogAndUserlistHeight(windowId) {
 	// disable scrolling as it causes scrollbar flickering
 	$('body').css('overflow-y', 'hidden');
 
-	var chatlogDiv = windowIdToObject('#chatlog_', windowId);
-	var newChatlogHeight = getTargetHeightForMaincell()
-		- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
-		- stripPx(chatlogDiv.css('padding-bottom'))
-		- stripPx(chatlogDiv.css('border-top-width')) // same for border
-		- stripPx(chatlogDiv.css('border-bottom-width'));
+	var newHeight = getTargetHeightForMaincell();
 
-	if (newChatlogHeight < 200) {
-		newChatlogHeight = 200;
+	if (newHeight < 200) {
+		newHeight = 200;
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
-	chatlogDiv.css('height', newChatlogHeight);
+	windowIdToObject('#chatlog_', windowId).css('height', newHeight);
+
+	// if there is a userlist in this window, update its height too
+	windowIdToObject('#userlist_', windowId).css('height', newHeight);
 
 	// scroll the chatlog to the bottom, if possible
 	//instantScrollChatlogToBottom(chatlogDiv);

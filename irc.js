@@ -7,6 +7,7 @@ var serverCommandHandlers = {
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
 	'PING': handleCommandRequireArgs(1, handlePing),
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
+	'PART': handleCommandRequireArgs(1, handlePart),
 }
 
 function handleCommandRequireArgs(requiredNumArgs, handler) {
@@ -93,8 +94,8 @@ function handlePing(user, server, origin, arg) {
 }
 
 function handleJoin(user, server, origin, channelName) {
-	// if the nickname of the joiner matches ours
 	if (origin !== null && origin.type === 'client') {
+		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've joined some channel
 			server.channels.push(new data.Channel(channelName, user.getNextWindowId()));
@@ -114,6 +115,40 @@ function handleJoin(user, server, origin, channelName) {
 
 					enterActivityForChannel(user, channel, 'Join', {
 						who: newUserlistEntry
+					}, true);
+				},
+				silentFailCallback
+			);
+		}
+	}
+}
+
+function handlePart(user, server, origin, channelName) {
+	if (origin !== null && origin.type === 'client') {
+		// if the nickname of the leaver matches ours
+		if (server.nickname !== null && server.nickname === origin.nick) {
+			// the server is confirming that we've left some channel
+			server.channels = server.channels.filter(function(currentChannel) {
+				return (currentChannel.name !== channelName);
+			});
+
+			console.log('Parted ' + channelName);
+		} else {
+			// someone left one of the channels we should be in
+			withChannel(server, channelName,
+				function(channel) {
+					var who = new data.UserlistEntry();
+
+					who.nick = origin.nick;
+					who.user = origin.user;
+					who.host = origin.host;
+
+					channel.userlist = channel.userlist.filter(function(currentUserlistEntry) {
+						return (currentUserlistEntry.nick !== who.nick);
+					});
+
+					enterActivityForChannel(user, channel, 'Part', {
+						who: who
 					}, true);
 				},
 				silentFailCallback

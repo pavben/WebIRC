@@ -46,19 +46,24 @@ a:hover, a:active {
 .userlistcell {
 	display:table-cell;
 	width:200px;
+	vertical-align:bottom;
 }
 .chatlog, .userlist {
-	padding:1px 10px 3px 6px;
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
+	box-sizing:border-box;
 	overflow-x:hidden;
 	overflow-y:auto;
 	white-space:pre-wrap;
 	word-wrap: break-word;
 }
+.chatlog {
+	padding:1px 10px 3px 6px;
+}
 .userlist {
 	height:100%;
+	padding:6px 6px 6px 6px;
 }
 .chatboxwrapper {
 	margin-top:10px;

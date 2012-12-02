@@ -1,3 +1,5 @@
+var state = null;
+
 $(window).bind('load', function() {
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chatbox'), $('#chatboxwrapper'));
