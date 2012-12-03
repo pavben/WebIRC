@@ -27,11 +27,6 @@ app.configure(function() {
 	app.use(express.static(__dirname + '/static'));
 });
 
-app.get('/test', function(req, res) {
-	console.log("Sessions: %j", sessionStore);
-	res.end("hey");
-});
-
 var server = http.createServer(app);
 server.listen(28081);
 var sio = io.listen(server);
@@ -101,6 +96,10 @@ sio.configure(function() {
 			});
 
 			assert(socketRemoved, 'Disconnected WebSocket not found for removal');
+		});
+
+		socket.on('ChatboxSend', function(data) {
+			console.log(data);
 		});
 	});
 });

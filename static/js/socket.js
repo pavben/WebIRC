@@ -36,6 +36,14 @@ function startWebSocketConnection() {
 	});
 }
 
+function sendToGateway(msgId, data) {
+	if (socket !== null) {
+		socket.emit(msgId, data);
+	} else {
+		console.log('sendToGateway called on a null socket');
+	}
+}
+
 function handleActivity(windowId, activity, isNew) {
 	if (activity.type in activityHandlers) {
 		activityHandlers[activity.type](windowId, activity, isNew);
