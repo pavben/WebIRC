@@ -21,10 +21,7 @@ function startWebSocketConnection() {
 				// we no longer need the activity log, since they have all been displayed
 				delete channel.activityLog;
 
-				// build the userlist divs
-				channel.userlist.forEach(function(user) {
-					Userlist.addUser(channel, user, false);
-				});
+				channel.userlist = new Userlist(channel.windowId, channel.userlist);
 			});
 		});
 	});
@@ -56,7 +53,7 @@ var activityHandlers = {
 			);
 
 			if (isNew) {
-				Userlist.addUser(channel, activity.who, true);
+				channel.userlist.addUser(activity.who);
 			}
 		},
 		silentFailCallback);
@@ -71,7 +68,7 @@ var activityHandlers = {
 			);
 
 			if (isNew) {
-				Userlist.removeUser(channel, activity.who, true);
+				channel.userlist.removeUser(activity.who.nick);
 			}
 		},
 		silentFailCallback);
@@ -116,30 +113,3 @@ function getObjectByWindowId(windowId) {
 	// windowId not found
 	return null;
 }
-
-var Userlist = {
-	addUser: function(channel, userlistEntry, isNew) {
-		if (isNew) {
-			channel.userlist.push(userlistEntry);
-		}
-
-		var userlistDiv = windowIdToObject('#userlist_', channel.windowId);
-
-		userlistDiv.append(
-			$('<div/>').attr('id', 'userlist_' + channel.windowId + '_' + userlistEntry.nick).text(userlistEntry.nick)
-		);
-	},
-	removeUser: function(channel, userlistEntry, isNew) {
-		if (isNew) {
-			// filter the userlist leaving only the elements without matching nicknames
-			channel.userlist = channel.userlist.filter(function(currentUserlistEntry) {
-				return (currentUserlistEntry.nick !== userlistEntry.nick);
-			});
-		}
-
-		var userlistEntryDiv = $('#userlist_' + channel.windowId + '_' + userlistEntry.nick);
-
-		userlistEntryDiv.remove();
-	}
-}
-

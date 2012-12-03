@@ -13,7 +13,3 @@ $(window).bind('load', function() {
 	startWebSocketConnection();
 });
 
-function log(msg) {
-	window.console.log(msg);
-}
-
