@@ -377,7 +377,7 @@ function processChatboxLine(line, user, windowId, exec) {
 	if (exec) {
 		var match;
 
-		if (match = line.match(/^\/([a-z0-9]+)(?:\s*)(.*?)$/i)) {
+		if (match = line.match(/^\/([a-z0-9]*)(?:\s*)(.*?)$/i)) {
 			command = match[1].toUpperCase();
 			rest = match[2];
 		}

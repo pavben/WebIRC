@@ -21,13 +21,13 @@ function initializeChatboxHandler() {
 
 	chatbox.keypress(function(e) {
 		if (e.which === 13) {
-			var chatboxVal = chatbox.val();
+			var lines = chatbox.val().replace(/\r\n/g, '\n').split('\n').filter(function(line) { return (line.length > 0); });
 
-			if (chatboxVal.length > 0) {
-				var lines = chatboxVal.replace(/\r\n/g, '\n').split('\n');
+			if (lines.length > 0) {
 				sendToGateway('ChatboxSend', {windowId: visibleWindowId, lines: lines, exec: !e.shiftKey});
-				chatbox.val('');
 			}
+
+			chatbox.val('').change();
 
 			return false;
 		}
