@@ -1,7 +1,15 @@
 var socket = null;
 
 function startWebSocketConnection() {
-	socket = io.connect();
+	// connect to the current webserver
+	socket = io.connect('', {
+		reconnect: false
+	});
+
+	// TODO: connect_failed isn't emitted
+	socket.on('connect_failed', function() {
+		console.log('Connection failed');
+	});
 
 	socket.on('CurrentState', function(currentState) {
 		console.log(currentState);
@@ -33,6 +41,10 @@ function startWebSocketConnection() {
 		var activity = data.activity;
 
 		handleActivity(windowId, activity, true);
+	});
+
+	socket.on('disconnect', function() {
+		console.log('Socket closed');
 	});
 }
 

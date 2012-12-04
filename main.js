@@ -57,27 +57,34 @@ sio.configure(function() {
 	sio.sockets.on('connection', function(socket) {
 		console.log('A socket with sessionId ' + socket.handshake.sessionId + ' connected.');
 
-		data.users.forEach(function(user) {
+		var user = null;
+
+		data.users.some(function(currentUser) {
 			// if socket.handshake.sessionId is in user.loggedInSessions
 			// if (user.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
 			if (true) {
-				user.activeWebSockets.push(socket);
-
-				// then they're already authenticated
-				socket.emit('CurrentState', {
-					username: user.username,
-					servers: user.servers.map(function(server) {
-						// copy the server object
-						var serverCopy = cloneextend.clone(server);
-
-						// and remove the fields that should not be sent
-						delete serverCopy.socket;
-
-						return serverCopy;
-					})
-				});
+				user = currentUser;
+				return true;
 			} else {
-				socket.emit('NeedLogin', {});
+				return false;
+			}
+		});
+
+		// see if this socket belongs to a user who is already logged in
+		if (user !== null) {
+			handleSuccessfulLogin(user, socket);
+		} else {
+			socket.emit('NeedLogin', {});
+		}
+
+		socket.on('Login', function(data) {
+			// only process Login if the user for this socket is null
+			if (user === null) {
+				// TODO: verify login
+
+				// TODO: add sessionId to loggedInSessions for user
+
+				handleSuccessfulLogin(user, socket);
 			}
 		});
 
@@ -86,23 +93,38 @@ sio.configure(function() {
 			console.log('WebSocket disconnected');
 
 			// remove the socket from activeWebSockets of the user
-			var socketRemoved = false;
-			data.users.forEach(function(user) {
+			// nothing to remove if the socket was not yet logged in
+			if (user !== null) {
 				var socketIndex = user.activeWebSockets.indexOf(socket);
 				if (socketIndex !== -1) {
 					user.activeWebSockets.splice(socketIndex, 1);
-					socketRemoved = true;
 				}
-			});
-
-			assert(socketRemoved, 'Disconnected WebSocket not found for removal');
-		});
-
-		socket.on('ChatboxSend', function(data) {
-			console.log(data);
+			}
 		});
 	});
 });
+
+function handleSuccessfulLogin(user, socket) {
+	user.activeWebSockets.push(socket);
+
+	// then they're already authenticated
+	socket.emit('CurrentState', {
+		username: user.username,
+		servers: user.servers.map(function(server) {
+			// copy the server object
+			var serverCopy = cloneextend.clone(server);
+
+			// and remove the fields that should not be sent
+			delete serverCopy.socket;
+
+			return serverCopy;
+		})
+	});
+
+	socket.on('ChatboxSend', function(data) {
+		console.log(data);
+	});
+}
 
 var newUser = new data.User(
 	'u',
