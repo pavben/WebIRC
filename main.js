@@ -107,7 +107,6 @@ sio.configure(function() {
 function handleSuccessfulLogin(user, socket) {
 	user.activeWebSockets.push(socket);
 
-	// then they're already authenticated
 	socket.emit('CurrentState', {
 		username: user.username,
 		servers: user.servers.map(function(server) {
@@ -123,6 +122,10 @@ function handleSuccessfulLogin(user, socket) {
 
 	socket.on('ChatboxSend', function(data) {
 		console.log(data);
+
+		data.lines.forEach(function(line) {
+			irc.processChatboxLine(line, user, data.windowId, data.exec);
+		});
 	});
 }
 

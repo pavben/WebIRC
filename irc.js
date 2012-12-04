@@ -1,5 +1,6 @@
 var net = require('net');
 var data = require('./data.js');
+var utils = require('./utils.js');
 
 var serverCommandHandlers = {
 	'001': handleCommandRequireArgs(0, handle001),
@@ -8,6 +9,7 @@ var serverCommandHandlers = {
 	'PING': handleCommandRequireArgs(1, handlePing),
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'PART': handleCommandRequireArgs(1, handlePart),
+	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
 }
 
 function handleCommandRequireArgs(requiredNumArgs, handler) {
@@ -149,6 +151,24 @@ function handlePart(user, server, origin, channelName) {
 
 					enterActivityForChannel(user, channel, 'Part', {
 						who: who
+					}, true);
+				},
+				silentFailCallback
+			);
+		}
+	}
+}
+
+function handlePrivmsg(user, server, origin, targetName, text) {
+	if (origin !== null) {
+		if (utils.isNickname(targetName)) {
+			console.log('Unhandled target type -- nickname');
+		} else {
+			withChannel(server, targetName,
+				function(channel) {
+					enterActivityForChannel(user, channel, 'ChatMessage', {
+						nick: (origin.type === 'client' ? origin.nick : origin.name),
+						text: text
 					}, true);
 				},
 				silentFailCallback
@@ -348,4 +368,38 @@ function parseOrigin(str) {
 		return {type: 'server', name: str};
 	}
 }
+
+function processChatboxLine(line, user, windowId, exec) {
+	var command = null;
+	var rest = line;
+
+	// only parse commands if exec is true
+	if (exec) {
+		var match;
+
+		if (match = line.match(/^\/([a-z0-9]+)(?:\s*)(.*?)$/i)) {
+			command = match[1].toUpperCase();
+			rest = match[2];
+		}
+	}
+
+	if (command !== null) {
+		console.log('Commands not implemented');
+	} else {
+		var objs = utils.getObjectsByWindowId(user, windowId);
+
+		if (objs !== null) {
+			if (objs.type === 'channel') {
+				var server = objs.server;
+				var channel = objs.channel;
+
+				enterActivityForChannel(user, channel, 'ChatMessage', { nick: server.nickname, text: rest }, true);
+
+				sendToServer(server, 'PRIVMSG ' + channel.name + ' :' + rest);
+			}
+		}
+	}
+}
+
+exports.processChatboxLine = processChatboxLine;
 

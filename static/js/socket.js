@@ -92,6 +92,17 @@ var activityHandlers = {
 			}
 		},
 		silentFailCallback);
+	},
+	'ChatMessage': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			// TODO: abstract appending to the chatlog
+			var chatlogDiv = windowIdToObject('#chatlog_', windowId);
+
+			chatlogDiv.append(
+				$('<div/>').text('<' + activity.nick + '> ' + activity.text)
+			);
+		},
+		silentFailCallback);
 	}
 };
 
@@ -99,37 +110,3 @@ function silentFailCallback() {
 	console.log('silentFailCallback');
 }
 
-function withChannelByWindowId(windowId, successCallback, failureCallback) {
-	var ret = getObjectByWindowId(windowId);
-
-	if (ret.type === 'channel') {
-		successCallback(ret.object);
-	} else {
-		failureCallback();
-	}
-}
-
-function getObjectByWindowId(windowId) {
-	if (state === null) {
-		return null;
-	}
-
-	for (serverIdx in state.servers) {
-		var server = state.servers[serverIdx];
-
-		if (server.windowId === windowId) {
-			return {type: 'server', object: server};
-		}
-		
-		for (channelIdx in server.channels) {
-			var channel = server.channels[channelIdx];
-
-			if (channel.windowId === windowId) {
-				return {type: 'channel', object: channel};
-			}
-		}
-	}
-
-	// windowId not found
-	return null;
-}
