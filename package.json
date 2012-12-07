@@ -3,11 +3,12 @@
 	"version" : "0.0.1",
 	"author": "Pavel Bennett",
 	"dependencies": {
-		"express": ">= 3.0.3",
-		"socket.io": ">= 0.9.11",
+		"cloneextend" : "*",
 		"connect": ">= 2.7.0",
+		"cookie": "*",
+		"express": ">= 3.0.3",
 		"http": "*",
-		"cookie": "*"
+		"socket.io": ">= 0.9.11"
 	},
 	"engines": {
 		"node": ">= 0.6"

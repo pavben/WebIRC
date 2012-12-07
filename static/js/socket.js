@@ -65,10 +65,7 @@ function handleActivity(windowId, activity, isNew) {
 var activityHandlers = {
 	'Join': function(windowId, activity, isNew) {
 		withChannelByWindowId(windowId, function(channel) {
-			// TODO: abstract appending to the chatlog
-			var chatlogDiv = windowIdToObject('#chatlog_', windowId);
-
-			chatlogDiv.append(
+			appendToChatlog(windowId,
 				$('<div/>').text('Join: ' + activity.who.nick)
 			);
 
@@ -80,10 +77,7 @@ var activityHandlers = {
 	},
 	'Part': function(windowId, activity, isNew) {
 		withChannelByWindowId(windowId, function(channel) {
-			// TODO: abstract appending to the chatlog
-			var chatlogDiv = windowIdToObject('#chatlog_', windowId);
-
-			chatlogDiv.append(
+			appendToChatlog(windowId,
 				$('<div/>').text('Part: ' + activity.who.nick)
 			);
 
@@ -95,10 +89,7 @@ var activityHandlers = {
 	},
 	'ChatMessage': function(windowId, activity, isNew) {
 		withChannelByWindowId(windowId, function(channel) {
-			// TODO: abstract appending to the chatlog
-			var chatlogDiv = windowIdToObject('#chatlog_', windowId);
-
-			chatlogDiv.append(
+			appendToChatlog(windowId,
 				$('<div/>').text('<' + activity.nick + '> ' + activity.text)
 			);
 		},

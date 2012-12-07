@@ -33,13 +33,16 @@ function updateChatlogAndUserlistHeight(windowId) {
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
-	windowIdToObject('#chatlog_', windowId).css('height', newHeight);
+
+	var chatlogDiv = windowIdToObject('#chatlog_', windowId)
+	
+	chatlogDiv.css('height', newHeight);
 
 	// if there is a userlist in this window, update its height too
 	windowIdToObject('#userlist_', windowId).css('height', newHeight);
 
 	// scroll the chatlog to the bottom, if possible
-	//instantScrollChatlogToBottom(chatlogDiv);
+	instantScrollChatlogToBottom(chatlogDiv);
 }
 
 function getTargetHeightForMaincell() {
@@ -149,6 +152,26 @@ function bindTextChangeEvents(field, checkForChangeFunction) {
 		'keydown': checkForChangeFunction,
 		'change': checkForChangeFunction
 	});
+}
+
+function appendToChatlog(windowId, elements) {
+	var chatlogDiv = windowIdToObject('#chatlog_', windowId);
+
+	if (chatlogDiv.length === 1) {
+		chatlogDiv.append(elements);
+
+		instantScrollChatlogToBottom(chatlogDiv);
+	} else {
+		console.log('Incorrect number of elements matched in appendToChatlog');
+	}
+}
+
+function instantScrollChatlogToBottom(chatlogDiv) {
+	if (chatlogDiv.length > 0) {
+		var scrollHeight = chatlogDiv[0].scrollHeight;
+
+		chatlogDiv.scrollTop(scrollHeight);
+	}
 }
 
 function windowIdToObject(prefix, windowId) {
