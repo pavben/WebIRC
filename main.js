@@ -115,35 +115,51 @@ function handleSuccessfulLogin(user, socket) {
 
 			// and remove the fields that should not be sent
 			delete serverCopy.socket;
+			delete serverCopy.user;
+
+			serverCopy.channels = server.channels.map(function(channel) {
+				// copy the channel object
+				var channelCopy = cloneextend.clone(channel);
+
+				// and remove the fields that should not be sent
+				delete channelCopy.server;
+
+				return channelCopy;
+			});
 
 			return serverCopy;
-		})
+		}),
+		activeWindowId: user.activeWindowId
 	});
 
 	socket.on('ChatboxSend', function(data) {
 		console.log(data);
 
 		data.lines.forEach(function(line) {
-			irc.processChatboxLine(line, user, data.windowId, data.exec);
+			irc.processChatboxLine(line, user, data.exec);
 		});
+	});
+
+	socket.on('SetActiveWindow', function(data) {
+		console.log('active window set to: ' + data.windowId + ' (client request)');
+
+		user.setActiveWindow(data.windowId);
 	});
 }
 
 var newUser = new data.User(
 	'u',
-	'p',
-	[]
+	'p'
 );
 
-newUser.servers.push(
+newUser.addServer(
 	new data.Server(
 		'test.server',
 		6667,
 		'webirc',
 		'webirc',
 		'webirc',
-		['#test'],
-		newUser.getNextWindowId()
+		['#test']
 	)
 );
 

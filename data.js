@@ -1,22 +1,67 @@
-function User(username, password, servers) {
+function User(username, password) {
 	this.username = username;
 	this.password = password;
 
-	this.servers = servers;
+	this.servers = [];
 
 	this.activeWebSockets = [];
 	this.loggedInSessions = [];
 
 	this.nextWindowId = 0;
+	this.activeWindowId = null;
 }
 
 User.prototype = {
+	addServer: function(server) {
+		server.user = this;
+		server.windowId = this.getNextWindowId();
+
+		this.servers.push(server);
+
+		this.setActiveWindow(server.windowId);
+	},
+	setActiveWindow: function(windowId) {
+		console.log('active window set to: ' + windowId + ' (on server)');
+
+		this.activeWindowId = windowId;
+
+		// sync the change to the gateway
+		this.sendToWeb('SetActiveWindow', {windowId: windowId});
+	},
+	sendToWeb: function(msgId, data) {
+		this.activeWebSockets.forEach(function(socket) {
+			socket.emit(msgId, data);
+		});
+	},
+	sendActivityForWindow: function(windowId, activity) {
+		this.sendToWeb('Activity', {windowId: windowId, activity: activity });
+	},
 	getNextWindowId: function() {
 		return (this.nextWindowId++);
+	},
+	getObjectsByWindowId: function(windowId) {
+		for (serverIdx in this.servers) {
+			var server = this.servers[serverIdx];
+
+			if (server.windowId === windowId) {
+				return {type: 'server', server: server};
+			}
+			
+			for (channelIdx in server.channels) {
+				var channel = server.channels[channelIdx];
+
+				if (channel.windowId === windowId) {
+					return {type: 'channel', server: server, channel: channel};
+				}
+			}
+		}
+
+		// windowId not found
+		return null;
 	}
 };
 
-function Server(host, port, desiredNickname, username, realName, desiredChannels, windowId) {
+function Server(host, port, desiredNickname, username, realName, desiredChannels) {
 	this.host = host;
 	this.port = port;
 	this.nickname = null;
@@ -26,15 +71,32 @@ function Server(host, port, desiredNickname, username, realName, desiredChannels
 	this.channels = [];
 	this.desiredChannels = desiredChannels;
 	this.socket = null;
-	this.windowId = windowId;
+
+	// these are set automatically by the 'add' functions
+	this.user = null; // the user this server belongs to
+	this.windowId = null;
 }
 
-function Channel(name, windowId) {
+Server.prototype = {
+	addChannel: function(channel) {
+		channel.server = this;
+		channel.windowId = this.user.getNextWindowId();
+
+		this.channels.push(channel);
+
+		this.user.setActiveWindow(channel.windowId);
+	}
+};
+
+function Channel(name) {
 	this.name = name;
 	this.tempUserlist = []; // built while NAMES entries are coming in (353) and copied to userlist on 366
 	this.userlist = [];
 	this.activityLog = [];
-	this.windowId = windowId;
+
+	// these are set automatically by the 'add' functions
+	this.server = null;
+	this.windowId = null;
 }
 
 /*

@@ -24,7 +24,7 @@ function initializeChatboxHandler() {
 			var lines = chatbox.val().replace(/\r\n/g, '\n').split('\n').filter(function(line) { return (line.length > 0); });
 
 			if (lines.length > 0) {
-				sendToGateway('ChatboxSend', {windowId: visibleWindowId, lines: lines, exec: !e.shiftKey});
+				sendToGateway('ChatboxSend', {lines: lines, exec: !e.shiftKey});
 			}
 
 			chatbox.val('').change();

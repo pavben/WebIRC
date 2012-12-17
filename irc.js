@@ -100,7 +100,7 @@ function handleJoin(user, server, origin, channelName) {
 		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've joined some channel
-			server.channels.push(new data.Channel(channelName, user.getNextWindowId()));
+			server.addChannel(new data.Channel(channelName));
 
 			console.log('Successfully joined ' + channelName);
 		} else {
@@ -130,6 +130,9 @@ function handlePart(user, server, origin, channelName) {
 		// if the nickname of the leaver matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've left some channel
+
+			// TODO: get window before channel.windowId and set it as active
+
 			server.channels = server.channels.filter(function(currentChannel) {
 				return (currentChannel.name !== channelName);
 			});
@@ -186,17 +189,7 @@ function enterActivityForChannel(user, channel, activityType, activity, affectsH
 		channel.activityLog.push(activity);
 	}
 
-	sendActivityForWindow(user, channel.windowId, activity);
-}
-
-function sendActivityForWindow(user, windowId, activity) {
-	sendToWeb(user, 'Activity', {windowId: windowId, activity: activity });
-}
-
-function sendToWeb(user, msgId, data) {
-	user.activeWebSockets.forEach(function(socket) {
-		socket.emit(msgId, data);
-	});
+	user.sendActivityForWindow(channel.windowId, activity);
 }
 
 function withChannel(server, channelName, successCallback, failureCallback) {
@@ -369,7 +362,7 @@ function parseOrigin(str) {
 	}
 }
 
-function processChatboxLine(line, user, windowId, exec) {
+function processChatboxLine(line, user, exec) {
 	var command = null;
 	var rest = line;
 
@@ -386,7 +379,7 @@ function processChatboxLine(line, user, windowId, exec) {
 	if (command !== null) {
 		console.log('Commands not implemented');
 	} else {
-		var objs = utils.getObjectsByWindowId(user, windowId);
+		var objs = user.getObjectsByWindowId(user.activeWindowId);
 
 		if (objs !== null) {
 			if (objs.type === 'channel') {

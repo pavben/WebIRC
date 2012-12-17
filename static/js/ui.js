@@ -2,8 +2,8 @@ var visibleWindowId = null;
 
 function onResize() {
 	var maincellDiv = $('#maincell');
-	if (visibleWindowId !== null) {
-		updateChatlogAndUserlistHeight(visibleWindowId);
+	if (state !== null && state.activeWindowId !== null) {
+		updateChatlogAndUserlistHeight(state.activeWindowId);
 		maincellDiv.css('height', 'auto');
 	} else {
 		// disable scrolling as it causes scrollbar flickering
@@ -58,7 +58,7 @@ function getTargetHeightForMaincell() {
 	);
 }
 
-function addWindow(windowId, windowType) {
+function addWindow(windowId, windowType, setActive) {
 	var maincellContent = null;
 	switch(windowType) {
 		case 'server':
@@ -89,15 +89,33 @@ function addWindow(windowId, windowType) {
 		$('<div/>').attr('id', 'maincell_' + windowId).hide().append(maincellContent)
 	);
 
-	setVisibleWindowId(windowId);
+	if (setActive) {
+		setActiveWindowId(windowId);
+	}
 }
 
-function setVisibleWindowId(windowId) {
-	windowIdToObject('#maincell_', visibleWindowId).hide();
+function setActiveWindowId(windowId) {
+	// only do this if windowId isn't already active
+	if (state.activeWindowId !== windowId) {
+		hideActiveWindow();
 
-	visibleWindowId = windowId;
+		state.activeWindowId = windowId;
 
-	windowIdToObject('#maincell_', visibleWindowId).show();
+		// sync the change to the gateway
+		sendToGateway('SetActiveWindow', {windowId: windowId});
+
+		showActiveWindow();
+	}
+}
+
+function hideActiveWindow() {
+	if (state.activeWindowId !== null) {
+		windowIdToObject('#maincell_', state.activeWindowId).hide();
+	}
+}
+
+function showActiveWindow() {
+	windowIdToObject('#maincell_', state.activeWindowId).show();
 
 	onResize();
 }
@@ -175,14 +193,7 @@ function instantScrollChatlogToBottom(chatlogDiv) {
 }
 
 function windowIdToObject(prefix, windowId) {
-	var divId = prefix;
-	if (windowId !== null) {
-		divId += windowId;
-	} else {
-		divId += 'none';
-	}
-
-	return $(divId);
+	return $(prefix + windowId);
 }
 
 function stripPx(text) {

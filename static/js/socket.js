@@ -17,10 +17,10 @@ function startWebSocketConnection() {
 		state = currentState;
 
 		state.servers.forEach(function(server) {
-			addWindow(server.windowId, 'server');
+			addWindow(server.windowId, 'server', false);
 
 			server.channels.forEach(function(channel) {
-				addWindow(channel.windowId, 'channel');
+				addWindow(channel.windowId, 'channel', false);
 
 				channel.activityLog.forEach(function(activity) {
 					handleActivity(channel.windowId, activity, false);
@@ -32,6 +32,8 @@ function startWebSocketConnection() {
 				channel.userlist = new Userlist(channel.windowId, channel.userlist);
 			});
 		});
+
+		showActiveWindow();
 	});
 
 	socket.on('Activity', function(data) {
@@ -41,6 +43,10 @@ function startWebSocketConnection() {
 		var activity = data.activity;
 
 		handleActivity(windowId, activity, true);
+	});
+
+	socket.on('SetActiveWindow', function(data) {
+		setActiveWindowId(data.windowId);
 	});
 
 	socket.on('disconnect', function() {
