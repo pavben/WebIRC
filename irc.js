@@ -345,12 +345,11 @@ function parseOrigin(str) {
 	}
 }
 
-function processChatboxLine(line, user, exec) {
+function processChatboxLine(line, user, parseCommands) {
 	var command = null;
 	var rest = line;
 
-	// only parse commands if exec is true
-	if (exec) {
+	if (parseCommands) {
 		var match;
 
 		if (match = line.match(/^\/([a-z0-9]*)(?:\s*)(.*?)$/i)) {

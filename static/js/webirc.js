@@ -6,7 +6,7 @@ $(window).bind('load', function() {
 
 	initializeChatboxHandler();
 
-	$(window).resize(onResize);
+	$(window).bind('resize orientationchange', onResize);
 
 	onResize();
 
