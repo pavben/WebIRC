@@ -3,6 +3,9 @@ function Userlist(windowId, initialList) {
 	this.users = [];
 	this.nextUserlistId = 0;
 
+	// first, empty the userlist div
+	windowIdToObject('#userlist_', this.windowId).empty();
+
 	// build the userlist divs
 	initialList.forEach(function(user) {
 		this.addUser(user);

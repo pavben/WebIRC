@@ -115,6 +115,12 @@ var activityHandlers = {
 			);
 		},
 		silentFailCallback);
+	},
+	'NamesUpdate': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			channel.userlist = new Userlist(channel.windowId, activity.userlist);
+		},
+		silentFailCallback);
 	}
 };
 

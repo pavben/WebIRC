@@ -86,6 +86,8 @@ function handle366(user, server, origin, myNickname, channelName) {
 			// swap tempUserlist for userlist and clear it
 			channel.userlist = channel.tempUserlist;
 			channel.tempUserlist = [];
+
+			enterActivityForChannel(user, channel, 'NamesUpdate', {userlist: channel.userlist}, false);
 		},
 		silentFailCallback
 	);
