@@ -1,7 +1,17 @@
+function withServerByWindowId(windowId, successCallback, failureCallback) {
+	var ret = getObjectsByWindowId(windowId);
+
+	if (ret !== null && typeof ret.server !== 'undefined') {
+		successCallback(ret.server);
+	} else {
+		failureCallback();
+	}
+}
+
 function withChannelByWindowId(windowId, successCallback, failureCallback) {
 	var ret = getObjectsByWindowId(windowId);
 
-	if (ret !== null && ret.type === 'channel') {
+	if (ret !== null && typeof ret.channel !== 'undefined') {
 		successCallback(ret.channel);
 	} else {
 		failureCallback();

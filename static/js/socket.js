@@ -14,29 +14,20 @@ function startWebSocketConnection() {
 	socket.on('CurrentState', function(currentState) {
 		console.log(currentState);
 
-		state = currentState;
+		state = {}; // reset the state to empty
 
-		state.servers.forEach(function(server) {
-			addWindow(server.windowId, 'server', false);
+		state.username = currentState.username;
 
-			server.channels.forEach(function(channel) {
-				addWindow(channel.windowId, 'channel', false);
+		state.servers = [];
 
-				channel.activityLog.forEach(function(activity) {
-					handleActivity(channel.windowId, activity, false);
-				});
+		currentState.servers.forEach(processNewServerFromGateway);
 
-				// we no longer need the activity log, since they have all been displayed
-				delete channel.activityLog;
+		state.activeWindowId = null; // initially, no active window
 
-				channel.userlist = new Userlist(channel.windowId, channel.userlist);
-			});
-		});
-
-		showActiveWindow();
+		setActiveWindowId(currentState.activeWindowId);
 	});
 
-	socket.on('Activity', function(data) {
+	socket.on('WindowActivity', function(data) {
 		console.log(data);
 
 		var windowId = data.windowId;
@@ -47,6 +38,30 @@ function startWebSocketConnection() {
 
 	socket.on('SetActiveWindow', function(data) {
 		setActiveWindowId(data.windowId);
+	});
+
+	socket.on('JoinChannel', function(data) {
+		console.log('JoinChannel');
+		console.log(data);
+
+		withServerByWindowId(data.serverWindowId, function(server) {
+			processNewChannelFromGateway(server, data.channel);
+		},
+		silentFailCallback);
+	});
+
+	socket.on('RemoveChannel', function(data) {
+		console.log('RemoveChannel');
+		console.log(data);
+
+		withServerByWindowId(data.channelWindowId, function(server) {
+			removeWindow(data.channelWindowId);
+
+			server.channels = server.channels.filter(function(channel) {
+				return (channel.windowId !== data.channelWindowId);
+			});
+		},
+		silentFailCallback);
 	});
 
 	socket.on('disconnect', function() {
@@ -105,5 +120,34 @@ var activityHandlers = {
 
 function silentFailCallback() {
 	console.log('silentFailCallback');
+}
+
+function processNewServerFromGateway(server) {
+	state.servers.push(server);
+
+	addWindow(server.windowId, 'server');
+
+	var channels = server.channels;
+
+	server.channels = [];
+
+	channels.forEach(function(channel) {
+		processNewChannelFromGateway(server, channel);
+	});
+}
+
+function processNewChannelFromGateway(server, channel) {
+	server.channels.push(channel);
+
+	addWindow(channel.windowId, 'channel');
+
+	channel.activityLog.forEach(function(activity) {
+		handleActivity(channel.windowId, activity, false);
+	});
+
+	// we no longer need the activity log, since they have all been displayed
+	delete channel.activityLog;
+
+	channel.userlist = new Userlist(channel.windowId, channel.userlist);
 }
 

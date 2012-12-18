@@ -27,7 +27,7 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 
 function handle001(user, server, origin) {
 	server.desiredChannels.forEach(function(channel) {
-		sendToServer(server, 'JOIN ' + channel);
+		server.send('JOIN ' + channel);
 	});
 }
 
@@ -92,7 +92,7 @@ function handle366(user, server, origin, myNickname, channelName) {
 }
 
 function handlePing(user, server, origin, arg) {
-	sendToServer(server, 'PONG :' + arg);
+	server.send('PONG :' + arg);
 }
 
 function handleJoin(user, server, origin, channelName) {
@@ -100,9 +100,9 @@ function handleJoin(user, server, origin, channelName) {
 		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've joined some channel
-			server.addChannel(new data.Channel(channelName));
+			var channel = new data.Channel(channelName);
 
-			console.log('Successfully joined ' + channelName);
+			server.addChannel(channel);
 		} else {
 			// someone joined one of the channels we should be in
 			withChannel(server, channelName,
@@ -131,13 +131,7 @@ function handlePart(user, server, origin, channelName) {
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've left some channel
 
-			// TODO: get window before channel.windowId and set it as active
-
-			server.channels = server.channels.filter(function(currentChannel) {
-				return (currentChannel.name !== channelName);
-			});
-
-			console.log('Parted ' + channelName);
+			server.removeChannel(channelName);
 		} else {
 			// someone left one of the channels we should be in
 			withChannel(server, channelName,
@@ -223,8 +217,8 @@ exports.run = function() {
 					server.socket = serverSocket;
 					server.nickname = server.desiredNickname;
 
-					sendToServer(server, 'NICK ' + server.nickname);
-					sendToServer(server, 'USER ' + server.username + ' ' + server.username + ' ' + server.host + ' :' + server.realName);
+					server.send('NICK ' + server.nickname);
+					server.send('USER ' + server.username + ' ' + server.username + ' ' + server.host + ' :' + server.realName);
 				}
 			);
 
@@ -253,15 +247,6 @@ exports.run = function() {
 	});
 }
 
-function sendToServer(server, data) {
-	console.log('SEND: ' + data);
-	if (server.socket !== null) {
-		server.socket.write(data + '\r\n');
-	} else {
-		console.log('sendToServer received server with null socket');
-	}
-}
-
 function processLineFromServer(user, server, line) {
 	console.log('Line: ' + line);
 
@@ -269,8 +254,6 @@ function processLineFromServer(user, server, line) {
 
 	if (parseResult !== null) {
 		if (parseResult.command in serverCommandHandlers) {
-			// TODO: origin can be a server
-
 			serverCommandHandlers[parseResult.command](
 				parseResult.args.length,
 				[
@@ -376,19 +359,22 @@ function processChatboxLine(line, user, exec) {
 		}
 	}
 
-	if (command !== null) {
-		console.log('Commands not implemented');
-	} else {
-		var objs = user.getObjectsByWindowId(user.activeWindowId);
+	var objs = user.getObjectsByWindowId(user.activeWindowId);
 
-		if (objs !== null) {
+	if (objs !== null) {
+		var server = objs.server;
+
+		if (command !== null) {
+			//console.log('Commands not implemented');
+
+			server.send(command + ' ' + rest);
+		} else {
 			if (objs.type === 'channel') {
-				var server = objs.server;
 				var channel = objs.channel;
 
 				enterActivityForChannel(user, channel, 'ChatMessage', { nick: server.nickname, text: rest }, true);
 
-				sendToServer(server, 'PRIVMSG ' + channel.name + ' :' + rest);
+				server.send('PRIVMSG ' + channel.name + ' :' + rest);
 			}
 		}
 	}

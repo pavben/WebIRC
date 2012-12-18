@@ -58,7 +58,7 @@ function getTargetHeightForMaincell() {
 	);
 }
 
-function addWindow(windowId, windowType, setActive) {
+function addWindow(windowId, windowType) {
 	var maincellContent = null;
 	switch(windowType) {
 		case 'server':
@@ -88,36 +88,36 @@ function addWindow(windowId, windowType, setActive) {
 	$('#maincell').append(
 		$('<div/>').attr('id', 'maincell_' + windowId).hide().append(maincellContent)
 	);
+}
 
-	if (setActive) {
-		setActiveWindowId(windowId);
+function removeWindow(windowId) {
+	if (windowId === state.activeWindowId) {
+		console.log('Removing active window! This is not supported.');
 	}
+	windowIdToObject('#maincell_', windowId).remove();
 }
 
 function setActiveWindowId(windowId) {
 	// only do this if windowId isn't already active
 	if (state.activeWindowId !== windowId) {
-		hideActiveWindow();
+		console.log('in setActiveWindowId: ' + windowId);
+
+		if (state.activeWindowId !== null) {
+			console.log('state.activeWindowId is not null');
+			windowIdToObject('#maincell_', state.activeWindowId).hide();
+		}
 
 		state.activeWindowId = windowId;
 
 		// sync the change to the gateway
 		sendToGateway('SetActiveWindow', {windowId: windowId});
 
-		showActiveWindow();
+		windowIdToObject('#maincell_', state.activeWindowId).show();
+
+		onResize();
+	} else {
+		console.log('setActiveWindowId ignored because the requested window is already active');
 	}
-}
-
-function hideActiveWindow() {
-	if (state.activeWindowId !== null) {
-		windowIdToObject('#maincell_', state.activeWindowId).hide();
-	}
-}
-
-function showActiveWindow() {
-	windowIdToObject('#maincell_', state.activeWindowId).show();
-
-	onResize();
 }
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {

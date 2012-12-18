@@ -1,3 +1,5 @@
+var cloneextend = require('cloneextend');
+
 function User(username, password) {
 	this.username = username;
 	this.password = password;
@@ -34,7 +36,7 @@ User.prototype = {
 		});
 	},
 	sendActivityForWindow: function(windowId, activity) {
-		this.sendToWeb('Activity', {windowId: windowId, activity: activity });
+		this.sendToWeb('WindowActivity', {windowId: windowId, activity: activity });
 	},
 	getNextWindowId: function() {
 		return (this.nextWindowId++);
@@ -58,6 +60,43 @@ User.prototype = {
 
 		// windowId not found
 		return null;
+	},
+	onWindowClosing: function(windowIdBeingClosed) {
+		// if the window being closed is active, set a new active
+		if (windowIdBeingClosed === this.activeWindowId) {
+			// get the window before channel.windowId and set it as active
+			var nextWindowId = getNextActiveWindowId(this);
+
+			this.setActiveWindow(nextWindowId);
+		}
+
+		function getNextActiveWindowId(user) {
+			var lastWindowId = null;
+
+			(function() {
+				for (serverIdx in user.servers) {
+					var server = user.servers[serverIdx];
+
+					if (server.windowId === windowIdBeingClosed) {
+						return;
+					} else {
+						lastWindowId = server.windowId;
+					
+						for (channelIdx in server.channels) {
+							var channel = server.channels[channelIdx];
+
+							if (channel.windowId === windowIdBeingClosed) {
+								return;
+							} else {
+								lastWindowId = channel.windowId;
+							}
+						}
+					}
+				}
+			})();
+
+			return lastWindowId;
+		}
 	}
 };
 
@@ -84,7 +123,50 @@ Server.prototype = {
 
 		this.channels.push(channel);
 
+		// and send the update to the web clients
+		
+		// copy the channel object
+		var channelCopy = cloneextend.clone(channel);
+
+		// and remove the fields that should not be sent
+		delete channelCopy.server;
+
+		this.user.sendToWeb('JoinChannel', {serverWindowId: this.windowId, channel: channelCopy});
+
+		console.log('Successfully joined ' + channel.name);
+
 		this.user.setActiveWindow(channel.windowId);
+	},
+	removeChannel: function(channelName) {
+		var numMatched = 0;
+
+		this.channels = this.channels.filter(function(channel) {
+			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+				this.user.onWindowClosing(channel.windowId);
+
+				this.user.sendToWeb('RemoveChannel', {channelWindowId: channel.windowId});
+
+				numMatched++;
+
+				return false; // this entry is removed
+			} else {
+				return true; // this entry stays
+			}
+		}, this);
+
+		if (numMatched === 1) {
+			console.log('Parted ' + channelName);
+		} else {
+			console.log('Unexpected number of channels matched on removeChannel(' + channelName + '): ' + numMatched);
+		}
+	},
+	send: function(data) {
+		console.log('SEND: ' + data);
+		if (this.socket !== null) {
+			this.socket.write(data + '\r\n');
+		} else {
+			console.log('send called on a server with null socket');
+		}
 	}
 };
 

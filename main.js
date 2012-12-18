@@ -127,6 +127,8 @@ function handleSuccessfulLogin(user, socket) {
 				return channelCopy;
 			});
 
+			console.log('len: ' + serverCopy.channels.length);
+
 			return serverCopy;
 		}),
 		activeWindowId: user.activeWindowId
