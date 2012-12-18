@@ -1,14 +1,16 @@
 var net = require('net');
 var data = require('./data.js');
+var mode = require('./mode.js');
 var utils = require('./utils.js');
 
 var serverCommandHandlers = {
 	'001': handleCommandRequireArgs(0, handle001),
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
-	'PING': handleCommandRequireArgs(1, handlePing),
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
+	'MODE': handleCommandRequireArgs(2, handleMode),
 	'PART': handleCommandRequireArgs(1, handlePart),
+	'PING': handleCommandRequireArgs(1, handlePing),
 	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
 }
 
@@ -124,6 +126,21 @@ function handleJoin(user, server, origin, channelName) {
 				silentFailCallback
 			);
 		}
+	}
+}
+
+function handleMode(user, server, origin, target, modes) {
+	// is it a user mode or a channel mode?
+	if (utils.isNickname(target)) {
+		if (target === server.nickname) {
+			console.log('User mode change: ' + modes);
+		}
+	} else {
+		var modeArgs = Array.prototype.slice.call(arguments, 5);
+		console.log(modeArgs);
+
+		var parsedModes = mode.parseChannelModes(modes, modeArgs);
+		console.log('%j', parsedModes);
 	}
 }
 
