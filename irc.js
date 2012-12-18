@@ -136,11 +136,64 @@ function handleMode(user, server, origin, target, modes) {
 			console.log('User mode change: ' + modes);
 		}
 	} else {
-		var modeArgs = Array.prototype.slice.call(arguments, 5);
-		console.log(modeArgs);
+		var handleModeArguments = arguments;
 
-		var parsedModes = mode.parseChannelModes(modes, modeArgs);
-		console.log('%j', parsedModes);
+		withChannel(server, target,
+			function(channel) {
+				var modeArgs = Array.prototype.slice.call(handleModeArguments, 5);
+
+				var parsedModes = mode.parseChannelModes(modes, modeArgs);
+
+				var originStr = 'Unknown';
+				if (origin !== null) {
+					originStr = (origin.type === 'client') ? origin.nick : origin.name;
+				}
+
+				enterActivityForChannel(user, channel, 'ModeChange', {
+					origin: originStr,
+					modes: modes,
+					args: modeArgs
+				}, true);
+
+				if (parsedModes !== null) {
+					parsedModes.forEach(function(parsedMode) {
+						// a, h, o, q, v
+						var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
+
+						if (userlistEntryAttribute !== null) {
+							withUserlistEntry(channel, parsedMode.arg, function(userlistEntry) {
+								if (parsedMode.plus) {
+									userlistEntry[userlistEntryAttribute] = true;
+								} else {
+									delete userlistEntry[userlistEntryAttribute];
+								}
+
+								enterActivityForChannel(user, channel, 'UserlistModeUpdate', {
+									userlistEntry: userlistEntry
+								}, false);
+							});
+						}
+
+						// for now, we ignore all other modes
+					});
+				} else {
+					console.log('Unable to parse channel mode change!');
+				}
+			},
+			silentFailCallback
+		);
+	}
+}
+
+function withUserlistEntry(channel, nick, successCallback, failureCallback) {
+	var matched = channel.userlist.filter(function(userlistEntry) {
+		return (userlistEntry.nick === nick);
+	});
+
+	if (matched.length === 1) {
+		successCallback(matched.shift());
+	} else {
+		failureCallback();
 	}
 }
 

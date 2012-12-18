@@ -64,13 +64,31 @@ function parseModes(modes, args, modesWithParams) {
 				}
 			}
 
-			parsedModes.push({plus: plus, mode: c, arg: arg});
+			parsedModes.push({mode: c, plus: plus, arg: arg});
 		}
 	}
 
 	return parsedModes;
 }
 
+function getUserlistEntryAttributeByMode(mode) {
+	switch (mode) {
+		case 'a':
+			return 'admin';
+		case 'h':
+			return 'halfop';
+		case 'o':
+			return 'op';
+		case 'q':
+			return 'owner';
+		case 'v':
+			return 'voice';
+		default:
+			return null;
+	}
+}
+
 module.exports.parseChannelModes = parseChannelModes;
 module.exports.parseUserModes = parseUserModes;
+module.exports.getUserlistEntryAttributeByMode = getUserlistEntryAttributeByMode;
 

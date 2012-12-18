@@ -121,6 +121,21 @@ var activityHandlers = {
 			channel.userlist = new Userlist(channel.windowId, activity.userlist);
 		},
 		silentFailCallback);
+	},
+	'ModeChange': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			appendToChatlog(windowId,
+				$('<div/>').text(activity.origin + ' sets mode: ' + activity.modes + ((activity.args.length > 0) ? ' ' : '') + activity.args.join(' '))
+			);
+		},
+		silentFailCallback);
+	},
+	'UserlistModeUpdate': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			channel.userlist.removeUser(activity.userlistEntry.nick);
+			channel.userlist.addUser(activity.userlistEntry);
+		},
+		silentFailCallback);
 	}
 };
 
