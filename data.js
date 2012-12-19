@@ -1,4 +1,6 @@
 var cloneextend = require('cloneextend');
+var domain = require('domain');
+var net = require('net');
 
 function User(username, password) {
 	this.username = username;
@@ -117,6 +119,68 @@ function Server(host, port, desiredNickname, username, realName, desiredChannels
 }
 
 Server.prototype = {
+	reconnect: function(processLineFromServer) {
+		if (this.socket !== null) {
+			this.send('QUIT :');
+
+			this.socket.destroy();
+
+			this.socket = null;
+		}
+
+		var theServer = this;
+
+		var serverSocket = net.connect({host: theServer.host, port: theServer.port},
+			function() {
+				console.log('Connected to server');
+
+				theServer.socket = serverSocket;
+				theServer.nickname = theServer.desiredNickname;
+
+				theServer.send('NICK ' + theServer.nickname);
+				theServer.send('USER ' + theServer.username + ' ' + theServer.username + ' ' + theServer.host + ' :' + theServer.realName);
+			}
+		);
+
+		var serverSocketDomain = domain.create();
+		serverSocketDomain.add(serverSocket);
+
+		serverSocketDomain.on('error', function(err) {
+			console.log('Server socket error: ' + err);
+			try {
+				if (theServer.socket !== null) {
+					theServer.socket.destroy();
+				}
+			} finally {
+				theServer.socket = null;
+				console.log('Connection to server closed due to error.');
+			}
+		});
+
+		var readBuffer = '';
+		serverSocket.on('data', function(data) {
+			readBuffer += data;
+
+			while(true) {
+				var lineEndIndex = readBuffer.indexOf('\r\n');
+				if (lineEndIndex === -1) {
+					break;
+				}
+
+				var line = readBuffer.substring(0, lineEndIndex);
+
+				readBuffer = readBuffer.substring(lineEndIndex + 2);
+
+				processLineFromServer(line, theServer);
+			}
+		});
+
+		serverSocket.on('end', function() {
+			theServer.socket = null;
+
+			console.log('Disconnected from server');
+		});
+	},
 	addChannel: function(channel) {
 		channel.server = this;
 		channel.windowId = this.user.getNextWindowId();

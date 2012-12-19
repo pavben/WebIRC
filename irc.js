@@ -1,5 +1,3 @@
-var net = require('net');
-var domain = require('domain');
 var data = require('./data.js');
 var mode = require('./mode.js');
 var utils = require('./utils.js');
@@ -104,10 +102,13 @@ function handleJoin(user, server, origin, channelName) {
 	if (origin !== null && origin.type === 'client') {
 		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
-			// the server is confirming that we've joined some channel
-			var channel = new data.Channel(channelName);
+			// if the channel window isn't already open, create it
+			if (!server.channels.some(function(channel) { return (channel.name === channelName); })) {
+				// the server is confirming that we've joined some channel
+				var channel = new data.Channel(channelName);
 
-			server.addChannel(channel);
+				server.addChannel(channel);
+			}
 		} else {
 			// someone joined one of the channels we should be in
 			withChannel(server, channelName,
@@ -283,58 +284,12 @@ function silentFailCallback() {
 exports.run = function() {
 	data.users.forEach(function(user) {
 		user.servers.forEach(function(server) {
-			var serverSocket = net.connect({host: server.host, port: server.port},
-				function() {
-					console.log('connected');
-
-					server.socket = serverSocket;
-					server.nickname = server.desiredNickname;
-
-					server.send('NICK ' + server.nickname);
-					server.send('USER ' + server.username + ' ' + server.username + ' ' + server.host + ' :' + server.realName);
-				}
-			);
-
-			var serverSocketDomain = domain.create();
-			serverSocketDomain.add(serverSocket);
-
-			serverSocketDomain.on('error', function(err) {
-				try {
-					server.socket.destroy();
-				} finally {
-					server.socket = null;
-					console.log('Connection to server closed due to error.');
-				}
-			});
-
-			var readBuffer = '';
-			serverSocket.on('data', function(data) {
-				readBuffer += data;
-
-				while(true) {
-					var lineEndIndex = readBuffer.indexOf('\r\n');
-					if (lineEndIndex === -1) {
-						break;
-					}
-
-					var line = readBuffer.substring(0, lineEndIndex);
-
-					readBuffer = readBuffer.substring(lineEndIndex + 2);
-
-					processLineFromServer(user, server, line);
-				}
-			});
-
-			serverSocket.on('end', function() {
-				server.socket = null;
-
-				console.log('Disconnected from server');
-			});
+			server.reconnect(processLineFromServer);
 		});
 	});
 }
 
-function processLineFromServer(user, server, line) {
+function processLineFromServer(line, server) {
 	console.log('Line: ' + line);
 
 	parseResult = parseLine(line);
@@ -344,7 +299,7 @@ function processLineFromServer(user, server, line) {
 			serverCommandHandlers[parseResult.command](
 				parseResult.args.length,
 				[
-					user,
+					server.user,
 					server,
 					(parseResult.origin !== null ? parseOrigin(parseResult.origin) : null)
 				].concat(parseResult.args)
@@ -453,7 +408,11 @@ function processChatboxLine(line, user, parseCommands) {
 		if (command !== null) {
 			//console.log('Commands not implemented');
 
-			server.send(command + ' ' + rest);
+			if (command === 'SERVER') {
+				server.reconnect(processLineFromServer);
+			} else {
+				server.send(command + ' ' + rest);
+			}
 		} else {
 			if (objs.type === 'channel') {
 				var channel = objs.channel;
