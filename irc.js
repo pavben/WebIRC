@@ -1,4 +1,5 @@
 var net = require('net');
+var domain = require('domain');
 var data = require('./data.js');
 var mode = require('./mode.js');
 var utils = require('./utils.js');
@@ -294,6 +295,18 @@ exports.run = function() {
 				}
 			);
 
+			var serverSocketDomain = domain.create();
+			serverSocketDomain.add(serverSocket);
+
+			serverSocketDomain.on('error', function(err) {
+				try {
+					server.socket.destroy();
+				} finally {
+					server.socket = null;
+					console.log('Connection to server closed due to error.');
+				}
+			});
+
 			var readBuffer = '';
 			serverSocket.on('data', function(data) {
 				readBuffer += data;
@@ -313,7 +326,9 @@ exports.run = function() {
 			});
 
 			serverSocket.on('end', function() {
-				console.log('disconnected');
+				server.socket = null;
+
+				console.log('Disconnected from server');
 			});
 		});
 	});

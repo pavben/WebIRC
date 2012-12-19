@@ -24,6 +24,7 @@ function startWebSocketConnection() {
 
 		state.activeWindowId = null; // initially, no active window
 
+		// CONSIDER: this sends a window change to the server, which isn't necessary
 		setActiveWindowId(currentState.activeWindowId);
 	});
 

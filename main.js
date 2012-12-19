@@ -116,6 +116,8 @@ function handleSuccessfulLogin(user, socket) {
 			// and remove the fields that should not be sent
 			delete serverCopy.socket;
 			delete serverCopy.user;
+			delete serverCopy.desiredChannels;
+			delete serverCopy.desiredNickname;
 
 			serverCopy.channels = server.channels.map(function(channel) {
 				// copy the channel object
@@ -123,11 +125,10 @@ function handleSuccessfulLogin(user, socket) {
 
 				// and remove the fields that should not be sent
 				delete channelCopy.server;
+				delete channelCopy.tempUserlist;
 
 				return channelCopy;
 			});
-
-			console.log('len: ' + serverCopy.channels.length);
 
 			return serverCopy;
 		}),
