@@ -1,5 +1,4 @@
 var cloneextend = require('cloneextend');
-var domain = require('domain');
 var net = require('net');
 
 function User(username, password) {
@@ -142,10 +141,7 @@ Server.prototype = {
 			}
 		);
 
-		var serverSocketDomain = domain.create();
-		serverSocketDomain.add(serverSocket);
-
-		serverSocketDomain.on('error', function(err) {
+		serverSocket.on('error', function(err) {
 			console.log('Server socket error: ' + err);
 			try {
 				if (theServer.socket !== null) {

@@ -137,6 +137,22 @@ var activityHandlers = {
 			channel.userlist.addUser(activity.userlistEntry);
 		},
 		silentFailCallback);
+	},
+	'NickChange': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			appendToChatlog(windowId,
+				$('<div/>').text(activity.oldNickname + ' is now known as ' + activity.newNickname)
+			);
+
+			if (isNew) {
+				var userlistEntry = channel.userlist.removeUser(activity.oldNickname);
+
+				userlistEntry.nick = activity.newNickname;
+
+				channel.userlist.addUser(userlistEntry);
+			}
+		},
+		silentFailCallback);
 	}
 };
 

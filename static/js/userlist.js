@@ -54,8 +54,12 @@ Userlist.prototype.removeUser = function(nick) {
 		var userlistEntryDiv = $('#userlist_' + this.windowId + '_' + userlistEntry.userlistId);
 
 		userlistEntryDiv.remove();
+
+		return userlistEntry;
 	} else {
 		console.log('Unexpected: matchedUsers.length in Userlist.removeUser is ' + matchedUsers.length);
+
+		return null;
 	}
 }
 

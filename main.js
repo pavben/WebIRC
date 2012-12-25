@@ -116,6 +116,11 @@ function handleSuccessfulLogin(user, socket) {
 			// and remove the fields that should not be sent
 			delete serverCopy.socket;
 			delete serverCopy.user;
+			delete serverCopy.nickname;
+			delete serverCopy.username;
+			delete serverCopy.realName;
+			delete serverCopy.host;
+			delete serverCopy.port;
 			delete serverCopy.desiredChannels;
 			delete serverCopy.desiredNickname;
 

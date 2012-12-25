@@ -115,8 +115,6 @@ function setActiveWindowId(windowId) {
 		windowIdToObject('#maincell_', state.activeWindowId).show();
 
 		onResize();
-	} else {
-		console.log('setActiveWindowId ignored because the requested window is already active');
 	}
 }
 

@@ -8,6 +8,7 @@ var serverCommandHandlers = {
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'MODE': handleCommandRequireArgs(2, handleMode),
+	'NICK': handleCommandRequireArgs(1, handleNick),
 	'PART': handleCommandRequireArgs(1, handlePart),
 	'PING': handleCommandRequireArgs(1, handlePing),
 	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
@@ -187,6 +188,25 @@ function handleMode(user, server, origin, target, modes) {
 	}
 }
 
+function handleNick(user, server, origin, newNickname) {
+	if (origin !== null && origin.type === 'client') {
+		// if the nickname change origin matches ours
+		if (server.nickname !== null && server.nickname === origin.nick) {
+			server.nickname = newNickname;
+		}
+
+		forEveryChannelWithNick(server, origin.nick,
+			function(channel) {
+				enterActivityForChannel(user, channel, 'NickChange', {
+					oldNickname: origin.nick,
+					newNickname: newNickname
+				}, true);
+			},
+			silentFailCallback
+		);
+	}
+}
+
 function withUserlistEntry(channel, nick, successCallback, failureCallback) {
 	var matched = channel.userlist.filter(function(userlistEntry) {
 		return (userlistEntry.nick === nick);
@@ -274,6 +294,14 @@ function withChannel(server, channelName, successCallback, failureCallback) {
 	if (!success && typeof failureCallback !== 'undefined') {
 		failureCallback();
 	}
+}
+
+function forEveryChannelWithNick(server, nickname, successCallback) {
+	server.channels.forEach(function(channel) {
+		if (channel.userlist.some(function(userlistEntry) { return (userlistEntry.nick === nickname); })) {
+			successCallback(channel);
+		}
+	});
 }
 
 function silentFailCallback() {
