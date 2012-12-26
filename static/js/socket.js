@@ -85,6 +85,11 @@ function handleActivity(windowId, activity, isNew) {
 }
 
 var activityHandlers = {
+	'BasicError': function(windowId, activity, isNew) {
+		appendToChatlog(windowId,
+			$('<div/>').text(activity.text)
+		);
+	},
 	'Join': function(windowId, activity, isNew) {
 		withChannelByWindowId(windowId, function(channel) {
 			appendToChatlog(windowId,

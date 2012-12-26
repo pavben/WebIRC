@@ -36,8 +36,13 @@ User.prototype = {
 			socket.emit(msgId, data);
 		});
 	},
-	sendActivityForWindow: function(windowId, activity) {
+	sendActivityForWindow: function(windowId, activityType, activity) {
+		activity.type = activityType;
+
 		this.sendToWeb('WindowActivity', {windowId: windowId, activity: activity });
+	},
+	sendActivityForActiveWindow: function(activityType, activity) {
+		this.sendActivityForWindow(this.activeWindowId, activityType, activity);
 	},
 	getNextWindowId: function() {
 		return (this.nextWindowId++);
@@ -240,6 +245,20 @@ function Channel(name) {
 	this.server = null;
 	this.windowId = null;
 }
+
+Channel.prototype = {
+	enterActivity: function(activityType, activity, affectsHistory) {
+		// first, set the type
+		activity.type = activityType;
+
+		// if this event is one that should be stored in the activity log (such as a message or a join), push it
+		if (affectsHistory) {
+			this.activityLog.push(activity);
+		}
+
+		this.server.user.sendActivityForWindow(this.windowId, activityType, activity);
+	}
+};
 
 /*
  * join - log and userlist add

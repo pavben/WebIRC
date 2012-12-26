@@ -1,3 +1,4 @@
+var clientcommands = require('./clientcommands.js');
 var data = require('./data.js');
 var mode = require('./mode.js');
 var utils = require('./utils.js');
@@ -13,7 +14,7 @@ var serverCommandHandlers = {
 	'PING': handleCommandRequireArgs(1, handlePing),
 	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
 	'QUIT': handleCommandRequireArgs(1, handleQuit),
-}
+};
 
 function handleCommandRequireArgs(requiredNumArgs, handler) {
 	// note: allArgs includes user, server, and origin -- these are not counted in numArgs as numArgs represends the number of args after the command
@@ -90,7 +91,7 @@ function handle366(user, server, origin, myNickname, channelName) {
 			channel.userlist = channel.tempUserlist;
 			channel.tempUserlist = [];
 
-			enterActivityForChannel(user, channel, 'NamesUpdate', {userlist: channel.userlist}, false);
+			channel.enterActivity('NamesUpdate', {userlist: channel.userlist}, false);
 		},
 		silentFailCallback
 	);
@@ -123,7 +124,7 @@ function handleJoin(user, server, origin, channelName) {
 
 					channel.userlist.push(newUserlistEntry);
 
-					enterActivityForChannel(user, channel, 'Join', {
+					channel.enterActivity('Join', {
 						who: newUserlistEntry
 					}, true);
 				},
@@ -153,7 +154,7 @@ function handleMode(user, server, origin, target, modes) {
 					originStr = (origin.type === 'client') ? origin.nick : origin.name;
 				}
 
-				enterActivityForChannel(user, channel, 'ModeChange', {
+				channel.enterActivity('ModeChange', {
 					origin: originStr,
 					modes: modes,
 					args: modeArgs
@@ -172,7 +173,7 @@ function handleMode(user, server, origin, target, modes) {
 									delete userlistEntry[userlistEntryAttribute];
 								}
 
-								enterActivityForChannel(user, channel, 'UserlistModeUpdate', {
+								channel.enterActivity('UserlistModeUpdate', {
 									userlistEntry: userlistEntry
 								}, false);
 							});
@@ -198,7 +199,7 @@ function handleNick(user, server, origin, newNickname) {
 
 		forEveryChannelWithNick(server, origin.nick,
 			function(channel) {
-				enterActivityForChannel(user, channel, 'NickChange', {
+				channel.enterActivity('NickChange', {
 					oldNickname: origin.nick,
 					newNickname: newNickname
 				}, true);
@@ -217,7 +218,7 @@ function handleQuit(user, server, origin, quitMessage) {
 
 		forEveryChannelWithNick(server, origin.nick,
 			function(channel) {
-				enterActivityForChannel(user, channel, 'Quit', {
+				channel.enterActivity('Quit', {
 					who: origin,
 					message: quitMessage
 				}, true);
@@ -260,7 +261,7 @@ function handlePart(user, server, origin, channelName) {
 						return (currentUserlistEntry.nick !== who.nick);
 					});
 
-					enterActivityForChannel(user, channel, 'Part', {
+					channel.enterActivity('Part', {
 						who: who
 					}, true);
 				},
@@ -272,7 +273,7 @@ function handlePart(user, server, origin, channelName) {
 
 function handlePrivmsg(user, server, origin, targetName, text) {
 	if (origin !== null) {
-		var ctcpMessage = parseCtcpMessage(text);
+		var ctcpMessage = utils.parseCtcpMessage(text);
 
 		if (ctcpMessage !== null) {
 			if (utils.isNickname(targetName)) {
@@ -286,7 +287,7 @@ function handlePrivmsg(user, server, origin, targetName, text) {
 			} else {
 				withChannel(server, targetName,
 					function(channel) {
-						enterActivityForChannel(user, channel, 'ChatMessage', {
+						channel.enterActivity('ChatMessage', {
 							nick: (origin.type === 'client' ? origin.nick : origin.name),
 							text: text
 						}, true);
@@ -304,7 +305,7 @@ function handleCtcp(server, origin, channelName, ctcpMessage) {
 			if (channelName !== null) {
 				withChannel(server, channelName,
 					function(channel) {
-						enterActivityForChannel(server.user, channel, 'ActionMessage', {
+						channel.enterActivity('ActionMessage', {
 							nick: (origin.type === 'client' ? origin.nick : origin.name),
 							text: ctcpMessage.args
 						}, true);
@@ -316,27 +317,6 @@ function handleCtcp(server, origin, channelName, ctcpMessage) {
 			console.log('Received CTCP ' + ctcpMessage.command + ' from ' + origin.nick);
 		}
 	}
-}
-
-function parseCtcpMessage(str) {
-	var match;
-	if (match = str.match(/^\u0001([^\s]+)(?: (.+))?\u0001$/)) {
-		return {command: match[1].toUpperCase(), args: (typeof match[2] === 'undefined' ? null : match[2])};
-	} else {
-		return null;
-	}
-}
-
-function enterActivityForChannel(user, channel, activityType, activity, affectsHistory) {
-	// first, set the type
-	activity.type = activityType;
-
-	// if this event is one that should be stored in the activity log (such as a message or a join), push it
-	if (affectsHistory) {
-		channel.activityLog.push(activity);
-	}
-
-	user.sendActivityForWindow(channel.windowId, activity);
 }
 
 function withChannel(server, channelName, successCallback, failureCallback) {
@@ -493,18 +473,12 @@ function processChatboxLine(line, user, parseCommands) {
 		var server = objs.server;
 
 		if (command !== null) {
-			//console.log('Commands not implemented');
-
-			if (command === 'SERVER') {
-				server.reconnect(processLineFromServer);
-			} else {
-				server.send(command + ' ' + rest);
-			}
+			clientcommands.handleClientCommand(objs, command, rest);
 		} else {
 			if (objs.type === 'channel') {
 				var channel = objs.channel;
 
-				enterActivityForChannel(user, channel, 'ChatMessage', { nick: server.nickname, text: rest }, true);
+				channel.enterActivity('ChatMessage', { nick: server.nickname, text: rest }, true);
 
 				server.send('PRIVMSG ' + channel.name + ' :' + rest);
 			}
