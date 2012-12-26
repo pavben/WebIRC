@@ -12,6 +12,7 @@ var serverCommandHandlers = {
 	'PART': handleCommandRequireArgs(1, handlePart),
 	'PING': handleCommandRequireArgs(1, handlePing),
 	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
+	'QUIT': handleCommandRequireArgs(1, handleQuit),
 }
 
 function handleCommandRequireArgs(requiredNumArgs, handler) {
@@ -207,6 +208,25 @@ function handleNick(user, server, origin, newNickname) {
 	}
 }
 
+function handleQuit(user, server, origin, quitMessage) {
+	if (origin !== null && origin.type === 'client') {
+		// if we are the quitter
+		if (server.nickname !== null && server.nickname === origin.nick) {
+			// do we need to do anything special?
+		}
+
+		forEveryChannelWithNick(server, origin.nick,
+			function(channel) {
+				enterActivityForChannel(user, channel, 'Quit', {
+					who: origin,
+					message: quitMessage
+				}, true);
+			},
+			silentFailCallback
+		);
+	}
+}
+
 function withUserlistEntry(channel, nick, successCallback, failureCallback) {
 	var matched = channel.userlist.filter(function(userlistEntry) {
 		return (userlistEntry.nick === nick);
@@ -252,19 +272,58 @@ function handlePart(user, server, origin, channelName) {
 
 function handlePrivmsg(user, server, origin, targetName, text) {
 	if (origin !== null) {
-		if (utils.isNickname(targetName)) {
-			console.log('Unhandled target type -- nickname');
+		var ctcpMessage = parseCtcpMessage(text);
+
+		if (ctcpMessage !== null) {
+			if (utils.isNickname(targetName)) {
+				handleCtcp(server, origin, null, ctcpMessage);
+			} else {
+				handleCtcp(server, origin, targetName, ctcpMessage);
+			}
 		} else {
-			withChannel(server, targetName,
-				function(channel) {
-					enterActivityForChannel(user, channel, 'ChatMessage', {
-						nick: (origin.type === 'client' ? origin.nick : origin.name),
-						text: text
-					}, true);
-				},
-				silentFailCallback
-			);
+			if (utils.isNickname(targetName)) {
+				console.log('Unhandled target type -- nickname');
+			} else {
+				withChannel(server, targetName,
+					function(channel) {
+						enterActivityForChannel(user, channel, 'ChatMessage', {
+							nick: (origin.type === 'client' ? origin.nick : origin.name),
+							text: text
+						}, true);
+					},
+					silentFailCallback
+				);
+			}
 		}
+	}
+}
+
+function handleCtcp(server, origin, channelName, ctcpMessage) {
+	if (origin !== null && origin.type === 'client') {
+		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
+			if (channelName !== null) {
+				withChannel(server, channelName,
+					function(channel) {
+						enterActivityForChannel(server.user, channel, 'ActionMessage', {
+							nick: (origin.type === 'client' ? origin.nick : origin.name),
+							text: ctcpMessage.args
+						}, true);
+					},
+					silentFailCallback
+				);
+			}
+		} else {
+			console.log('Received CTCP ' + ctcpMessage.command + ' from ' + origin.nick);
+		}
+	}
+}
+
+function parseCtcpMessage(str) {
+	var match;
+	if (match = str.match(/^\u0001([^\s]+)(?: (.+))?\u0001$/)) {
+		return {command: match[1].toUpperCase(), args: (typeof match[2] === 'undefined' ? null : match[2])};
+	} else {
+		return null;
 	}
 }
 

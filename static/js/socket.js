@@ -117,6 +117,14 @@ var activityHandlers = {
 		},
 		silentFailCallback);
 	},
+	'ActionMessage': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			appendToChatlog(windowId,
+				$('<div/>').text(activity.nick + ' ' + activity.text)
+			);
+		},
+		silentFailCallback);
+	},
 	'NamesUpdate': function(windowId, activity, isNew) {
 		withChannelByWindowId(windowId, function(channel) {
 			channel.userlist = new Userlist(channel.windowId, activity.userlist);
@@ -150,6 +158,18 @@ var activityHandlers = {
 				userlistEntry.nick = activity.newNickname;
 
 				channel.userlist.addUser(userlistEntry);
+			}
+		},
+		silentFailCallback);
+	},
+	'Quit': function(windowId, activity, isNew) {
+		withChannelByWindowId(windowId, function(channel) {
+			appendToChatlog(windowId,
+				$('<div/>').text('Quit: ' + activity.who.nick + (activity.message !== '' ? ' (' + activity.message + ')' : ''))
+			);
+
+			if (isNew) {
+				channel.userlist.removeUser(activity.who.nick);
 			}
 		},
 		silentFailCallback);
