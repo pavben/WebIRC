@@ -32,6 +32,7 @@ function handleClientCommand(objs, command, args) {
 
 		if (parsedArgs.length >= handlersData.numRequiredArgs) {
 			var handlers = handlersData.handlers;
+			var server = objs.server;
 			var handlerThisObject = {
 				numArgs: parsedArgs.length
 			};
@@ -39,19 +40,19 @@ function handleClientCommand(objs, command, args) {
 			(function() {
 				if (objs.type === 'channel') {
 					if ('channel' in handlers) {
-						return handlers['channel'].apply(handlerThisObject, [objs.server, objs.channel].concat(parsedArgs));
+						return handlers['channel'].apply(handlerThisObject, [server, objs.channel].concat(parsedArgs));
 					}
 				}
 
 				if ('any' in handlers) {
-					return handlers['any'].apply(handlerThisObject, [objs.server].concat(parsedArgs));
+					return handlers['any'].apply(handlerThisObject, [server].concat(parsedArgs));
 				}
 
 				// if here, no handlers matched
-				objs.server.user.sendActivityForActiveWindow('BasicError', {text: 'Can\'t run that here'});
+				server.user.sendActivityForActiveWindow('BasicError', {text: 'Can\'t run that here'});
 			})();
 		} else {
-			objs.server.user.sendActivityForActiveWindow('BasicError', {text: 'Not enough parameters'});
+			server.user.sendActivityForActiveWindow('BasicError', {text: 'Not enough parameters'});
 		}
 	} else {
 		server.send(command + ' ' + args);
