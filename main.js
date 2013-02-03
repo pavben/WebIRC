@@ -107,31 +107,40 @@ sio.configure(function() {
 function handleSuccessfulLogin(user, socket) {
 	user.activeWebSockets.push(socket);
 
-	socket.emit('CurrentState', {
-		username: user.username,
-		servers: user.servers.map(function(server) {
-			// copy the server object
-			var serverCopy = cloneextend.clone(server);
+	// copy the user object
+	var userCopy = cloneextend.clone(user);
+
+	// and remove the fields that should not be sent
+	delete userCopy.activeWebSockets;
+	delete userCopy.loggedInSessions;
+	delete userCopy.password;
+
+	// TODO: copy the functions that the client needs to have as well
+	//userCopy.getWindowByPath = user.getWindowByPath;
+
+	userCopy.servers = user.servers.map(function(server) {
+		// copy the server object
+		var serverCopy = cloneextend.clone(server);
+
+		// and remove the fields that should not be sent
+		delete serverCopy.socket;
+		delete serverCopy.user;
+
+		serverCopy.channels = server.channels.map(function(channel) {
+			// copy the channel object
+			var channelCopy = cloneextend.clone(channel);
 
 			// and remove the fields that should not be sent
-			delete serverCopy.socket;
-			delete serverCopy.user;
+			delete channelCopy.server;
+			delete channelCopy.tempUserlist;
 
-			serverCopy.channels = server.channels.map(function(channel) {
-				// copy the channel object
-				var channelCopy = cloneextend.clone(channel);
+			return channelCopy;
+		});
 
-				// and remove the fields that should not be sent
-				delete channelCopy.server;
-				delete channelCopy.tempUserlist;
-
-				return channelCopy;
-			});
-
-			return serverCopy;
-		}),
-		activeWindowId: user.activeWindowId
+		return serverCopy;
 	});
+
+	socket.emit('CurrentState', userCopy);
 
 	socket.on('ChatboxSend', function(data) {
 		console.log(data);

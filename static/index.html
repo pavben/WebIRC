@@ -21,7 +21,7 @@
 						<div ng-switch-when="Text">{{activity.text}}</div>
 					</div>
 				</div>
-				<div ng-repeat="channel in server.channels" ng-show="activeWindowId == channel.windowId" class="fixedtable">
+				<div ng-repeat="channel in server.channels" ng-show="channel.activeWindow" class="fixedtable">
 					<div class="tablerow">
 						<div class="tablecell">
 							<div class="chatlog" style="height: {{maincellHeight}}px;">

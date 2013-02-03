@@ -160,11 +160,11 @@ Server.prototype = {
 		this.user.setActiveWindow({serverIdx: serverIdx, channelIdx: channelIdx});
 	},
 	removeChannel: function(channelName) {
+		var server = this;
+
 		var success = this.channels.some(function(channel, channelIdx) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				var serverIdx = this.user.servers.indexOf(this);
-
-				this.user.applyStateChange('RemoveChannel', serverIdx, channelIdx);
+				server.user.applyStateChange('RemoveChannel', channel.toWindowPath());
 
 				return true; // we've found the entry
 			} else {

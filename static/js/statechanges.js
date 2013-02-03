@@ -1,3 +1,12 @@
+var assert = function() {
+	// server-side assert only; do nothing on the client
+};
+
+// if Node.js
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+	assert = require('assert');
+}
+
 var statechanges = {
 	stateChangeFunctions: {
 		'NamesUpdateAdd': function(serverIdx, channelIdx, userlistEntries) {
@@ -22,14 +31,19 @@ var statechanges = {
 
 			server.channels.push(channel);
 		},
-		'RemoveChannel': function(serverIdx, channelIdx, utils) {
-			utils.onCloseWindow(this, {serverIdx: serverIdx, channelIdx: channelIdx});
+		'RemoveChannel': function(windowPath, utils) {
+			utils.onCloseWindow(this, windowPath);
+
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'channel');
 
 			// remove the channel
-			this.channels.splice(channelIdx, 1);
+			targetWindow.server.channels.splice(windowPath.channelIdx, 1);
 		},
 		'SetActiveWindow': function(newActiveWindowPath, utils) {
-			console.log('active window being set to %j', newActiveWindowPath);
+			console.log('active window being set to:');
+			console.log(newActiveWindowPath);
 
 			// if there is already an active window, remove the 'activeWindow' flag from it
 			if (this.currentActiveWindow !== null) {
@@ -103,16 +117,18 @@ var statechanges = {
 		},
 		onCloseWindow: function(state, path) {
 			if ('serverIdx' in path) {
-				var server = this.servers[path.serverIdx];
+				var serverIdx = path.serverIdx;
+				var server = state.servers[serverIdx];
 
 				if ('channelIdx' in path) {
-					var channel = server.channels[path.channelIdx];
+					var channelIdx = path.channelIdx;
+					var channel = server.channels[channelIdx];
 
 					if (channel.activeWindow) {
 						if (channelIdx > 0) {
-							this.setActiveWindow({serverIdx: serverIdx, channelIdx: channelIdx - 1});
+							this.setActiveWindow(state, {serverIdx: serverIdx, channelIdx: channelIdx - 1});
 						} else {
-							this.setActiveWindow({serverIdx: serverIdx});
+							this.setActiveWindow(state, {serverIdx: serverIdx});
 						}
 					}
 				} else if ('queryIdx' in path) {
@@ -135,12 +151,12 @@ var statechanges = {
 				if ('channelIdx' in path) {
 					var channel = server.channels[path.channelIdx];
 
-					return {object: channel, type: 'channel'};
+					return {object: channel, server: server, type: 'channel', windowPath: path};
 				} else if ('queryIdx' in path) {
 					console.log('NOT IMPL');
 				} else {
 					// just the server
-					return {object: server, type: 'server'};
+					return {object: server, server: server, type: 'server', windowPath: path};
 				}
 			} else {
 				console.log('serverIdx required in getWindowByPath');
