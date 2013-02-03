@@ -1,20 +1,47 @@
 <!doctype html>
-<html>
+<html ng-app="webircApp">
 <head>
 	<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
 	<title>WebIRC</title>
 	<link href="css/webirc.css" rel="stylesheet" type="text/css" />
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.3/angular.min.js"></script>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
-	<script src="js/ui.js"></script>
-	<script src="js/socket.js"></script>
-	<script src="js/userlist.js"></script>
-	<script src="js/utils.js"></script>
 	<script src="js/webirc.js"></script>
+	<script src="js/socket.js"></script>
+	<script src="js/statechanges.js"></script>
 </head>
-<body>
+<body ng-controller="AppCtrl" style="overflow: {{bodyOverflowY}}">
 	<div id="outerwrapper" class="outerwrapper">
 		<div id="maincell">
+			<div ng-repeat="server in state.servers">
+				<!-- server window -->
+				<div class="chatlog" ng-show="server.activeWindow" style="height: 504px;">
+					<div ng-repeat="activity in server.activityLog" ng-switch="activity.type">
+						<div ng-switch-when="Text">{{activity.text}}</div>
+					</div>
+				</div>
+				<div ng-repeat="channel in server.channels" ng-show="activeWindowId == channel.windowId" class="fixedtable">
+					<div class="tablerow">
+						<div class="tablecell">
+							<div class="chatlog" style="height: {{maincellHeight}}px;">
+								<div ng-repeat="activity in channel.activityLog" ng-switch="activity.type">
+									<div ng-switch-when="Text">{{activity.text}}</div>
+									<div ng-switch-when="NickChange">{{activity.oldNickname}} is now known as {{activity.newNickname}}</div>
+									<div ng-switch-when="ChatMessage">&lt;{{activity.nick}}&gt; {{activity.text}}</div>
+									<div ng-switch-when="Action">* {{activity.nick}} {{activity.text}}</div>
+								</div>
+							</div>
+						</div>
+						<div class="mainspacercell"></div>
+						<div class="userlistcell">
+							<div class="userlist" style="height: {{maincellHeight}}px;">
+								<div ng-repeat="user in channel.userlist">{{user.nick}}</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 		<div id="chatboxwrapper" class="chatboxwrapper">
 			<textarea id="chatbox" class="chatbox"></textarea>

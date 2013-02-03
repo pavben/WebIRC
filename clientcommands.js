@@ -1,14 +1,20 @@
 var utils = require('./utils.js');
 
 var serverCommandHandlers = {
-	'ME': getHandlersData(1, 1, {channel: handleChannelMe}),
-	'SERVER': getHandlersData(2, 0, {any: handleServer}),
+	'ME': getHandler(1, 1, handleMe),
+	'SERVER': getHandler(2, 0, handleServer),
 };
 
-function handleChannelMe(server, channel, text) {
-	channel.enterActivity('ActionMessage', { nick: server.nickname, text: text }, true);
+function handleMe(text) {
+	if (this.activeWindow.type === 'channel') {
+		var channel = this.activeWindow.object;
 
-	server.send('PRIVMSG ' + channel.name + ' :' + utils.toCtcp('ACTION', text));
+		this.user.applyStateChange('ActionMessage', this.activeWindow.windowPath, this.server.nickname, text);
+
+		this.server.send('PRIVMSG ' + channel.name + ' :' + utils.toCtcp('ACTION', text));
+	} else {
+		console.log('Unsupported window type for command');
+	}
 }
 
 function handleServer(host, port) {
@@ -20,51 +26,42 @@ function handleServer(host, port) {
 			this.server.host = host;
 			// fall through
 		case 0:
-			this.server.reconnect(processLineFromServer);
+			//this.server.reconnect(processLineFromServer);
+			// TODO: broken, no access to processLineFromServer
 	}
 }
 
-function handleClientCommand(objs, command, args) {
+function handleClientCommand(activeWindow, command, args) {
 	if (command in serverCommandHandlers) {
-		var handlersData = serverCommandHandlers[command];
+		var handlerData = serverCommandHandlers[command];
 
-		var parsedArgs = parseArgs(handlersData.numPossibleArgs, args);
+		var parsedArgs = parseArgs(handlerData.numPossibleArgs, args);
 
-		if (parsedArgs.length >= handlersData.numRequiredArgs) {
-			var handlers = handlersData.handlers;
-			var server = objs.server;
+		if (parsedArgs.length >= handlerData.numRequiredArgs) {
+			var handler = handlerData.handler;
 			var handlerThisObject = {
+				user: activeWindow.server.user,
+				server: activeWindow.server,
+				activeWindow: activeWindow,
 				numArgs: parsedArgs.length
 			};
 
-			(function() {
-				if (objs.type === 'channel') {
-					if ('channel' in handlers) {
-						return handlers['channel'].apply(handlerThisObject, [server, objs.channel].concat(parsedArgs));
-					}
-				}
-
-				if ('any' in handlers) {
-					return handlers['any'].apply(handlerThisObject, [server].concat(parsedArgs));
-				}
-
-				// if here, no handlers matched
-				server.user.sendActivityForActiveWindow('BasicError', {text: 'Can\'t run that here'});
-			})();
+			handler.apply(handlerThisObject, parsedArgs);
 		} else {
-			server.user.sendActivityForActiveWindow('BasicError', {text: 'Not enough parameters'});
+			// error: Not enough parameters
 		}
 	} else {
-		server.send(command + ' ' + args);
+		// TODO: are we connected?
+		activeWindow.server.send(command + ' ' + args);
 	}
 }
 
-function getHandlersData(numPossibleArgs, numRequiredArgs, handlers) {
+function getHandler(numPossibleArgs, numRequiredArgs, handler) {
 	var ret = {};
 
 	ret.numPossibleArgs = numPossibleArgs;
 	ret.numRequiredArgs = numRequiredArgs;
-	ret.handlers = handlers;
+	ret.handler = handler;
 
 	return ret;
 }

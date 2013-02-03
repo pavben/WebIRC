@@ -1,5 +1,6 @@
 var cloneextend = require('cloneextend');
 var net = require('net');
+var callStateChangeFunction = require('./static/js/statechanges.js').callStateChangeFunction;
 
 function User(username, password) {
 	this.username = username;
@@ -10,98 +11,60 @@ function User(username, password) {
 	this.activeWebSockets = [];
 	this.loggedInSessions = [];
 
-	this.nextWindowId = 0;
-	this.activeWindowId = null;
+	this.currentActiveWindow = null;
 }
 
 User.prototype = {
 	addServer: function(server) {
+		this.applyStateChange('AddServer', server);
+
+		// now apply the parameters that should not be sent
 		server.user = this;
-		server.windowId = this.getNextWindowId();
 
-		this.servers.push(server);
+		var serverIdx = this.servers.length - 1; // will be the last
 
-		this.setActiveWindow(server.windowId);
+		this.setActiveWindow({serverIdx: serverIdx});
 	},
-	setActiveWindow: function(windowId) {
-		console.log('active window set to: ' + windowId + ' (on server)');
-
-		this.activeWindowId = windowId;
-
-		// sync the change to the gateway
-		this.sendToWeb('SetActiveWindow', {windowId: windowId});
+	setActiveWindow: function(newActiveWindowParams) {
+		this.applyStateChange('SetActiveWindow', newActiveWindowParams);
 	},
 	sendToWeb: function(msgId, data) {
 		this.activeWebSockets.forEach(function(socket) {
 			socket.emit(msgId, data);
 		});
 	},
-	sendActivityForWindow: function(windowId, activityType, activity) {
-		activity.type = activityType;
+	applyStateChange: function() {
+		var funcId = arguments[0];
 
-		this.sendToWeb('WindowActivity', {windowId: windowId, activity: activity });
-	},
-	sendActivityForActiveWindow: function(activityType, activity) {
-		this.sendActivityForWindow(this.activeWindowId, activityType, activity);
-	},
-	getNextWindowId: function() {
-		return (this.nextWindowId++);
-	},
-	getObjectsByWindowId: function(windowId) {
-		for (serverIdx in this.servers) {
-			var server = this.servers[serverIdx];
+		var args = Array.prototype.slice.call(arguments, 1);
 
-			if (server.windowId === windowId) {
-				return {type: 'server', server: server};
+		console.log('%s state change args: %j', funcId, args);
+
+		// first, apply the change on the server
+		callStateChangeFunction(this, funcId, args);
+
+		// then send it to the clients
+		this.sendToWeb('ApplyStateChange', {
+			funcId: funcId,
+			args: args
+		});
+	},
+	getWindowByPath: function(path) {
+		if ('serverIdx' in path) {
+			var server = this.servers[path.serverIdx];
+
+			if ('channelIdx' in path) {
+				var channel = server.channels[path.channelIdx];
+
+				return {object: channel, server: server, type: 'channel', windowPath: path};
+			} else if ('queryIdx' in path) {
+				console.log('NOT IMPL');
+			} else {
+				// just the server
+				return {object: server, server: server, type: 'server', windowPath: path};
 			}
-			
-			for (channelIdx in server.channels) {
-				var channel = server.channels[channelIdx];
-
-				if (channel.windowId === windowId) {
-					return {type: 'channel', server: server, channel: channel};
-				}
-			}
-		}
-
-		// windowId not found
-		return null;
-	},
-	onWindowClosing: function(windowIdBeingClosed) {
-		// if the window being closed is active, set a new active
-		if (windowIdBeingClosed === this.activeWindowId) {
-			// get the window before channel.windowId and set it as active
-			var nextWindowId = getNextActiveWindowId(this);
-
-			this.setActiveWindow(nextWindowId);
-		}
-
-		function getNextActiveWindowId(user) {
-			var lastWindowId = null;
-
-			(function() {
-				for (serverIdx in user.servers) {
-					var server = user.servers[serverIdx];
-
-					if (server.windowId === windowIdBeingClosed) {
-						return;
-					} else {
-						lastWindowId = server.windowId;
-					
-						for (channelIdx in server.channels) {
-							var channel = server.channels[channelIdx];
-
-							if (channel.windowId === windowIdBeingClosed) {
-								return;
-							} else {
-								lastWindowId = channel.windowId;
-							}
-						}
-					}
-				}
-			})();
-
-			return lastWindowId;
+		} else {
+			console.log('serverIdx required in getWindowByPath');
 		}
 	}
 };
@@ -116,10 +79,10 @@ function Server(host, port, desiredNickname, username, realName, desiredChannels
 	this.channels = [];
 	this.desiredChannels = desiredChannels;
 	this.socket = null;
+	this.activityLog = [];
 
 	// these are set automatically by the 'add' functions
 	this.user = null; // the user this server belongs to
-	this.windowId = null;
 }
 
 Server.prototype = {
@@ -183,46 +146,34 @@ Server.prototype = {
 		});
 	},
 	addChannel: function(channel) {
+		var serverIdx = this.user.servers.indexOf(this);
+
+		this.user.applyStateChange('AddChannel', serverIdx, channel);
+
+		// now apply the parameters that should not be sent
 		channel.server = this;
-		channel.windowId = this.user.getNextWindowId();
-
-		this.channels.push(channel);
-
-		// and send the update to the web clients
-		
-		// copy the channel object
-		var channelCopy = cloneextend.clone(channel);
-
-		// and remove the fields that should not be sent
-		delete channelCopy.server;
-
-		this.user.sendToWeb('JoinChannel', {serverWindowId: this.windowId, channel: channelCopy});
 
 		console.log('Successfully joined ' + channel.name);
 
-		this.user.setActiveWindow(channel.windowId);
+		var channelIdx = this.user.servers[serverIdx].channels.length - 1; // will be the last
+
+		this.user.setActiveWindow({serverIdx: serverIdx, channelIdx: channelIdx});
 	},
 	removeChannel: function(channelName) {
-		var numMatched = 0;
-
-		this.channels = this.channels.filter(function(channel) {
+		var success = this.channels.some(function(channel, channelIdx) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				this.user.onWindowClosing(channel.windowId);
+				var serverIdx = this.user.servers.indexOf(this);
 
-				this.user.sendToWeb('RemoveChannel', {channelWindowId: channel.windowId});
+				this.user.applyStateChange('RemoveChannel', serverIdx, channelIdx);
 
-				numMatched++;
-
-				return false; // this entry is removed
+				return true; // we've found the entry
 			} else {
-				return true; // this entry stays
+				return false; // continue
 			}
-		}, this);
+		});
 
-		if (numMatched === 1) {
+		if (success) {
 			console.log('Parted ' + channelName);
-		} else {
-			console.log('Unexpected number of channels matched on removeChannel(' + channelName + '): ' + numMatched);
 		}
 	},
 	send: function(data) {
@@ -243,33 +194,16 @@ function Channel(name) {
 
 	// these are set automatically by the 'add' functions
 	this.server = null;
-	this.windowId = null;
 }
 
 Channel.prototype = {
-	enterActivity: function(activityType, activity, affectsHistory) {
-		// first, set the type
-		activity.type = activityType;
-
-		// if this event is one that should be stored in the activity log (such as a message or a join), push it
-		if (affectsHistory) {
-			this.activityLog.push(activity);
-		}
-
-		this.server.user.sendActivityForWindow(this.windowId, activityType, activity);
+	toWindowPath: function() {
+		return {
+			serverIdx: this.server.user.servers.indexOf(this.server),
+			channelIdx: this.server.channels.indexOf(this)
+		};
 	}
 };
-
-/*
- * join - log and userlist add
- * part - log and userlist remove
- * mode - log and a bunch of userlist changes possibly
- * quit - log in every applicable channel and remove from userlist in all
- * kick - same as part
- * topic - log and update topic, if we care
- * invite - log in active window
- * list - create a special list window, keep the list in server.channelList, send them to the browser at some interval
- */
 
 function UserlistEntry() {
 	this.nick = null;

@@ -17,7 +17,7 @@ var serverCommandHandlers = {
 };
 
 function handleCommandRequireArgs(requiredNumArgs, handler) {
-	// note: allArgs includes user, server, and origin -- these are not counted in numArgs as numArgs represends the number of args after the command
+	// note: allArgs includes user, serverIdx, server, and origin -- these are not counted in numArgs as numArgs represends the number of args after the command
 	return function(numArgs, allArgs) {
 		if (numArgs >= requiredNumArgs) {
 			return handler.apply(null, allArgs);
@@ -29,15 +29,15 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 	};
 }
 
-function handle001(user, server, origin) {
+function handle001(user, serverIdx, server, origin) {
 	server.desiredChannels.forEach(function(channel) {
 		server.send('JOIN ' + channel);
 	});
 }
 
-function handle353(user, server, origin, myNickname, channelType, channelName, namesList) {
+function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {
 	withChannel(server, channelName,
-		function(channel) {
+		function(channelIdx, channel) {
 			// build a list of UserlistEntry
 			var userlistEntries = [];
 			
@@ -49,7 +49,7 @@ function handle353(user, server, origin, myNickname, channelType, channelName, n
 				}
 			});
 
-			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
+			user.applyStateChange('NamesUpdateAdd', serverIdx, channelIdx, userlistEntries);
 		},
 		silentFailCallback
 	);
@@ -84,24 +84,20 @@ function parseUserlistEntry(nickWithFlags) {
 	return null;
 }
 
-function handle366(user, server, origin, myNickname, channelName) {
+function handle366(user, serverIdx, server, origin, myNickname, channelName) {
 	withChannel(server, channelName,
-		function(channel) {
-			// swap tempUserlist for userlist and clear it
-			channel.userlist = channel.tempUserlist;
-			channel.tempUserlist = [];
-
-			channel.enterActivity('NamesUpdate', {userlist: channel.userlist}, false);
+		function(channelIdx, channel) {
+			user.applyStateChange('NamesUpdate', serverIdx, channelIdx);
 		},
 		silentFailCallback
 	);
 }
 
-function handlePing(user, server, origin, arg) {
+function handlePing(user, serverIdx, server, origin, arg) {
 	server.send('PONG :' + arg);
 }
 
-function handleJoin(user, server, origin, channelName) {
+function handleJoin(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin.type === 'client') {
 		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
@@ -115,18 +111,14 @@ function handleJoin(user, server, origin, channelName) {
 		} else {
 			// someone joined one of the channels we should be in
 			withChannel(server, channelName,
-				function(channel) {
+				function(channelIdx, channel) {
 					var newUserlistEntry = new data.UserlistEntry();
 
 					newUserlistEntry.nick = origin.nick;
 					newUserlistEntry.user = origin.user;
 					newUserlistEntry.host = origin.host;
 
-					channel.userlist.push(newUserlistEntry);
-
-					channel.enterActivity('Join', {
-						who: newUserlistEntry
-					}, true);
+					user.applyStateChange('Join', serverIdx, channelIdx, newUserlistEntry);
 				},
 				silentFailCallback
 			);
@@ -134,7 +126,7 @@ function handleJoin(user, server, origin, channelName) {
 	}
 }
 
-function handleMode(user, server, origin, target, modes) {
+function handleMode(user, serverIdx, server, origin, target, modes) {
 	// is it a user mode or a channel mode?
 	if (utils.isNickname(target)) {
 		if (target === server.nickname) {
@@ -144,7 +136,7 @@ function handleMode(user, server, origin, target, modes) {
 		var handleModeArguments = arguments;
 
 		withChannel(server, target,
-			function(channel) {
+			function(channelIdx, channel) {
 				var modeArgs = Array.prototype.slice.call(handleModeArguments, 5);
 
 				var parsedModes = mode.parseChannelModes(modes, modeArgs);
@@ -190,26 +182,13 @@ function handleMode(user, server, origin, target, modes) {
 	}
 }
 
-function handleNick(user, server, origin, newNickname) {
+function handleNick(user, serverIdx, server, origin, newNickname) {
 	if (origin !== null && origin.type === 'client') {
-		// if the nickname change origin matches ours
-		if (server.nickname !== null && server.nickname === origin.nick) {
-			server.nickname = newNickname;
-		}
-
-		forEveryChannelWithNick(server, origin.nick,
-			function(channel) {
-				channel.enterActivity('NickChange', {
-					oldNickname: origin.nick,
-					newNickname: newNickname
-				}, true);
-			},
-			silentFailCallback
-		);
+		user.applyStateChange('NickChange', serverIdx, origin.nick, newNickname);
 	}
 }
 
-function handleQuit(user, server, origin, quitMessage) {
+function handleQuit(user, serverIdx, server, origin, quitMessage) {
 	if (origin !== null && origin.type === 'client') {
 		// if we are the quitter
 		if (server.nickname !== null && server.nickname === origin.nick) {
@@ -240,7 +219,7 @@ function withUserlistEntry(channel, nick, successCallback, failureCallback) {
 	}
 }
 
-function handlePart(user, server, origin, channelName) {
+function handlePart(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin.type === 'client') {
 		// if the nickname of the leaver matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
@@ -250,20 +229,14 @@ function handlePart(user, server, origin, channelName) {
 		} else {
 			// someone left one of the channels we should be in
 			withChannel(server, channelName,
-				function(channel) {
+				function(channelIdx, channel) {
 					var who = new data.UserlistEntry();
 
 					who.nick = origin.nick;
 					who.user = origin.user;
 					who.host = origin.host;
 
-					channel.userlist = channel.userlist.filter(function(currentUserlistEntry) {
-						return (currentUserlistEntry.nick !== who.nick);
-					});
-
-					channel.enterActivity('Part', {
-						who: who
-					}, true);
+					user.applyStateChange('Part', serverIdx, channelIdx, who);
 				},
 				silentFailCallback
 			);
@@ -271,26 +244,25 @@ function handlePart(user, server, origin, channelName) {
 	}
 }
 
-function handlePrivmsg(user, server, origin, targetName, text) {
+function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
 		var ctcpMessage = utils.parseCtcpMessage(text);
 
 		if (ctcpMessage !== null) {
 			if (utils.isNickname(targetName)) {
-				handleCtcp(server, origin, null, ctcpMessage);
+				handleCtcp(serverIdx, server, origin, null, ctcpMessage);
 			} else {
-				handleCtcp(server, origin, targetName, ctcpMessage);
+				handleCtcp(serverIdx, server, origin, targetName, ctcpMessage);
 			}
 		} else {
 			if (utils.isNickname(targetName)) {
 				console.log('Unhandled target type -- nickname');
 			} else {
 				withChannel(server, targetName,
-					function(channel) {
-						channel.enterActivity('ChatMessage', {
-							nick: (origin.type === 'client' ? origin.nick : origin.name),
-							text: text
-						}, true);
+					function(channelIdx, channel) {
+						var nick = (origin.type === 'client' ? origin.nick : origin.name);
+
+						user.applyStateChange('ChatMessage', channel.toWindowPath(), nick, text);
 					},
 					silentFailCallback
 				);
@@ -299,16 +271,13 @@ function handlePrivmsg(user, server, origin, targetName, text) {
 	}
 }
 
-function handleCtcp(server, origin, channelName, ctcpMessage) {
+function handleCtcp(serverIdx, server, origin, channelName, ctcpMessage) {
 	if (origin !== null && origin.type === 'client') {
 		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
 			if (channelName !== null) {
 				withChannel(server, channelName,
-					function(channel) {
-						channel.enterActivity('ActionMessage', {
-							nick: (origin.type === 'client' ? origin.nick : origin.name),
-							text: ctcpMessage.args
-						}, true);
+					function(channelIdx, channel) {
+						server.user.applyStateChange('ActionMessage', channel.toWindowPath(), (origin.type === 'client' ? origin.nick : origin.name), ctcpMessage.args);
 					},
 					silentFailCallback
 				);
@@ -320,27 +289,19 @@ function handleCtcp(server, origin, channelName, ctcpMessage) {
 }
 
 function withChannel(server, channelName, successCallback, failureCallback) {
-	var success = server.channels.some(function(channel) {
+	var success = server.channels.some(function(channel, channelIdx) {
 		if (channel.name === channelName) {
-			successCallback(channel);
+			successCallback(channelIdx, channel);
 
-			return true; // break out
+			return true;
 		} else {
-			return false; // continue
+			return false;
 		}
 	});
 
-	if (!success && typeof failureCallback !== 'undefined') {
+	if (!success) {
 		failureCallback();
 	}
-}
-
-function forEveryChannelWithNick(server, nickname, successCallback) {
-	server.channels.forEach(function(channel) {
-		if (channel.userlist.some(function(userlistEntry) { return (userlistEntry.nick === nickname); })) {
-			successCallback(channel);
-		}
-	});
 }
 
 function silentFailCallback() {
@@ -367,6 +328,7 @@ function processLineFromServer(line, server) {
 				parseResult.args.length,
 				[
 					server.user,
+					server.user.servers.indexOf(server), // serverIdx
 					server,
 					(parseResult.origin !== null ? parseOrigin(parseResult.origin) : null)
 				].concat(parseResult.args)
@@ -455,34 +417,39 @@ function parseOrigin(str) {
 }
 
 function processChatboxLine(line, user, parseCommands) {
-	var command = null;
-	var rest = line;
+	if (user.currentActiveWindow !== null) {
+		var command = null;
+		var rest = line;
 
-	if (parseCommands) {
-		var match;
+		if (parseCommands) {
+			var match;
 
-		if (match = line.match(/^\/([a-z0-9]*)(?:\s*)(.*?)$/i)) {
-			command = match[1].toUpperCase();
-			rest = match[2];
-		}
-	}
-
-	var objs = user.getObjectsByWindowId(user.activeWindowId);
-
-	if (objs !== null) {
-		var server = objs.server;
-
-		if (command !== null) {
-			clientcommands.handleClientCommand(objs, command, rest);
-		} else {
-			if (objs.type === 'channel') {
-				var channel = objs.channel;
-
-				channel.enterActivity('ChatMessage', { nick: server.nickname, text: rest }, true);
-
-				server.send('PRIVMSG ' + channel.name + ' :' + rest);
+			if (match = line.match(/^\/([a-z0-9]*)(?:\s*)(.*?)$/i)) {
+				command = match[1].toUpperCase();
+				rest = match[2];
 			}
 		}
+
+		var activeWindow = user.getWindowByPath(user.currentActiveWindow);
+
+		if (activeWindow !== null) {
+			if (command !== null) {
+				clientcommands.handleClientCommand(activeWindow, command, rest);
+			} else {
+				if (activeWindow.type === 'channel') {
+					var server = activeWindow.server;
+					var channel = activeWindow.object;
+
+					user.applyStateChange('ChatMessage', channel.toWindowPath(), server.nickname, rest);
+
+					server.send('PRIVMSG ' + channel.name + ' :' + rest);
+				} else {
+					console.log('Non-command in a non-channel/non-query window');
+				}
+			}
+		}
+	} else {
+		console.log('No active window in processChatboxLine');
 	}
 }
 

@@ -116,13 +116,6 @@ function handleSuccessfulLogin(user, socket) {
 			// and remove the fields that should not be sent
 			delete serverCopy.socket;
 			delete serverCopy.user;
-			delete serverCopy.nickname;
-			delete serverCopy.username;
-			delete serverCopy.realName;
-			delete serverCopy.host;
-			delete serverCopy.port;
-			delete serverCopy.desiredChannels;
-			delete serverCopy.desiredNickname;
 
 			serverCopy.channels = server.channels.map(function(channel) {
 				// copy the channel object
@@ -151,7 +144,7 @@ function handleSuccessfulLogin(user, socket) {
 	socket.on('SetActiveWindow', function(data) {
 		console.log('active window set to: ' + data.windowId + ' (client request)');
 
-		user.setActiveWindow(data.windowId);
+		//user.setActiveWindow(data.windowId);
 	});
 }
 
