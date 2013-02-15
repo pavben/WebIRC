@@ -51,20 +51,28 @@ User.prototype = {
 	},
 	getWindowByPath: function(path) {
 		if ('serverIdx' in path) {
+			if (path.serverIdx < 0 || path.serverIdx >= this.servers.length)
+				return null;
+
 			var server = this.servers[path.serverIdx];
 
 			if ('channelIdx' in path) {
+				if (path.channelIdx < 0 || path.channelIdx >= server.channels.length)
+					return null;
+
 				var channel = server.channels[path.channelIdx];
 
 				return {object: channel, server: server, type: 'channel', windowPath: path};
 			} else if ('queryIdx' in path) {
 				console.log('NOT IMPL');
+				return null;
 			} else {
 				// just the server
 				return {object: server, server: server, type: 'server', windowPath: path};
 			}
 		} else {
 			console.log('serverIdx required in getWindowByPath');
+			return null;
 		}
 	}
 };

@@ -195,15 +195,7 @@ function handleQuit(user, serverIdx, server, origin, quitMessage) {
 			// do we need to do anything special?
 		}
 
-		forEveryChannelWithNick(server, origin.nick,
-			function(channel) {
-				channel.enterActivity('Quit', {
-					who: origin,
-					message: quitMessage
-				}, true);
-			},
-			silentFailCallback
-		);
+		user.applyStateChange('Quit', serverIdx, origin, quitMessage);
 	}
 }
 

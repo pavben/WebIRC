@@ -151,9 +151,15 @@ function handleSuccessfulLogin(user, socket) {
 	});
 
 	socket.on('SetActiveWindow', function(data) {
-		console.log('active window set to: ' + data.windowId + ' (client request)');
+		console.log('client requesting the active window to be set to %j', data.windowPath);
 
-		//user.setActiveWindow(data.windowId);
+		var targetWindow = user.getWindowByPath(data.windowPath);
+
+		if (targetWindow !== null) {
+			user.setActiveWindow(data.windowPath);
+		} else {
+			console.log('Invalid windowPath in SetActiveWindow from client');
+		}
 	});
 }
 

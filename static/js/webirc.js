@@ -3,11 +3,7 @@ var webircApp = angular.module('webircApp', []);
 $(window).bind('load', function() {
 	initializeChatboxHandler();
 
-	//$(window).bind('resize orientationchange', onResize);
-
-	//onResize();
-
-	//$('#chatlog').css('transition', 'all .5s ease');
+	angular.bootstrap(document, ['webircApp']);
 });
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo, resizeCallback) {
@@ -80,7 +76,7 @@ function initializeChatboxHandler() {
 	});
 }
 
-function AppCtrl($scope, socket, resizeHandler) {
+function AppCtrl($scope, socket) {
 	// HACK: Ugly.
 	$scope.safeApply = function(fn) {
 		var phase = this.$root.$$phase;
@@ -98,29 +94,41 @@ function AppCtrl($scope, socket, resizeHandler) {
 
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chatbox'), $('#chatboxwrapper'), function() {
-		resizeHandler($scope);
+		// we need to rerun $scope.getResizeParams on resize
+		$scope.safeApply();
 	});
 
-	$(window).bind('resize orientationchange', function() {
-		resizeHandler($scope);
-	});
+	$scope.getResizeParams = function() {
+		console.log('maincellHeightF called');
 
-	resizeHandler($scope);
-}
+		var bodyOverflowY = 'hidden';
 
-webircApp.factory('resizeHandler', function () {
-	var resizeHandler = function(scope) {
-		onResize(scope);
+		var maincellHeight = getTargetHeightForMaincell();
 
-		scope.safeApply();
+		if (maincellHeight < 300) {
+			maincellHeight = 300;
+			// if the scrollbars are needed, enable them
+			bodyOverflowY = 'auto';
+		}
+
+		return {maincellHeight: maincellHeight, bodyOverflowY: bodyOverflowY};
 	}
 
-	return resizeHandler;
-});	
+	$scope.$watch($scope.getResizeParams, function(newVal, oldVal) {
+		console.log('maincellHeight changed to ' + newVal.maincellHeight);
+		$scope.maincellHeight = newVal.maincellHeight + 'px';
+		$scope.bodyOverflowY = newVal.bodyOverflowY;
+	}, true);
+
+	$(window).bind('resize orientationchange', function() {
+		// we need to rerun $scope.getResizeParams on resize
+		$scope.safeApply();
+	});
+}
 
 function getTargetHeightForMaincell() {
-	var maincellDiv = $('#maincell');                                                                                            
-	var chatboxWrapper = $('#chatboxwrapper');                                                                                   
+	var maincellDiv = $('#maincell');
+	var chatboxWrapper = $('#chatboxwrapper');
 	var outerWrapper = $('#outerwrapper');
 
 	return ($(window).height()
@@ -129,20 +137,6 @@ function getTargetHeightForMaincell() {
 		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
 		- stripPx(outerWrapper.css('padding-bottom'))
 	);
-}
-
-function onResize(scope) {
-	scope.bodyOverflowY = 'hidden';
-
-	var targetMaincellHeight = getTargetHeightForMaincell();
-
-	if (targetMaincellHeight < 300) {
-		targetMaincellHeight = 300;
-		// if the scrollbars are needed, enable them
-		scope.bodyOverflowY = 'auto';
-	}
-
-	scope.maincellHeight = targetMaincellHeight;
 }
 
 function stripPx(text) {

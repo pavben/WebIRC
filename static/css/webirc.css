@@ -39,6 +39,40 @@ a:hover, a:active {
 .outerwrapper {
 	padding:10px;
 }
+.windowlistwrapper {
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	padding:3px 3px 3px 3px;
+	margin-bottom:9px;
+	background-color:#FBFBFB;
+	overflow:hidden;
+}
+.windowlistbutton {
+	box-shadow:inset 0px 1px 0px 0px #ffffff;
+	background-color:#ededed;
+	border-radius:6px;
+	border:1px solid #dcdcdc;
+	display:inline-block;
+	color:#444444;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 12px;
+	text-decoration:none;
+	text-shadow:1px 1px 0px #ffffff;
+	float:left;
+	cursor:pointer;
+}
+.windowlistbutton:not(:first-child) {
+	margin-left:3px;
+}
+.windowlistbutton:hover {
+	background-color:#dfdfdf;
+}
+.windowlistbutton:active {
+	position:relative;
+	top:1px;
+}
 .mainspacercell {
 	display:table-cell;
 	width:10px;
@@ -64,10 +98,6 @@ a:hover, a:active {
 .userlist {
 	height:100%;
 	padding:6px 6px 6px 6px;
-}
-.chatboxwrapper {
-	margin-top:10px;
-	background:lightgreen;
 }
 .chatboxwrapper {
 	border:1px solid #BBBBBB;

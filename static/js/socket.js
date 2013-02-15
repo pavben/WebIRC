@@ -1,7 +1,7 @@
 var g_socket = null;
 
 webircApp.factory('socket', function ($rootScope) {
-	// connect to the current webserver
+	// connect to the webserver
 	var socket = io.connect('', {
 		reconnect: false
 	});
@@ -59,6 +59,10 @@ function initializeWebSocketConnection($scope, socket) {
 
 		console.log('Socket closed');
 	});
+
+	$scope.requestSetActiveWindow = function(windowPath) {
+		sendToGateway('SetActiveWindow', {windowPath: windowPath});
+	}
 }
 
 function sendToGateway(msgId, data) {

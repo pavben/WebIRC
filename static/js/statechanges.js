@@ -71,7 +71,7 @@ var statechanges = {
 				return (currentUserlistEntry.nick !== who.nick);
 			});
 
-			channel.activityLog.push({type: 'Part', who: newUserlistEntry});
+			channel.activityLog.push({type: 'Part', who: who});
 		},
 		'ChatMessage': function(windowPath, nick, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
@@ -94,6 +94,22 @@ var statechanges = {
 			utils.forEveryChannelWithNick(server, oldNickname,
 				function(channel) {
 					channel.activityLog.push({type: 'NickChange', oldNickname: oldNickname, newNickname: newNickname});
+
+					// TODO: apply the change to the userlist
+				}
+			);
+		},
+		'Quit': function(serverIdx, who, quitMessage) {
+			var server = this.servers[serverIdx];
+
+			// if we are the quitter
+			if (server.nickname !== null && server.nickname === who.nick) {
+				// do we need to do anything special?
+			}
+
+			utils.forEveryChannelWithNick(server, who.nick,
+				function(channel) {
+					channel.activityLog.push({type: 'Quit', who: who});
 
 					// TODO: apply the change to the userlist
 				}
