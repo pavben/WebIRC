@@ -40,7 +40,7 @@ function handle353(user, serverIdx, server, origin, myNickname, channelType, cha
 		function(channelIdx, channel) {
 			// build a list of UserlistEntry
 			var userlistEntries = [];
-			
+
 			namesList.trim().split(' ').forEach(function(nickWithFlags) {
 				var userlistEntryMaybe = parseUserlistEntry(nickWithFlags);
 
@@ -304,7 +304,7 @@ function silentFailCallback() {
 exports.run = function() {
 	data.users.forEach(function(user) {
 		user.servers.forEach(function(server) {
-			server.reconnect(processLineFromServer);
+			server.reconnect();
 		});
 	});
 }
@@ -445,5 +445,5 @@ function processChatboxLine(line, user, parseCommands) {
 	}
 }
 
+exports.processLineFromServer = processLineFromServer;
 exports.processChatboxLine = processChatboxLine;
-

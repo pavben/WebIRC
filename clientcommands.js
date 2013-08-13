@@ -26,8 +26,7 @@ function handleServer(host, port) {
 			this.server.host = host;
 			// fall through
 		case 0:
-			//this.server.reconnect(processLineFromServer);
-			// TODO: broken, no access to processLineFromServer
+			this.server.reconnect();
 	}
 }
 

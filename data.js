@@ -1,5 +1,6 @@
 var cloneextend = require('cloneextend');
 var net = require('net');
+var irc = require('./irc.js');
 var callStateChangeFunction = require('./static/js/statechanges.js').callStateChangeFunction;
 
 function User(username, password) {
@@ -94,7 +95,7 @@ function Server(host, port, desiredNickname, username, realName, desiredChannels
 }
 
 Server.prototype = {
-	reconnect: function(processLineFromServer) {
+	reconnect: function() {
 		if (this.socket !== null) {
 			this.send('QUIT :');
 
@@ -143,7 +144,7 @@ Server.prototype = {
 
 				readBuffer = readBuffer.substring(lineEndIndex + 2);
 
-				processLineFromServer(line, theServer);
+				irc.processLineFromServer(line, theServer);
 			}
 		});
 
@@ -215,7 +216,7 @@ Channel.prototype = {
 
 function UserlistEntry() {
 	this.nick = null;
-	
+
 	// optional: user, host, owner, op, halfop, voice
 }
 
