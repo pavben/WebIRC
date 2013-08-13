@@ -1,0 +1,17 @@
+{
+	"users": [{
+		"username": "u",
+		"password": "p",
+		"servers": [{
+			"host": "webirc.server",
+			"port": 6667,
+			"ssl": false,
+			"desiredNickname": "webirc123",
+			"username": "webirc",
+			"realName": "webirc",
+			"desiredChannels": ["#webirc-test"]
+		}]
+	}],
+	"httpListenPort": 28081,
+	"sessionSecret": "notsecret"
+}

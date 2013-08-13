@@ -2,7 +2,7 @@ exports.isNickname = function(name) {
 	if (name.match(/^[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*$/i)) {
 		return true;
 	} else {
-		return false; 
+		return false;
 	}
 }
 
@@ -29,3 +29,20 @@ exports.toCtcp = function(command, args) {
 	return ret;
 }
 
+exports.installGlobals = function() {
+	var globalFunctions = {
+		check: function(errorHandler, okHandler) {
+			return function(err, val) {
+				if (!err) {
+					okHandler.call(global, val);
+				} else {
+					errorHandler.call(global, err);
+				}
+			}
+		}
+	};
+
+	Object.keys(globalFunctions).forEach(function(functionName) {
+		global[functionName] = globalFunctions[functionName];
+	});
+}

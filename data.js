@@ -78,15 +78,16 @@ User.prototype = {
 	}
 };
 
-function Server(host, port, desiredNickname, username, realName, desiredChannels) {
-	this.host = host;
-	this.port = port;
+function Server(serverSpec) {
+	this.host = serverSpec.host;
+	this.port = serverSpec.port;
+	this.ssl = serverSpec.ssl || false;
 	this.nickname = null;
-	this.desiredNickname = desiredNickname;
-	this.username = username;
-	this.realName = realName;
+	this.desiredNickname = serverSpec.desiredNickname;
+	this.username = serverSpec.username;
+	this.realName = serverSpec.realName;
 	this.channels = [];
-	this.desiredChannels = desiredChannels;
+	this.desiredChannels = serverSpec.desiredChannels;
 	this.socket = null;
 	this.activityLog = [];
 
