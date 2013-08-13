@@ -170,12 +170,12 @@ var newUser = new data.User(
 
 newUser.addServer(
 	new data.Server(
-		'test.server',
+		'webirc.server',
 		6667,
+		'webirc123',
 		'webirc',
 		'webirc',
-		'webirc',
-		['#test']
+		['#webirc-test']
 	)
 );
 
