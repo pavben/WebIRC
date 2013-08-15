@@ -7,7 +7,6 @@
     "connect": ">= 2.7.0",
     "cookie": "*",
     "express": ">= 3.0.3",
-    "http": "*",
     "socket.io": ">= 0.9.11",
     "fs-extra": "*"
   },
