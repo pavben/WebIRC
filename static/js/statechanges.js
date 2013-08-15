@@ -99,7 +99,7 @@ var statechanges = {
 				}
 			);
 		},
-		'Quit': function(serverIdx, who, quitMessage) {
+		'Quit': function(serverIdx, who, quitMessage, utils) {
 			var server = this.servers[serverIdx];
 
 			// if we are the quitter
@@ -114,6 +114,22 @@ var statechanges = {
 					// TODO: apply the change to the userlist
 				}
 			);
+		},
+		'ModeChange': function(windowPath, origin, modes, modeArgs, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			targetWindow.object.activityLog.push({
+				type: 'ModeChange',
+				origin: origin,
+				modes: modes,
+				modeArgs: modeArgs
+			});
+		},
+		'UserlistModeUpdate': function(windowPath, userlistEntry, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			// TODO
+			//targetWindow.object.
 		},
 	},
 	utilityFunctions: {

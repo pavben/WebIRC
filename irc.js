@@ -137,7 +137,7 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 
 		withChannel(server, target,
 			function(channelIdx, channel) {
-				var modeArgs = Array.prototype.slice.call(handleModeArguments, 5);
+				var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
 
 				var parsedModes = mode.parseChannelModes(modes, modeArgs);
 
@@ -146,11 +146,7 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 					originStr = (origin.type === 'client') ? origin.nick : origin.name;
 				}
 
-				channel.enterActivity('ModeChange', {
-					origin: originStr,
-					modes: modes,
-					args: modeArgs
-				}, true);
+				user.applyStateChange('ModeChange', channel.toWindowPath(), originStr, modes, modeArgs);
 
 				if (parsedModes !== null) {
 					parsedModes.forEach(function(parsedMode) {
@@ -165,10 +161,8 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 									delete userlistEntry[userlistEntryAttribute];
 								}
 
-								channel.enterActivity('UserlistModeUpdate', {
-									userlistEntry: userlistEntry
-								}, false);
-							});
+								user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), userlistEntry);
+							}, silentFailCallback);
 						}
 
 						// for now, we ignore all other modes

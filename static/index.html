@@ -37,6 +37,7 @@
 									<div ng-switch-when="Join">* Join: {{activity.who.nick}}</div>
 									<div ng-switch-when="Part">* Part: {{activity.who.nick}}</div>
 									<div ng-switch-when="Quit">* Quit: {{activity.who.nick}}</div>
+									<div ng-switch-when="ModeChange">{{activity.origin}} sets mode: {{activity.modes}} {{activity.modeArgs.join(' ')}}</div>
 								</div>
 							</div>
 						</div>
