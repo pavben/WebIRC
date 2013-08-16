@@ -7,8 +7,8 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 	assert = require('assert');
 }
 
-var statechanges = {
-	stateChangeFunctions: {
+var sc = {
+	func: {
 		'NamesUpdateAdd': function(serverIdx, channelIdx, userlistEntries) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 
@@ -72,31 +72,32 @@ var statechanges = {
 			newActiveWindow.object.activeWindow = true;
 			this.currentActiveWindow = newActiveWindowPath;
 		},
-		'Join': function(serverIdx, channelIdx, newUserlistEntry) {
+		'Join': function(serverIdx, channelIdx, newUserlistEntry, utils) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 
-			channel.userlist.push(newUserlistEntry);
-
-			channel.activityLog.push({type: 'Join', who: newUserlistEntry});
+			utils.addActivity(channel, 'Join', { who: newUserlistEntry });
 		},
-		'Part': function(serverIdx, channelIdx, who) {
+		'Part': function(serverIdx, channelIdx, who, utils) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 
 			channel.userlist = channel.userlist.filter(function(currentUserlistEntry) {
 				return (currentUserlistEntry.nick !== who.nick);
 			});
 
-			channel.activityLog.push({type: 'Part', who: who});
+			utils.addActivity(channel, 'Part', { who: who });
 		},
 		'ChatMessage': function(windowPath, nick, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			targetWindow.object.activityLog.push({type: 'ChatMessage', nick: nick, text: text});
+			utils.addActivity(targetWindow.object, 'ChatMessage', {
+				nick: nick,
+				text: text
+			});
 		},
 		'ActionMessage': function(windowPath, nick, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			targetWindow.object.activityLog.push({type: 'Action', nick: nick, text: text});
+			utils.addActivity(targetWindow.object, 'Action', { nick: nick, text: text });
 		},
 		'NickChange': function(serverIdx, oldNickname, newNickname, utils) {
 			var server = this.servers[serverIdx];
@@ -108,7 +109,10 @@ var statechanges = {
 
 			utils.forEveryChannelWithNick(server, oldNickname,
 				function(channel) {
-					channel.activityLog.push({type: 'NickChange', oldNickname: oldNickname, newNickname: newNickname});
+					utils.addActivity(channel, 'NickChange', {
+						oldNickname: oldNickname,
+						newNickname: newNickname
+					});
 
 					// TODO: apply the change to the userlist
 				}
@@ -117,7 +121,7 @@ var statechanges = {
 		'Notice': function(windowPath, nick, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			targetWindow.object.activityLog.push({type: 'Notice', nick: nick, text: text});
+			utils.addActivity(targetWindow.object, 'Notice', { nick: nick, text: text });
 		},
 		'Quit': function(serverIdx, who, quitMessage, utils) {
 			var server = this.servers[serverIdx];
@@ -129,7 +133,7 @@ var statechanges = {
 
 			utils.forEveryChannelWithNick(server, who.nick,
 				function(channel) {
-					channel.activityLog.push({type: 'Quit', who: who});
+					utils.addActivity(channel, 'Quit', { who: who });
 
 					// TODO: apply the change to the userlist
 				}
@@ -138,13 +142,12 @@ var statechanges = {
 		'Text': function(windowPath, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			targetWindow.object.activityLog.push({type: 'Text', text: text});
+			utils.addActivity(targetWindow.object, 'Text', { text: text });
 		},
 		'ModeChange': function(windowPath, origin, modes, modeArgs, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			targetWindow.object.activityLog.push({
-				type: 'ModeChange',
+			utils.addActivity(targetWindow.object, 'ModeChange', {
 				origin: origin,
 				modes: modes,
 				modeArgs: modeArgs
@@ -157,12 +160,23 @@ var statechanges = {
 			//targetWindow.object.
 		},
 	},
-	utilityFunctions: {
+	utils: {
+		addActivity: function(object, type, data) {
+			data.type = type;
+
+			assert(Array.isArray(object.activityLog), "addActivity called on an object without a valid activityLog");
+
+			object.activityLog.push(data);
+
+			if (object.activityLog.length > 40) {
+				object.activityLog.splice(0, 4);
+			}
+		},
 		forEveryChannelWithNick: function(server, nickname, successCallback) {
 			server.channels.forEach(function(channel, channelIdx) {
 				var channel = server.channels[channelIdx];
 
-				if (statechanges.utilityFunctions.isNicknameInUserlist(nickname, channel.userlist)) {
+				if (sc.utils.isNicknameInUserlist(nickname, channel.userlist)) {
 					successCallback(channel);
 				}
 			});
@@ -183,9 +197,9 @@ var statechanges = {
 
 					if (channel.activeWindow) {
 						if (channelIdx > 0) {
-							statechanges.utilityFunctions.setActiveWindow(state, {serverIdx: serverIdx, channelIdx: channelIdx - 1});
+							sc.utils.setActiveWindow(state, {serverIdx: serverIdx, channelIdx: channelIdx - 1});
 						} else {
-							statechanges.utilityFunctions.setActiveWindow(state, {serverIdx: serverIdx});
+							sc.utils.setActiveWindow(state, {serverIdx: serverIdx});
 						}
 					}
 				} else if ('queryIdx' in path) {
@@ -236,10 +250,10 @@ var statechanges = {
 };
 
 function callStateChangeFunction(stateObject, funcId, args) {
-	var newArgs = args.concat([statechanges.utilityFunctions]);
+	var newArgs = args.concat([sc.utils]);
 
-	if (funcId in statechanges.stateChangeFunctions) {
-		return statechanges.stateChangeFunctions[funcId].apply(stateObject, newArgs);
+	if (funcId in sc.func) {
+		return sc.func[funcId].apply(stateObject, newArgs);
 	} else {
 		assert(false, 'Received invalid state change function: ' + funcId);
 	}
@@ -248,5 +262,5 @@ function callStateChangeFunction(stateObject, funcId, args) {
 // if being loaded into Node.js, export
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 	module.exports.callStateChangeFunction = callStateChangeFunction;
-	module.exports.utils = statechanges.utilityFunctions;
+	module.exports.utils = sc.utils;
 }
