@@ -444,7 +444,7 @@ function parseOrigin(str) {
 
 // Possible channel types: & # + ! . ~
 function parseTarget(str) {
-	if (str.match(/^[#&+.~][A-Za-z0-9]{1,49}|![A-Z0-5]{5}[A-Za-z0-9]{1,44}$/)) { // http://stackoverflow.com/questions/9424462/match-irc-channel-with-regular-expression-rfcs-2811-2813
+	if (str.match(/^[#&+.~][^\s]{1,99}|![A-Z0-5]{5}[^\s]{1,94}$/)) {
 		return new ChannelTarget(str);
 	} else if (str.match(/^[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*$/i)) { // http://stackoverflow.com/questions/5163255/regular-expression-to-match-irc-nickname
 		return new ClientTarget(str);
@@ -473,7 +473,7 @@ function processChatboxLine(line, user, parseCommands) {
 		if (parseCommands) {
 			var match;
 
-			if (match = line.match(/^\/([a-z0-9]*)(?:\s*)(.*?)$/i)) {
+			if (match = line.match(/^\/([a-z0-9]*)\s*(.*?)$/i)) {
 				command = match[1].toUpperCase();
 				rest = match[2];
 			}
