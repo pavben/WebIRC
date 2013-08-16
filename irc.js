@@ -1,14 +1,17 @@
 var clientcommands = require('./clientcommands.js');
 var mode = require('./mode.js');
+var net = require('net');
+var tls = require('tls');
 var utils = require('./utils.js');
 
 var serverCommandHandlers = {
-	'001': handleCommandRequireArgs(0, handle001),
+	'001': handleCommandRequireArgs(1, handle001),
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'MODE': handleCommandRequireArgs(2, handleMode),
 	'NICK': handleCommandRequireArgs(1, handleNick),
+	'NOTICE': handleCommandRequireArgs(2, handleNotice),
 	'PART': handleCommandRequireArgs(1, handlePart),
 	'PING': handleCommandRequireArgs(1, handlePing),
 	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
@@ -28,10 +31,14 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 	};
 }
 
-function handle001(user, serverIdx, server, origin) {
+function handle001(user, serverIdx, server, origin, myNickname, text) {
+	server.nickname = myNickname;
+
 	server.desiredChannels.forEach(function(channel) {
 		server.send('JOIN ' + channel);
 	});
+
+	user.applyStateChange('Text', server.toWindowPath(), text);
 }
 
 function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {
@@ -178,6 +185,50 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 function handleNick(user, serverIdx, server, origin, newNickname) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		user.applyStateChange('NickChange', serverIdx, origin.nick, newNickname);
+	}
+}
+
+function handleNotice(user, serverIdx, server, origin, targetName, text) {
+	if (origin !== null) {
+		withParsedTarget(targetName, function(target) {
+			// here we have a valid target
+
+			var ctcpMessage = utils.parseCtcpMessage(text);
+
+			if (ctcpMessage !== null) {
+				//handleCtcp(serverIdx, server, origin, target, ctcpMessage);
+				console.log('CTCP reply handling not implemented');
+			} else {
+				// not CTCP reply, but a regular notice
+				if (target instanceof ChannelTarget) {
+					withChannel(server, target.name,
+						function(channelIdx, channel) {
+							user.applyStateChange('Notice', channel.toWindowPath(), origin.getNickOrName(), text);
+						},
+						silentFailCallback
+					);
+				} else if (target instanceof ClientTarget) {
+					if (server.nickname !== null) {
+						if (server.nickname === target.nick) {
+							// we are the recipient
+							var activeWindow = user.getWindowByPath(user.currentActiveWindow);
+
+							if (activeWindow !== null) {
+								if (activeWindow.type === 'server' || activeWindow.type === 'channel' || activeWindow.type === 'query') {
+									user.applyStateChange('Notice', activeWindow.object.toWindowPath(), origin.getNickOrName(), text);
+								} else {
+									// if the active is not a supported window type, show the notice in the server window
+									user.applyStateChange('Notice', activeWindow.server.toWindowPath(), origin.getNickOrName(), text);
+								}
+							}
+						}
+					} else {
+						// no nickname yet, so this is most likely an AUTH notice
+						user.applyStateChange('Notice', server.toWindowPath(), origin.getNickOrName(), text);
+					}
+				}
+			}
+		}, silentFailCallback);
 	}
 }
 
@@ -343,6 +394,72 @@ exports.run = function() {
 	});
 }
 
+function reconnectServer(server) {
+	if (server.socket !== null) {
+		server.send('QUIT :');
+
+		server.socket.destroy();
+
+		server.socket = null;
+	}
+
+	var connectOptions = {
+		host: server.host,
+		port: server.port
+	};
+
+	if (server.ssl) {
+		connectOptions.rejectUnauthorized = false; // no certificate validation yet
+	}
+
+	var netOrTls = server.ssl ? tls : net;
+
+	var serverSocket = netOrTls.connect(connectOptions, function() {
+		console.log('Connected to server');
+
+		server.socket = serverSocket;
+
+		server.send('NICK ' + server.desiredNickname);
+		server.send('USER ' + server.username + ' ' + server.username + ' ' + server.host + ' :' + server.realName);
+	});
+
+	serverSocket.on('error', function(err) {
+		console.log('Server socket error: ' + err);
+		try {
+			if (server.socket !== null) {
+				server.socket.destroy();
+			}
+		} finally {
+			server.socket = null;
+			console.log('Connection to server closed due to error.');
+		}
+	});
+
+	var readBuffer = '';
+	serverSocket.on('data', function(data) {
+		readBuffer += data;
+
+		while(true) {
+			var lineEndIndex = readBuffer.indexOf('\r\n');
+			if (lineEndIndex === -1) {
+				break;
+			}
+
+			var line = readBuffer.substring(0, lineEndIndex);
+
+			readBuffer = readBuffer.substring(lineEndIndex + 2);
+
+			processLineFromServer(line, server);
+		}
+	});
+
+	serverSocket.on('end', function() {
+		server.socket = null;
+
+		console.log('Disconnected from server');
+	});
+}
+
 function processLineFromServer(line, server) {
 	console.log('Line: ' + line);
 
@@ -360,7 +477,7 @@ function processLineFromServer(line, server) {
 				].concat(parseResult.args)
 			);
 		} else {
-			//console.log('No handler for command ' + command);
+			server.user.applyStateChange('Text', server.toWindowPath(), parseResult.command + ' ' + parseResult.args.join(' '));
 		}
 	} else {
 		console.log('Invalid line from server: ' + line);
@@ -509,5 +626,5 @@ function processChatboxLine(line, user, parseCommands) {
 	}
 }
 
-exports.processLineFromServer = processLineFromServer;
+exports.reconnectServer = reconnectServer;
 exports.processChatboxLine = processChatboxLine;

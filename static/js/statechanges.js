@@ -114,6 +114,11 @@ var statechanges = {
 				}
 			);
 		},
+		'Notice': function(windowPath, nick, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			targetWindow.object.activityLog.push({type: 'Notice', nick: nick, text: text});
+		},
 		'Quit': function(serverIdx, who, quitMessage, utils) {
 			var server = this.servers[serverIdx];
 
@@ -129,6 +134,11 @@ var statechanges = {
 					// TODO: apply the change to the userlist
 				}
 			);
+		},
+		'Text': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			targetWindow.object.activityLog.push({type: 'Text', text: text});
 		},
 		'ModeChange': function(windowPath, origin, modes, modeArgs, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);

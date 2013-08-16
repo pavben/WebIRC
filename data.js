@@ -1,6 +1,4 @@
 var cloneextend = require('cloneextend');
-var net = require('net');
-var tls = require('tls');
 // irc.js include moved to the bottom due to circular dependency
 var statechanges = require('./static/js/statechanges.js');
 
@@ -78,72 +76,7 @@ function Server(serverSpec) {
 
 Server.prototype = {
 	reconnect: function() {
-		if (this.socket !== null) {
-			this.send('QUIT :');
-
-			this.socket.destroy();
-
-			this.socket = null;
-		}
-
-		var theServer = this;
-
-		var connectOptions = {
-			host: theServer.host,
-			port: theServer.port
-		};
-
-		if (theServer.ssl) {
-			connectOptions.rejectUnauthorized = false; // no certificate validation yet
-		}
-
-		var netOrTls = theServer.ssl ? tls : net;
-
-		var serverSocket = netOrTls.connect(connectOptions, function() {
-			console.log('Connected to server');
-
-			theServer.socket = serverSocket;
-			theServer.nickname = theServer.desiredNickname;
-
-			theServer.send('NICK ' + theServer.nickname);
-			theServer.send('USER ' + theServer.username + ' ' + theServer.username + ' ' + theServer.host + ' :' + theServer.realName);
-		});
-
-		serverSocket.on('error', function(err) {
-			console.log('Server socket error: ' + err);
-			try {
-				if (theServer.socket !== null) {
-					theServer.socket.destroy();
-				}
-			} finally {
-				theServer.socket = null;
-				console.log('Connection to server closed due to error.');
-			}
-		});
-
-		var readBuffer = '';
-		serverSocket.on('data', function(data) {
-			readBuffer += data;
-
-			while(true) {
-				var lineEndIndex = readBuffer.indexOf('\r\n');
-				if (lineEndIndex === -1) {
-					break;
-				}
-
-				var line = readBuffer.substring(0, lineEndIndex);
-
-				readBuffer = readBuffer.substring(lineEndIndex + 2);
-
-				irc.processLineFromServer(line, theServer);
-			}
-		});
-
-		serverSocket.on('end', function() {
-			theServer.socket = null;
-
-			console.log('Disconnected from server');
-		});
+		irc.reconnectServer(this);
 	},
 	addChannel: function(channel) {
 		var serverIdx = this.user.servers.indexOf(this);
@@ -193,6 +126,11 @@ Server.prototype = {
 		} else {
 			console.log('send called on a server with null socket');
 		}
+	},
+	toWindowPath: function() {
+		return {
+			serverIdx: this.user.servers.indexOf(this),
+		};
 	}
 };
 
