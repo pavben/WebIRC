@@ -90,7 +90,7 @@ a:hover, a:active {
 	overflow-x:hidden;
 	overflow-y:auto;
 	XXwhite-space:pre-wrap;
-	XXword-wrap: break-word;
+	XXword-wrap:break-word;
 }
 .chatlog {
 	padding:1px 10px 3px 6px;
@@ -127,9 +127,9 @@ a:hover, a:active {
 	position:absolute;
 	top:-9999px;
 	left:-9999px;
-	white-space: pre-wrap;      /* CSS3 */   
-	white-space: -moz-pre-wrap; /* Firefox */    
-	white-space: -pre-wrap;     /* Opera <7 */   
-	white-space: -o-pre-wrap;   /* Opera 7 */    
+	white-space: pre-wrap;      /* CSS3 */
+	white-space: -moz-pre-wrap; /* Firefox */
+	white-space: -pre-wrap;     /* Opera <7 */
+	white-space: -o-pre-wrap;   /* Opera 7 */
 	word-wrap: break-word;      /* IE */
 }

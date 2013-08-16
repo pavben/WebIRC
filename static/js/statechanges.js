@@ -152,7 +152,7 @@ var statechanges = {
 			server.channels.forEach(function(channel, channelIdx) {
 				var channel = server.channels[channelIdx];
 
-				if (this.isNicknameInUserlist(nickname, channel.userlist)) {
+				if (statechanges.utilityFunctions.isNicknameInUserlist(nickname, channel.userlist)) {
 					successCallback(channel);
 				}
 			});
@@ -173,12 +173,13 @@ var statechanges = {
 
 					if (channel.activeWindow) {
 						if (channelIdx > 0) {
-							this.setActiveWindow(state, {serverIdx: serverIdx, channelIdx: channelIdx - 1});
+							statechanges.utilityFunctions.setActiveWindow(state, {serverIdx: serverIdx, channelIdx: channelIdx - 1});
 						} else {
-							this.setActiveWindow(state, {serverIdx: serverIdx});
+							statechanges.utilityFunctions.setActiveWindow(state, {serverIdx: serverIdx});
 						}
 					}
 				} else if ('queryIdx' in path) {
+					// TODO: implement when query windows can be closed
 					console.log('NOT IMPL');
 				} else {
 					// just the server

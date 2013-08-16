@@ -99,8 +99,6 @@ function AppCtrl($scope, socket) {
 	});
 
 	$scope.getResizeParams = function() {
-		console.log('maincellHeightF called');
-
 		var bodyOverflowY = 'hidden';
 
 		var maincellHeight = getTargetHeightForMaincell();
