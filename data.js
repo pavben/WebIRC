@@ -1,5 +1,6 @@
 var cloneextend = require('cloneextend');
 var net = require('net');
+var tls = require('tls');
 // irc.js include moved to the bottom due to circular dependency
 var statechanges = require('./static/js/statechanges.js');
 
@@ -87,17 +88,26 @@ Server.prototype = {
 
 		var theServer = this;
 
-		var serverSocket = net.connect({host: theServer.host, port: theServer.port},
-			function() {
-				console.log('Connected to server');
+		var connectOptions = {
+			host: theServer.host,
+			port: theServer.port
+		};
 
-				theServer.socket = serverSocket;
-				theServer.nickname = theServer.desiredNickname;
+		if (theServer.ssl) {
+			connectOptions.rejectUnauthorized = false; // no certificate validation yet
+		}
 
-				theServer.send('NICK ' + theServer.nickname);
-				theServer.send('USER ' + theServer.username + ' ' + theServer.username + ' ' + theServer.host + ' :' + theServer.realName);
-			}
-		);
+		var netOrTls = theServer.ssl ? tls : net;
+
+		var serverSocket = netOrTls.connect(connectOptions, function() {
+			console.log('Connected to server');
+
+			theServer.socket = serverSocket;
+			theServer.nickname = theServer.desiredNickname;
+
+			theServer.send('NICK ' + theServer.nickname);
+			theServer.send('USER ' + theServer.username + ' ' + theServer.username + ' ' + theServer.host + ' :' + theServer.realName);
+		});
 
 		serverSocket.on('error', function(err) {
 			console.log('Server socket error: ' + err);
