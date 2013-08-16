@@ -1,7 +1,7 @@
 var cloneextend = require('cloneextend');
 var net = require('net');
-var irc = require('./irc.js');
-var callStateChangeFunction = require('./static/js/statechanges.js').callStateChangeFunction;
+// irc.js include moved to the bottom due to circular dependency
+var statechanges = require('./static/js/statechanges.js');
 
 function User(username, password) {
 	this.username = username;
@@ -42,39 +42,18 @@ User.prototype = {
 		console.log('%s state change args: %j', funcId, args);
 
 		// first, apply the change on the server
-		callStateChangeFunction(this, funcId, args);
+		var stateChangeFunctionReturn = statechanges.callStateChangeFunction(this, funcId, args);
 
 		// then send it to the clients
 		this.sendToWeb('ApplyStateChange', {
 			funcId: funcId,
 			args: args
 		});
+
+		return stateChangeFunctionReturn;
 	},
 	getWindowByPath: function(path) {
-		if ('serverIdx' in path) {
-			if (path.serverIdx < 0 || path.serverIdx >= this.servers.length)
-				return null;
-
-			var server = this.servers[path.serverIdx];
-
-			if ('channelIdx' in path) {
-				if (path.channelIdx < 0 || path.channelIdx >= server.channels.length)
-					return null;
-
-				var channel = server.channels[path.channelIdx];
-
-				return {object: channel, server: server, type: 'channel', windowPath: path};
-			} else if ('queryIdx' in path) {
-				console.log('NOT IMPL');
-				return null;
-			} else {
-				// just the server
-				return {object: server, server: server, type: 'server', windowPath: path};
-			}
-		} else {
-			console.log('serverIdx required in getWindowByPath');
-			return null;
-		}
+		return statechanges.utils.getWindowByPath(this, path);
 	}
 };
 
@@ -88,6 +67,7 @@ function Server(serverSpec) {
 	this.realName = serverSpec.realName;
 	this.channels = [];
 	this.desiredChannels = serverSpec.desiredChannels;
+	this.queries = [];
 	this.socket = null;
 	this.activityLog = [];
 
@@ -158,16 +138,16 @@ Server.prototype = {
 	addChannel: function(channel) {
 		var serverIdx = this.user.servers.indexOf(this);
 
-		this.user.applyStateChange('AddChannel', serverIdx, channel);
+		var channelIdx = this.user.applyStateChange('AddChannel', serverIdx, channel);
 
 		// now apply the parameters that should not be sent
 		channel.server = this;
 
 		console.log('Successfully joined ' + channel.name);
 
-		var channelIdx = this.user.servers[serverIdx].channels.length - 1; // will be the last
-
 		this.user.setActiveWindow({serverIdx: serverIdx, channelIdx: channelIdx});
+
+		return channelIdx;
 	},
 	removeChannel: function(channelName) {
 		var server = this;
@@ -185,6 +165,16 @@ Server.prototype = {
 		if (success) {
 			console.log('Parted ' + channelName);
 		}
+	},
+	addQuery: function(query) {
+		var serverIdx = this.user.servers.indexOf(this);
+
+		var queryIdx = this.user.applyStateChange('AddQuery', serverIdx, query);
+
+		// now apply the parameters that should not be sent
+		query.server = this;
+
+		return queryIdx;
 	},
 	send: function(data) {
 		console.log('SEND: ' + data);
@@ -215,17 +205,73 @@ Channel.prototype = {
 	}
 };
 
+function Query(name) {
+	this.name = name;
+	this.activityLog = [];
+
+	// these are set automatically by the 'add' functions
+	this.server = null;
+}
+
+Query.prototype = {
+	toWindowPath: function() {
+		return {
+			serverIdx: this.server.user.servers.indexOf(this.server),
+			queryIdx: this.server.queries.indexOf(this)
+		};
+	}
+};
+
 function UserlistEntry() {
 	this.nick = null;
 
 	// optional: user, host, owner, op, halfop, voice
 }
 
+function ClientOrigin(nick, user, host) {
+	this.nick = nick;
+	this.user = user;
+	this.host = host;
+}
+
+ClientOrigin.prototype = {
+	getNickOrName: function() {
+		return this.nick;
+	}
+}
+
+function ServerOrigin(name) {
+	this.name = name;
+}
+
+ServerOrigin.prototype = {
+	getNickOrName: function() {
+		return this.name;
+	}
+}
+
+function ChannelTarget(name) {
+	this.name = name;
+}
+
+function ClientTarget(nick) {
+	this.nick = nick;
+}
+
 var users = [];
 
-exports.User = User;
-exports.Server = Server;
-exports.Channel = Channel;
-exports.UserlistEntry = UserlistEntry;
-exports.users = users;
+exports.install = function() {
+	global.User = User;
+	global.Server = Server;
+	global.Channel = Channel;
+	global.Query = Query;
+	global.UserlistEntry = UserlistEntry;
+	global.ClientOrigin = ClientOrigin;
+	global.ServerOrigin = ServerOrigin;
+	global.ChannelTarget = ChannelTarget;
+	global.ClientTarget = ClientTarget;
+	global.users = users;
+}
 
+// down here due to circular dependency
+var irc = require('./irc.js');

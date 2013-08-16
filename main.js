@@ -1,3 +1,5 @@
+require('./data.js').install();
+
 var assert = require('assert');
 var express = require('express');
 var app = express();
@@ -8,7 +10,6 @@ var io = require('socket.io');
 var cloneextend = require('cloneextend');
 var config = require('./config.js')
 var irc = require('./irc.js');
-var data = require('./data.js');
 
 var sessionKey = 'sid';
 
@@ -62,7 +63,7 @@ config.load('config.json', check(
 
 				var user = null;
 
-				data.users.some(function(currentUser) {
+				users.some(function(currentUser) {
 					// if socket.handshake.sessionId is in user.loggedInSessions
 					// if (user.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
 					if (true) {
@@ -140,6 +141,16 @@ config.load('config.json', check(
 					return channelCopy;
 				});
 
+				serverCopy.queries = server.queries.map(function(query) {
+					// copy the query object
+					var queryCopy = cloneextend.clone(query);
+
+					// and remove the fields that should not be sent
+					delete queryCopy.server;
+
+					return queryCopy;
+				});
+
 				return serverCopy;
 			});
 
@@ -167,13 +178,13 @@ config.load('config.json', check(
 		}
 
 		config.data.users.forEach(function(user) {
-			var newUser = new data.User(user.username, user.password);
+			var newUser = new User(user.username, user.password);
 
 			user.servers.forEach(function(serverSpec) {
-				newUser.addServer(new data.Server(serverSpec));
+				newUser.addServer(new Server(serverSpec));
 			});
 
-			data.users.push(newUser);
+			users.push(newUser);
 		})
 
 		irc.run();

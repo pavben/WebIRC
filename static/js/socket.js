@@ -8,7 +8,7 @@ webircApp.factory('socket', function ($rootScope) {
 
 	return {
 		on: function (eventName, callback) {
-			socket.on(eventName, function () {  
+			socket.on(eventName, function () {
 				var args = arguments;
 				$rootScope.$apply(function () {
 					callback.apply(socket, args);
@@ -26,7 +26,7 @@ webircApp.factory('socket', function ($rootScope) {
 			})
 		}
 	};
-});	
+});
 
 function initializeWebSocketConnection($scope, socket) {
 	g_socket = socket;

@@ -1,5 +1,4 @@
 var clientcommands = require('./clientcommands.js');
-var data = require('./data.js');
 var mode = require('./mode.js');
 var utils = require('./utils.js');
 
@@ -58,7 +57,7 @@ function handle353(user, serverIdx, server, origin, myNickname, channelType, cha
 // &owner, @op, %halfop, +voice, regular
 // combinations possible, e.g. &@name
 function parseUserlistEntry(nickWithFlags) {
-	var userlistEntry = new data.UserlistEntry();
+	var userlistEntry = new UserlistEntry();
 
 	for (var i = 0; i < nickWithFlags.length; i++) {
 		switch (nickWithFlags.charAt(i)) {
@@ -98,13 +97,13 @@ function handlePing(user, serverIdx, server, origin, arg) {
 }
 
 function handleJoin(user, serverIdx, server, origin, channelName) {
-	if (origin !== null && origin.type === 'client') {
+	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// if the channel window isn't already open, create it
 			if (!server.channels.some(function(channel) { return (channel.name === channelName); })) {
 				// the server is confirming that we've joined some channel
-				var channel = new data.Channel(channelName);
+				var channel = new Channel(channelName);
 
 				server.addChannel(channel);
 			}
@@ -112,7 +111,7 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 			// someone joined one of the channels we should be in
 			withChannel(server, channelName,
 				function(channelIdx, channel) {
-					var newUserlistEntry = new data.UserlistEntry();
+					var newUserlistEntry = new UserlistEntry();
 
 					newUserlistEntry.nick = origin.nick;
 					newUserlistEntry.user = origin.user;
@@ -143,7 +142,7 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 
 				var originStr = 'Unknown';
 				if (origin !== null) {
-					originStr = (origin.type === 'client') ? origin.nick : origin.name;
+					originStr = (origin instanceof ClientOrigin) ? origin.nick : origin.name;
 				}
 
 				user.applyStateChange('ModeChange', channel.toWindowPath(), originStr, modes, modeArgs);
@@ -177,13 +176,13 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 }
 
 function handleNick(user, serverIdx, server, origin, newNickname) {
-	if (origin !== null && origin.type === 'client') {
+	if (origin !== null && origin instanceof ClientOrigin) {
 		user.applyStateChange('NickChange', serverIdx, origin.nick, newNickname);
 	}
 }
 
 function handleQuit(user, serverIdx, server, origin, quitMessage) {
-	if (origin !== null && origin.type === 'client') {
+	if (origin !== null && origin instanceof ClientOrigin) {
 		// if we are the quitter
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// do we need to do anything special?
@@ -206,7 +205,7 @@ function withUserlistEntry(channel, nick, successCallback, failureCallback) {
 }
 
 function handlePart(user, serverIdx, server, origin, channelName) {
-	if (origin !== null && origin.type === 'client') {
+	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the leaver matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've left some channel
@@ -216,7 +215,7 @@ function handlePart(user, serverIdx, server, origin, channelName) {
 			// someone left one of the channels we should be in
 			withChannel(server, channelName,
 				function(channelIdx, channel) {
-					var who = new data.UserlistEntry();
+					var who = new UserlistEntry();
 
 					who.nick = origin.nick;
 					who.user = origin.user;
@@ -232,44 +231,61 @@ function handlePart(user, serverIdx, server, origin, channelName) {
 
 function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
-		var ctcpMessage = utils.parseCtcpMessage(text);
+		withParsedTarget(targetName, function(target) {
+			// here we have a valid target
 
-		if (ctcpMessage !== null) {
-			if (utils.isNickname(targetName)) {
-				handleCtcp(serverIdx, server, origin, null, ctcpMessage);
-			} else {
-				handleCtcp(serverIdx, server, origin, targetName, ctcpMessage);
-			}
-		} else {
-			if (utils.isNickname(targetName)) {
-				console.log('Unhandled target type -- nickname');
-			} else {
-				withChannel(server, targetName,
-					function(channelIdx, channel) {
-						var nick = (origin.type === 'client' ? origin.nick : origin.name);
+			var ctcpMessage = utils.parseCtcpMessage(text);
 
-						user.applyStateChange('ChatMessage', channel.toWindowPath(), nick, text);
-					},
-					silentFailCallback
-				);
+			if (ctcpMessage !== null) {
+				handleCtcp(serverIdx, server, origin, target, ctcpMessage);
+			} else {
+				// not CTCP, but a regular message
+				if (target instanceof ChannelTarget) {
+					withChannel(server, target.name,
+						function(channelIdx, channel) {
+							user.applyStateChange('ChatMessage', channel.toWindowPath(), origin.getNickOrName(), text);
+						},
+						silentFailCallback
+					);
+				} else if (target instanceof ClientTarget) {
+					if (server.nickname !== null && server.nickname === target.nick) {
+						// we are the recipient
+						withQuery(server, origin.getNickOrName(),
+							function(queryIdx, query) {
+								user.applyStateChange('ChatMessage', query.toWindowPath(), origin.getNickOrName(), text);
+							},
+							silentFailCallback
+						);
+					}
+				}
 			}
-		}
+		}, silentFailCallback);
 	}
 }
 
-function handleCtcp(serverIdx, server, origin, channelName, ctcpMessage) {
-	if (origin !== null && origin.type === 'client') {
+function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
+	if (origin !== null && origin instanceof ClientOrigin) {
 		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
-			if (channelName !== null) {
-				withChannel(server, channelName,
+			if (target instanceof ChannelTarget) {
+				withChannel(server, target.name,
 					function(channelIdx, channel) {
-						server.user.applyStateChange('ActionMessage', channel.toWindowPath(), (origin.type === 'client' ? origin.nick : origin.name), ctcpMessage.args);
+						server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
 					},
 					silentFailCallback
 				);
+			} else if (target instanceof ClientTarget) {
+				if (server.nickname !== null && server.nickname === target.nick) {
+					// we are the recipient
+					withQuery(server, origin.getNickOrName(),
+						function(queryIdx, query) {
+							server.user.applyStateChange('ActionMessage', query.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
+						},
+						silentFailCallback
+					);
+				}
 			}
 		} else {
-			console.log('Received CTCP ' + ctcpMessage.command + ' from ' + origin.nick);
+			console.log('Received CTCP ' + ctcpMessage.command + ' from ' + origin.getNickOrName());
 		}
 	}
 }
@@ -290,13 +306,37 @@ function withChannel(server, channelName, successCallback, failureCallback) {
 	}
 }
 
+function withQuery(server, theirName, successCallback, failureCallback) {
+	var success = server.queries.some(function(query, queryIdx) {
+		if (query.name === theirName) {
+			successCallback(queryIdx, query);
+
+			return true;
+		} else {
+			return false;
+		}
+	});
+
+	if (!success) {
+		// if we need to create the query window
+		var query = new Query(theirName);
+		var queryIdx = server.addQuery(query);
+
+		if (queryIdx !== null) {
+			successCallback(queryIdx, query);
+		} else {
+			failureCallback();
+		}
+	}
+}
+
 function silentFailCallback() {
 	// silent fail (not so silent just yet)
 	console.log('silentFailCallback');
 }
 
 exports.run = function() {
-	data.users.forEach(function(user) {
+	users.forEach(function(user) {
 		user.servers.forEach(function(server) {
 			server.reconnect();
 		});
@@ -396,9 +436,32 @@ function parseLine(line) {
 function parseOrigin(str) {
 	var match;
 	if (match = str.match(/^([^!]+?)!([^@]+?)@(.+?)$/)) {
-		return {type: 'client', nick: match[1], user: match[2], host: match[3]};
+		return new ClientOrigin(match[1], match[2], match[3]);
 	} else {
-		return {type: 'server', name: str};
+		return new ServerOrigin(str);
+	}
+}
+
+// Possible channel types: & # + ! . ~
+function parseTarget(str) {
+	if (str.match(/^[#&+.~][A-Za-z0-9]{1,49}|![A-Z0-5]{5}[A-Za-z0-9]{1,44}$/)) { // http://stackoverflow.com/questions/9424462/match-irc-channel-with-regular-expression-rfcs-2811-2813
+		return new ChannelTarget(str);
+	} else if (str.match(/^[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*$/i)) { // http://stackoverflow.com/questions/5163255/regular-expression-to-match-irc-nickname
+		return new ClientTarget(str);
+	} else {
+		return null;
+	}
+}
+
+function withParsedTarget(targetName, successCallback, failureCallback) {
+	var maybeTarget = parseTarget(targetName);
+
+	if (maybeTarget instanceof ChannelTarget ||
+		maybeTarget instanceof ClientTarget ||
+		maybeTarget instanceof ServerTarget) {
+		successCallback(maybeTarget);
+	} else {
+		failureCallback();
 	}
 }
 
@@ -429,6 +492,13 @@ function processChatboxLine(line, user, parseCommands) {
 					user.applyStateChange('ChatMessage', channel.toWindowPath(), server.nickname, rest);
 
 					server.send('PRIVMSG ' + channel.name + ' :' + rest);
+				} else if (activeWindow.type === 'query') {
+					var server = activeWindow.server;
+					var query = activeWindow.object;
+
+					user.applyStateChange('ChatMessage', query.toWindowPath(), server.nickname, rest);
+
+					server.send('PRIVMSG ' + query.name + ' :' + rest);
 				} else {
 					console.log('Non-command in a non-channel/non-query window');
 				}

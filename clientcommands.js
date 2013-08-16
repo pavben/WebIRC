@@ -6,12 +6,12 @@ var serverCommandHandlers = {
 };
 
 function handleMe(text) {
-	if (this.activeWindow.type === 'channel') {
-		var channel = this.activeWindow.object;
+	if (this.activeWindow.type === 'channel' || this.activeWindow.type === 'query') {
+		var channelOrQuery = this.activeWindow.object;
 
 		this.user.applyStateChange('ActionMessage', this.activeWindow.windowPath, this.server.nickname, text);
 
-		this.server.send('PRIVMSG ' + channel.name + ' :' + utils.toCtcp('ACTION', text));
+		this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
 	} else {
 		console.log('Unsupported window type for command');
 	}

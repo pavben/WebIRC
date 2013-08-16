@@ -29,7 +29,7 @@ var statechanges = {
 		'AddChannel': function(serverIdx, channel) {
 			var server = this.servers[serverIdx];
 
-			server.channels.push(channel);
+			return server.channels.push(channel) - 1; // returns the index of the pushed element
 		},
 		'RemoveChannel': function(windowPath, utils) {
 			utils.onCloseWindow(this, windowPath);
@@ -40,6 +40,21 @@ var statechanges = {
 
 			// remove the channel
 			targetWindow.server.channels.splice(windowPath.channelIdx, 1);
+		},
+		'AddQuery': function(serverIdx, query) {
+			var server = this.servers[serverIdx];
+
+			return server.queries.push(query) - 1; // returns the index of the pushed element
+		},
+		'RemoveQuery': function(windowPath, utils) {
+			utils.onCloseWindow(this, windowPath);
+
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'query');
+
+			// remove the channel
+			targetWindow.server.queries.splice(windowPath.queryIdx, 1);
 		},
 		'SetActiveWindow': function(newActiveWindowPath, utils) {
 			console.log('active window being set to:');
@@ -178,20 +193,32 @@ var statechanges = {
 		},
 		getWindowByPath: function(state, path) {
 			if ('serverIdx' in path) {
+				if (path.serverIdx < 0 || path.serverIdx >= state.servers.length)
+					return null;
+
 				var server = state.servers[path.serverIdx];
 
 				if ('channelIdx' in path) {
+					if (path.channelIdx < 0 || path.channelIdx >= server.channels.length)
+						return null;
+
 					var channel = server.channels[path.channelIdx];
 
 					return {object: channel, server: server, type: 'channel', windowPath: path};
 				} else if ('queryIdx' in path) {
-					console.log('NOT IMPL');
+					if (path.queryIdx < 0 || path.queryIdx >= server.queries.length)
+						return null;
+
+					var query = server.queries[path.queryIdx];
+
+					return {object: query, server: server, type: 'query', windowPath: path};
 				} else {
 					// just the server
 					return {object: server, server: server, type: 'server', windowPath: path};
 				}
 			} else {
 				console.log('serverIdx required in getWindowByPath');
+				return null;
 			}
 		}
 	}
@@ -201,13 +228,14 @@ function callStateChangeFunction(stateObject, funcId, args) {
 	var newArgs = args.concat([statechanges.utilityFunctions]);
 
 	if (funcId in statechanges.stateChangeFunctions) {
-		statechanges.stateChangeFunctions[funcId].apply(stateObject, newArgs);
+		return statechanges.stateChangeFunctions[funcId].apply(stateObject, newArgs);
 	} else {
-		console.log('Received invalid state change function');
+		assert(false, 'Received invalid state change function: ' + funcId);
 	}
 }
 
 // if being loaded into Node.js, export
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 	module.exports.callStateChangeFunction = callStateChangeFunction;
+	module.exports.utils = statechanges.utilityFunctions;
 }
