@@ -224,7 +224,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 						}
 					} else {
 						// no nickname yet, so this is most likely an AUTH notice
-						user.applyStateChange('Notice', server.toWindowPath(), origin.getNickOrName(), text);
+						user.applyStateChange('Text', server.toWindowPath(), '-' + origin.getNickOrName() + '- ' + text);
 					}
 				}
 			}
