@@ -1,12 +1,6 @@
 # WebIRC
 
-This is a new web-based concept for an always-on IRC client.
-
-## Features
-
-* WebIRC runs as a daemon (similar to a BNC), so you are always connected to your favorite IRC networks.
-* Want to log in to the same IRC session from home, work, and your mobile devices? Control your client from anywhere with a modern web browser.
-* Run the daemon on one of your servers and WebIRC will use the server's IP, hiding yours. How about some sweet vhost? :D
+This is a new concept for an always-on web-based IRC "client". WebIRC runs as a daemon (similar to a BNC), so you are always connected to your favorite IRC networks. Want to log in to the same session from home, work, and your mobile devices? Continue your conversations from anywhere with a modern web browser.
 
 ## Status
 Early stage development. It's NOT ready, it's not stable, and many of the basic features are not yet implemented.
@@ -23,8 +17,16 @@ Then look at the console. Did it connect to your server? Visit `http://localhost
 You can also:
 
 * /join #channel, /part #channel
-* Talk
+* Talk in channels
+* Receive private messages and talk in them
 * Paste multi-line messages
+* Connect to IRC servers using SSL
 
-# License
+## Not yet supported
+* Closing private message windows (the code's easy, but I haven't decided what the UI for it should be)
+* Sending/receiving files
+* Proper userlist for channels
+* Multiple servers at the same time (it might work, but I haven't tried it yet)
+
+## License
 MIT
