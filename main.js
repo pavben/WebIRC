@@ -139,8 +139,7 @@ config.load('config.json', check(
 
 				serverCopy.channels = server.channels.map(function(channel) {
 					var channelCopy = cloneExceptFields(channel, [
-						'server',
-						'tempUserlist'
+						'server'
 					]);
 
 					return channelCopy;
