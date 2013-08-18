@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "author": "Pavel Bennett",
   "dependencies": {
-    "cloneextend": "*",
     "connect": ">= 2.7.0",
     "cookie": "*",
     "express": ">= 3.0.3",

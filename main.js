@@ -7,7 +7,6 @@ var http = require('http');
 var connect = require('connect');
 var cookie = require('cookie');
 var io = require('socket.io');
-var cloneextend = require('cloneextend');
 var config = require('./config.js')
 var irc = require('./irc.js');
 
@@ -111,42 +110,46 @@ config.load('config.json', check(
 		function handleSuccessfulLogin(user, socket) {
 			user.activeWebSockets.push(socket);
 
-			// copy the user object
-			var userCopy = cloneextend.clone(user);
+			function cloneExceptFields(src, exceptFields) {
+				var ret = {};
 
-			// and remove the fields that should not be sent
-			delete userCopy.activeWebSockets;
-			delete userCopy.loggedInSessions;
-			delete userCopy.password;
+				Object.keys(src).filter(function(k) {
+					return !~exceptFields.indexOf(k);
+				}).forEach(function(k) {
+					ret[k] = src[k];
+				});
 
-			// TODO: copy the functions that the client needs to have as well
-			//userCopy.getWindowByPath = user.getWindowByPath;
+				return ret;
+			}
+
+			var userCopy = cloneExceptFields(user, [
+				'activeWebSockets',
+				'loggedInSessions',
+				'password',
+				'servers'
+			]);
 
 			userCopy.servers = user.servers.map(function(server) {
-				// copy the server object
-				var serverCopy = cloneextend.clone(server);
-
-				// and remove the fields that should not be sent
-				delete serverCopy.socket;
-				delete serverCopy.user;
+				var serverCopy = cloneExceptFields(server, [
+					'socket',
+					'user',
+					'channels',
+					'queries'
+				]);
 
 				serverCopy.channels = server.channels.map(function(channel) {
-					// copy the channel object
-					var channelCopy = cloneextend.clone(channel);
-
-					// and remove the fields that should not be sent
-					delete channelCopy.server;
-					delete channelCopy.tempUserlist;
+					var channelCopy = cloneExceptFields(channel, [
+						'server',
+						'tempUserlist'
+					]);
 
 					return channelCopy;
 				});
 
 				serverCopy.queries = server.queries.map(function(query) {
-					// copy the query object
-					var queryCopy = cloneextend.clone(query);
-
-					// and remove the fields that should not be sent
-					delete queryCopy.server;
+					var queryCopy = cloneExceptFields(query, [
+						'server'
+					]);
 
 					return queryCopy;
 				});

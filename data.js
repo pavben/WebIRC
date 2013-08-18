@@ -1,4 +1,3 @@
-var cloneextend = require('cloneextend');
 // irc.js include moved to the bottom due to circular dependency
 var statechanges = require('./static/js/statechanges.js');
 
