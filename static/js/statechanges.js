@@ -57,9 +57,6 @@ var sc = {
 			targetWindow.server.queries.splice(windowPath.queryIdx, 1);
 		},
 		'SetActiveWindow': function(newActiveWindowPath, utils) {
-			console.log('active window being set to:');
-			console.log(newActiveWindowPath);
-
 			// if there is already an active window, remove the 'activeWindow' flag from it
 			if (this.currentActiveWindow !== null) {
 				var currentActiveWindow = utils.getWindowByPath(this, this.currentActiveWindow);

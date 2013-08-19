@@ -7,12 +7,7 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 			var chatlogDiv = $element[0];
 
 			$scope.delayedScroll = this.delayedScroll = function(force) {
-				console.log('delayedScroll called')
-
 				function doScroll(force) {
-					console.log(chatlogDiv.scrollTop);
-					console.log(chatlogDiv.scrollHeight);
-
 					if (chatlogDiv.lastScrollTopTarget && chatlogDiv.scrollTop >= chatlogDiv.lastScrollTopTarget - 30) {
 						// if they scroll near the bottom
 						chatlogDiv.scrollLock = false;
@@ -76,7 +71,6 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 			}
 
 			scope.$watch(getResizeParams, function(newVal, oldVal) {
-				console.log('maincellHeight changed to ' + newVal.maincellHeight);
 				scope.maincellHeight = newVal.maincellHeight + 'px';
 				//scope.bodyOverflowY = newVal.bodyOverflowY;
 
@@ -85,8 +79,6 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 
 			if (attrs.resizeMaincell) {
 				scope.$watch(attrs.resizeMaincell, function(newVal, oldVal) {
-					console.log('activeWindow set to', newVal)
-
 					if (newVal) {
 						// if this window is becoming active, scroll to the bottom
 						scope.delayedScroll(true);
