@@ -6,6 +6,7 @@
 			"host": "webirc.server",
 			"port": 6667,
 			"ssl": false,
+			"password": null,
 			"desiredNickname": "webirc123",
 			"username": "webirc",
 			"realName": "webirc",

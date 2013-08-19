@@ -419,6 +419,10 @@ function reconnectServer(server) {
 
 		server.socket = serverSocket;
 
+		if (server.password) {
+			server.send('PASS ' + server.password);
+		}
+
 		server.send('NICK ' + server.desiredNickname);
 		server.send('USER ' + server.username + ' ' + server.username + ' ' + server.host + ' :' + server.realName);
 	});
