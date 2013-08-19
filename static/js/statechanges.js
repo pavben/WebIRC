@@ -79,6 +79,30 @@ var sc = {
 
 			utils.addActivity(channel, 'Join', { who: newUserlistEntry });
 		},
+		'Kick': function(serverIdx, channelIdx, originName, targetNick, kickMessage, utils) {
+			var server = this.servers[serverIdx];
+			var channel = server.channels[channelIdx];
+
+			if (targetNick === server.nickname) {
+				// we are being kicked
+				utils.addActivity(channel, 'KickMe', {
+					originName: originName,
+					kickMessage: kickMessage
+				});
+
+				// and clear the userlist since it's now out of date
+				channel.userlist = [];
+			} else {
+				utils.userlist.removeUser(channel.userlist, targetNick);
+
+				// someone else being kicked
+				utils.addActivity(channel, 'Kick', {
+					originName: originName,
+					targetNick: targetNick,
+					kickMessage: kickMessage
+				});
+			}
+		},
 		'Part': function(serverIdx, channelIdx, who, utils) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 

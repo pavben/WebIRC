@@ -9,6 +9,7 @@ var serverCommandHandlers = {
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
+	'KICK': handleCommandRequireArgs(2, handleKick),
 	'MODE': handleCommandRequireArgs(2, handleMode),
 	'NICK': handleCommandRequireArgs(1, handleNick),
 	'NOTICE': handleCommandRequireArgs(2, handleNotice),
@@ -129,6 +130,21 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 				silentFailCallback
 			);
 		}
+	}
+}
+
+function handleKick(user, serverIdx, server, origin, channelName, targetName, kickMessage) {
+	if (origin !== null) {
+		withParsedTarget(targetName, function(target) {
+			if (target instanceof ClientTarget) {
+				withChannel(server, channelName,
+					function(channelIdx, channel) {
+						user.applyStateChange('Kick', serverIdx, channelIdx, origin.getNickOrName(), target.nick, kickMessage);
+					},
+					silentFailCallback
+				);
+			}
+		});
 	}
 }
 
@@ -578,8 +594,7 @@ function withParsedTarget(targetName, successCallback, failureCallback) {
 	var maybeTarget = parseTarget(targetName);
 
 	if (maybeTarget instanceof ChannelTarget ||
-		maybeTarget instanceof ClientTarget ||
-		maybeTarget instanceof ServerTarget) {
+		maybeTarget instanceof ClientTarget) {
 		successCallback(maybeTarget);
 	} else {
 		failureCallback();
