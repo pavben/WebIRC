@@ -21,8 +21,8 @@
 		<div id="maincell">
 			<div ng-repeat="server in state.servers">
 				<!-- server window -->
-				<div ng-show="server.activeWindow" class="chatlog" ng-style="{height: maincellHeight}">
-					<div ng-repeat="activity in server.activityLog" ng-switch="activity.type">
+				<div resize-maincell="server.activeWindow" ng-show="server.activeWindow" class="chatlog" ng-style="{height: maincellHeight}">
+					<div activitylogentry ng-repeat="activity in server.activityLog" ng-switch="activity.type">
 						<div ng-switch-when="Notice">* Private notice from {{activity.nick}}: {{activity.text}}</div>
 						<div ng-switch-when="Text">{{activity.text}}</div>
 					</div>
@@ -30,7 +30,7 @@
 				<div ng-repeat="channel in server.channels" ng-show="channel.activeWindow" class="fixedtable">
 					<div class="tablerow">
 						<div class="tablecell">
-							<div resize-maincell class="chatlog" ng-style="{height: maincellHeight}">
+							<div resize-maincell="channel.activeWindow" class="chatlog" ng-style="{height: maincellHeight}">
 								<div activitylogentry ng-repeat="activity in channel.activityLog" ng-switch="activity.type">
 									<div ng-switch-when="Text">{{activity.text}}</div>
 									<div ng-switch-when="NickChange">{{activity.oldNickname}} is now known as {{activity.newNickname}}</div>
@@ -52,8 +52,8 @@
 						</div>
 					</div>
 				</div>
-				<div ng-repeat="query in server.queries" ng-show="query.activeWindow" class="chatlog" ng-style="{height: maincellHeight}">
-					<div ng-repeat="activity in query.activityLog" ng-switch="activity.type">
+				<div resize-maincell="query.activeWindow" ng-repeat="query in server.queries" ng-show="query.activeWindow" class="chatlog" ng-style="{height: maincellHeight}">
+					<div activitylogentry ng-repeat="activity in query.activityLog" ng-switch="activity.type">
 						<div ng-switch-when="Action">* {{activity.nick}} {{activity.text}}</div>
 						<div ng-switch-when="ChatMessage">&lt;{{activity.nick}}&gt; {{activity.text}}</div>
 						<div ng-switch-when="Notice">* Private notice from {{activity.nick}}: {{activity.text}}</div>

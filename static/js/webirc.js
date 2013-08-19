@@ -6,10 +6,10 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 		controller: function($scope, $element, $timeout) {
 			var chatlogDiv = $element[0];
 
-			$scope.delayedScroll = this.delayedScroll = function() {
+			$scope.delayedScroll = this.delayedScroll = function(force) {
 				console.log('delayedScroll called')
 
-				function doScroll() {
+				function doScroll(force) {
 					console.log(chatlogDiv.scrollTop);
 					console.log(chatlogDiv.scrollHeight);
 
@@ -38,6 +38,10 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 						}
 					}
 
+					if (force) {
+						chatlogDiv.scrollLock = false;
+					}
+
 					if (!chatlogDiv.scrollLock)
 					{
 						chatlogDiv.scrollTop = scrollTopTarget;
@@ -47,7 +51,7 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 					chatlogDiv.lastScrollTopTarget = scrollTopTarget;
 				}
 
-				$timeout(doScroll);
+				$timeout(doScroll.bind(null, force));
 			}
 
 			this.resetScroll = function() {
@@ -57,10 +61,6 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 			}
 		},
 		link: function(scope, element, attrs) {
-			console.log('resizeMaincell being set up with scope:')
-			console.log(scope);
-			console.log($rootScope)
-
 			var getResizeParams = function() {
 				var bodyOverflowY = 'hidden';
 
@@ -82,6 +82,17 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 
 				scope.delayedScroll();
 			}, true);
+
+			if (attrs.resizeMaincell) {
+				scope.$watch(attrs.resizeMaincell, function(newVal, oldVal) {
+					console.log('activeWindow set to', newVal)
+
+					if (newVal) {
+						// if this window is becoming active, scroll to the bottom
+						scope.delayedScroll(true);
+					}
+				}, true);
+			}
 
 			angular.element(window).bind('resize orientationchange', function() {
 				// we need to rerun getResizeParams on resize
