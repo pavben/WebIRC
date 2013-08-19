@@ -165,8 +165,13 @@ var sc = {
 		'UserlistModeUpdate': function(windowPath, userlistEntry, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			// TODO
-			//targetWindow.object.
+			if (targetWindow.type === 'channel') {
+				var channel = targetWindow.object;
+
+				if (utils.userlist.removeUser(channel.userlist, userlistEntry.nick)) {
+					utils.userlist.addUser(channel.userlist, userlistEntry);
+				}
+			}
 		},
 	},
 	utils: {
