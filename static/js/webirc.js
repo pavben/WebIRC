@@ -1,5 +1,111 @@
 var webircApp = angular.module('webircApp', []);
 
+// TODO: this scrolling code needs to be redesigned
+webircApp.directive('resizeMaincell', function($rootScope) {
+	return {
+		controller: function($scope, $element, $timeout) {
+			var chatlogDiv = $element[0];
+
+			$scope.delayedScroll = this.delayedScroll = function() {
+				console.log('delayedScroll called')
+
+				function doScroll() {
+					console.log(chatlogDiv.scrollTop);
+					console.log(chatlogDiv.scrollHeight);
+
+					if (chatlogDiv.lastScrollTopTarget && chatlogDiv.scrollTop >= chatlogDiv.lastScrollTopTarget - 30) {
+						// if they scroll near the bottom
+						chatlogDiv.scrollLock = false;
+					}
+					else if (chatlogDiv.lastScrollTop && chatlogDiv.scrollTop < chatlogDiv.lastScrollTop) {
+						// if the user scrolled up the chat log
+						chatlogDiv.scrollLock = true;
+					}
+
+					var chatlogDivJQ = $(chatlogDiv);
+
+					var scrollTopTarget = getScrollTopTarget(chatlogDivJQ);
+
+					function getScrollTopTarget(theDiv) {
+						// scrollHeight of 0 means the div is out of view, so we check for that case to avoid returning a negative
+						if (theDiv[0].scrollHeight > 0) {
+							return theDiv[0].scrollHeight // start with the total scroll height
+								- theDiv.outerHeight() // subtract (height + padding + border)
+								+ parseInt(theDiv.css('border-top-width')) // readd the top border
+								+ parseInt(theDiv.css('border-bottom-width')) // readd the bottom border
+						} else {
+							return 0;
+						}
+					}
+
+					if (!chatlogDiv.scrollLock)
+					{
+						chatlogDiv.scrollTop = scrollTopTarget;
+					}
+
+					chatlogDiv.lastScrollTop = chatlogDiv.scrollTop;
+					chatlogDiv.lastScrollTopTarget = scrollTopTarget;
+				}
+
+				$timeout(doScroll);
+			}
+
+			this.resetScroll = function() {
+				//delete chatlogDiv.lastScrollTopTarget;
+				delete chatlogDiv.lastScrollTop;
+				//delete chatlogDiv.scrollLock;
+			}
+		},
+		link: function(scope, element, attrs) {
+			console.log('resizeMaincell being set up with scope:')
+			console.log(scope);
+			console.log($rootScope)
+
+			var getResizeParams = function() {
+				var bodyOverflowY = 'hidden';
+
+				var maincellHeight = getTargetHeightForMaincell();
+
+				if (maincellHeight < 300) {
+					maincellHeight = 300;
+					// if the scrollbars are needed, enable them
+					bodyOverflowY = 'auto';
+				}
+
+				return {maincellHeight: maincellHeight, bodyOverflowY: bodyOverflowY};
+			}
+
+			scope.$watch(getResizeParams, function(newVal, oldVal) {
+				console.log('maincellHeight changed to ' + newVal.maincellHeight);
+				scope.maincellHeight = newVal.maincellHeight + 'px';
+				//scope.bodyOverflowY = newVal.bodyOverflowY;
+
+				scope.delayedScroll();
+			}, true);
+
+			angular.element(window).bind('resize orientationchange', function() {
+				// we need to rerun getResizeParams on resize
+				scope.$apply();
+			});
+		}
+	}
+});
+
+webircApp.directive('activitylogentry', function() {
+	return {
+		require: '^resizeMaincell',
+		link: function(scope, element, attrs, resizeMaincellCtrl) {
+			if (scope.$last) {
+				resizeMaincellCtrl.delayedScroll();
+			}
+
+	        element.bind('$destroy', function() {
+	            resizeMaincellCtrl.resetScroll();
+	        });
+		}
+	};
+});
+
 $(window).bind('load', function() {
 	initializeChatboxHandler();
 
@@ -92,33 +198,9 @@ function AppCtrl($scope, socket) {
 	// TODO: Can we have this start after page load?
 	initializeWebSocketConnection($scope, socket);
 
+	// TODO: convert this into a directive
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chatbox'), $('#chatboxwrapper'), function() {
-		// we need to rerun $scope.getResizeParams on resize
-		$scope.safeApply();
-	});
-
-	$scope.getResizeParams = function() {
-		var bodyOverflowY = 'hidden';
-
-		var maincellHeight = getTargetHeightForMaincell();
-
-		if (maincellHeight < 300) {
-			maincellHeight = 300;
-			// if the scrollbars are needed, enable them
-			bodyOverflowY = 'auto';
-		}
-
-		return {maincellHeight: maincellHeight, bodyOverflowY: bodyOverflowY};
-	}
-
-	$scope.$watch($scope.getResizeParams, function(newVal, oldVal) {
-		console.log('maincellHeight changed to ' + newVal.maincellHeight);
-		$scope.maincellHeight = newVal.maincellHeight + 'px';
-		$scope.bodyOverflowY = newVal.bodyOverflowY;
-	}, true);
-
-	$(window).bind('resize orientationchange', function() {
 		// we need to rerun $scope.getResizeParams on resize
 		$scope.safeApply();
 	});
