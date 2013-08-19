@@ -117,6 +117,27 @@ webircApp.directive('activitylogentry', function() {
 	};
 });
 
+webircApp.directive('userlist', function() {
+	return {
+		scope: true,
+		link: function(scope) {
+			scope.getUserlistNamePrefix = function(userlistEntry) {
+				if ('owner' in userlistEntry) {
+					return '&';
+				} else if ('op' in userlistEntry) {
+					return '@';
+				} else if ('halfop' in userlistEntry) {
+					return '%';
+				} else if ('voice' in userlistEntry) {
+					return '+';
+				} else {
+					return '';
+				}
+			};
+		}
+	};
+});
+
 $(window).bind('load', function() {
 	initializeChatboxHandler();
 

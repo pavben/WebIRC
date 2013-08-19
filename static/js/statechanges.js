@@ -14,14 +14,14 @@ var sc = {
 
 			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
 		},
-		'NamesUpdate': function(serverIdx, channelIdx) {
+		'NamesUpdate': function(serverIdx, channelIdx, utils) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 
-			// swap tempUserlist for userlist and clear it
-			channel.userlist = channel.tempUserlist;
+			channel.userlist = [];
+			channel.tempUserlist.forEach(function(userlistEntry) {
+				utils.userlist.addUser(channel.userlist, userlistEntry);
+			});
 			channel.tempUserlist = [];
-
-			// TODO: sort tempUserlist and apply it
 		},
 		'AddServer': function(server) {
 			this.servers.push(server);
@@ -75,14 +75,14 @@ var sc = {
 		'Join': function(serverIdx, channelIdx, newUserlistEntry, utils) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 
+			utils.userlist.addUser(channel.userlist, newUserlistEntry);
+
 			utils.addActivity(channel, 'Join', { who: newUserlistEntry });
 		},
 		'Part': function(serverIdx, channelIdx, who, utils) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 
-			channel.userlist = channel.userlist.filter(function(currentUserlistEntry) {
-				return (currentUserlistEntry.nick !== who.nick);
-			});
+			utils.userlist.removeUser(channel.userlist, who.nick);
 
 			utils.addActivity(channel, 'Part', { who: who });
 		},
@@ -109,12 +109,18 @@ var sc = {
 
 			utils.forEveryChannelWithNick(server, oldNickname,
 				function(channel) {
+					var userlistEntry = utils.userlist.removeUser(channel.userlist, oldNickname);
+
+					if (userlistEntry) {
+						userlistEntry.nick = newNickname;
+
+						utils.userlist.addUser(channel.userlist, userlistEntry);
+					}
+
 					utils.addActivity(channel, 'NickChange', {
 						oldNickname: oldNickname,
 						newNickname: newNickname
 					});
-
-					// TODO: apply the change to the userlist
 				}
 			);
 		},
@@ -128,14 +134,17 @@ var sc = {
 
 			// if we are the quitter
 			if (server.nickname !== null && server.nickname === who.nick) {
-				// do we need to do anything special?
+				// TODO: do we need to do anything special?
 			}
 
 			utils.forEveryChannelWithNick(server, who.nick,
 				function(channel) {
-					utils.addActivity(channel, 'Quit', { who: who });
+					utils.userlist.removeUser(channel.userlist, who.nick);
 
-					// TODO: apply the change to the userlist
+					utils.addActivity(channel, 'Quit', {
+						who: who,
+						quitMessage: quitMessage
+					});
 				}
 			);
 		},
@@ -244,6 +253,72 @@ var sc = {
 			} else {
 				console.log('serverIdx required in getWindowByPath');
 				return null;
+			}
+		},
+		userlist: {
+			addUser: function(userlist, userlistEntry) {
+				// TODO: make this logarithmic
+				var insertIdx = 0;
+				for (var i = 0; i < userlist.length; i++) {
+					if (this.sortFunction(userlistEntry, userlist[i]) >= 0) {
+						insertIdx = i + 1;
+					} else {
+						break;
+					}
+				}
+
+				userlist.splice(insertIdx, 0, userlistEntry);
+			},
+			removeUser: function(userlist, nick) {
+				var matchedUserlistEntry = null;
+
+				userlist.some(function(userlistEntry, i) {
+					if (userlistEntry.nick === nick) {
+						matchedUserlistEntry = userlistEntry;
+
+						userlist.splice(i, 1);
+						return true;
+					} else {
+						return false;
+					}
+				});
+
+				return matchedUserlistEntry;
+			},
+			sortFunction: function(a, b) {
+				function getModeScore(u) {
+					if ('owner' in u) {
+						return 0;
+					} else if ('op' in u) {
+						return 1;
+					} else if ('halfop' in u) {
+						return 2;
+					} else if ('voice' in u) {
+						return 3;
+					} else {
+						return 4;
+					}
+				}
+
+				var modeScoreA = getModeScore(a);
+				var modeScoreB = getModeScore(b);
+
+				if (modeScoreA < modeScoreB) {
+					return -1;
+				} else if (modeScoreA > modeScoreB) {
+					return 1;
+				} else {
+					var nickA = a.nick.toLowerCase();
+					var nickB = b.nick.toLowerCase();
+
+					if (nickA < nickB) {
+						return -1;
+					} else if (nickA > nickB) {
+						return 1;
+					} else {
+						return 0;
+					}
+				}
 			}
 		}
 	}
