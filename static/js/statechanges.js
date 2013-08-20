@@ -9,6 +9,20 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 
 var sc = {
 	func: {
+		'AddChannel': function(serverIdx, channel, utils) {
+			var server = this.servers[serverIdx];
+
+			server.channels.push(channel);
+
+			utils.addActivity(channel, 'Info', {
+				text: 'Joined channel ' + channel.name
+			});
+		},
+		'AddQuery': function(serverIdx, query) {
+			var server = this.servers[serverIdx];
+
+			server.queries.push(query);
+		},
 		'Connect': function(serverIdx) {
 			var server = this.servers[serverIdx];
 
@@ -17,48 +31,101 @@ var sc = {
 		'Disconnect': function(serverIdx, utils) {
 			var server = this.servers[serverIdx];
 
-			function addDisconnectActivity(target) {
-				utils.addActivity(target, 'Info', {
-					text: 'Disconnected'
+			// if we disconnect before getting a 001 (such as due to a throttle), we avoid spamming "Disconnected"
+			if (server.connected) {
+				function addDisconnectActivity(target) {
+					utils.addActivity(target, 'Info', {
+						text: 'Disconnected'
+					});
+				}
+
+				// server
+				server.connected = false;
+
+				addDisconnectActivity(server);
+
+				// channels
+				server.channels.forEach(function(channel) {
+					utils.setNotInChannel(channel);
+
+					addDisconnectActivity(channel);
+				});
+
+				// queries
+				server.queries.forEach(addDisconnectActivity);
+			}
+		},
+		'Error': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			utils.addActivity(targetWindow.object, 'Error', { text: text });
+		},
+		'Info': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			utils.addActivity(targetWindow.object, 'Info', { text: text });
+		},
+		'Join': function(windowPath, newUserlistEntry, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'channel');
+
+			var channel = targetWindow.object;
+
+			utils.userlist.addUser(channel.userlist, newUserlistEntry);
+
+			utils.addActivity(channel, 'Join', { who: newUserlistEntry });
+		},
+		'Kick': function(windowPath, originName, targetNick, kickMessage, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'channel');
+
+			var server = targetWindow.server;
+			var channel = targetWindow.object;
+
+			if (targetNick === server.nickname) {
+				// we are being kicked
+				utils.addActivity(channel, 'KickMe', {
+					originName: originName,
+					kickMessage: kickMessage
+				});
+
+				sc.utils.setNotInChannel(channel);
+			} else {
+				utils.userlist.removeUser(channel.userlist, targetNick);
+
+				// someone else being kicked
+				utils.addActivity(channel, 'Kick', {
+					originName: originName,
+					targetNick: targetNick,
+					kickMessage: kickMessage
 				});
 			}
+		},
+		'Part': function(windowPath, who, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			// server
-			server.connected = false;
+			assert(targetWindow.type === 'channel');
 
-			addDisconnectActivity(server);
+			var channel = targetWindow.object;
 
-			// channels
-			server.channels.forEach(function(channel) {
-				utils.setNotInChannel(channel);
+			utils.userlist.removeUser(channel.userlist, who.nick);
 
-				addDisconnectActivity(channel);
+			utils.addActivity(channel, 'Part', { who: who });
+		},
+		'RejoinChannel': function(windowPath, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'channel');
+
+			var channel = targetWindow.object;
+
+			channel.inChannel = true;
+
+			utils.addActivity(channel, 'Info', {
+				text: 'Rejoined channel ' + channel.name
 			});
-
-			// queries
-			server.queries.forEach(addDisconnectActivity);
-		},
-		'NamesUpdateAdd': function(serverIdx, channelIdx, userlistEntries) {
-			var channel = this.servers[serverIdx].channels[channelIdx];
-
-			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
-		},
-		'NamesUpdate': function(serverIdx, channelIdx, utils) {
-			var channel = this.servers[serverIdx].channels[channelIdx];
-
-			channel.userlist = [];
-			channel.tempUserlist.forEach(function(userlistEntry) {
-				utils.userlist.addUser(channel.userlist, userlistEntry);
-			});
-			channel.tempUserlist = [];
-		},
-		'AddServer': function(server) {
-			this.servers.push(server);
-		},
-		'AddChannel': function(serverIdx, channel) {
-			var server = this.servers[serverIdx];
-
-			return server.channels.push(channel) - 1; // returns the index of the pushed element
 		},
 		'RemoveChannel': function(windowPath, utils) {
 			utils.onCloseWindow(this, windowPath);
@@ -70,10 +137,36 @@ var sc = {
 			// remove the channel
 			targetWindow.server.channels.splice(windowPath.channelIdx, 1);
 		},
-		'AddQuery': function(serverIdx, query) {
-			var server = this.servers[serverIdx];
+		'Text': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			return server.queries.push(query) - 1; // returns the index of the pushed element
+			utils.addActivity(targetWindow.object, 'Text', { text: text });
+		},
+		// SORTED ABOVE THIS LINE
+		'NamesUpdateAdd': function(windowPath, userlistEntries, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'channel');
+
+			var channel = targetWindow.object;
+
+			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
+		},
+		'NamesUpdate': function(windowPath, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'channel');
+
+			var channel = targetWindow.object;
+
+			channel.userlist = [];
+			channel.tempUserlist.forEach(function(userlistEntry) {
+				utils.userlist.addUser(channel.userlist, userlistEntry);
+			});
+			channel.tempUserlist = [];
+		},
+		'AddServer': function(server) {
+			this.servers.push(server);
 		},
 		'RemoveQuery': function(windowPath, utils) {
 			utils.onCloseWindow(this, windowPath);
@@ -97,43 +190,6 @@ var sc = {
 
 			newActiveWindow.object.activeWindow = true;
 			this.currentActiveWindow = newActiveWindowPath;
-		},
-		'Join': function(serverIdx, channelIdx, newUserlistEntry, utils) {
-			var channel = this.servers[serverIdx].channels[channelIdx];
-
-			utils.userlist.addUser(channel.userlist, newUserlistEntry);
-
-			utils.addActivity(channel, 'Join', { who: newUserlistEntry });
-		},
-		'Kick': function(serverIdx, channelIdx, originName, targetNick, kickMessage, utils) {
-			var server = this.servers[serverIdx];
-			var channel = server.channels[channelIdx];
-
-			if (targetNick === server.nickname) {
-				// we are being kicked
-				utils.addActivity(channel, 'KickMe', {
-					originName: originName,
-					kickMessage: kickMessage
-				});
-
-				sc.utils.setNotInChannel(channel);
-			} else {
-				utils.userlist.removeUser(channel.userlist, targetNick);
-
-				// someone else being kicked
-				utils.addActivity(channel, 'Kick', {
-					originName: originName,
-					targetNick: targetNick,
-					kickMessage: kickMessage
-				});
-			}
-		},
-		'Part': function(serverIdx, channelIdx, who, utils) {
-			var channel = this.servers[serverIdx].channels[channelIdx];
-
-			utils.userlist.removeUser(channel.userlist, who.nick);
-
-			utils.addActivity(channel, 'Part', { who: who });
 		},
 		'ChatMessage': function(windowPath, nick, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
@@ -191,16 +247,6 @@ var sc = {
 					});
 				}
 			);
-		},
-		'Text': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			utils.addActivity(targetWindow.object, 'Text', { text: text });
-		},
-		'Error': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			utils.addActivity(targetWindow.object, 'Error', { text: text });
 		},
 		'ModeChange': function(windowPath, origin, modes, modeArgs, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);

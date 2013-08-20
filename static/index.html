@@ -25,7 +25,7 @@
 					<div activitylogentry ng-repeat="activity in server.activityLog" ng-switch="activity.type">
 						<div ng-switch-when="Error" class="activity_error">* {{activity.text}}</div>
 						<div ng-switch-when="Info" class="activity_info">* {{activity.text}}</div>
-						<div ng-switch-when="Notice">* Private notice from {{activity.nick}}: {{activity.text}}</div>
+						<div ng-switch-when="Notice" class="activity_notice">* Notice from {{activity.nick}}: {{activity.text}}</div>
 						<div ng-switch-when="Text">{{activity.text}}</div>
 					</div>
 				</div>
@@ -37,15 +37,15 @@
 									<div ng-switch-when="Error" class="activity_error">* {{activity.text}}</div>
 									<div ng-switch-when="Info" class="activity_info">* {{activity.text}}</div>
 									<div ng-switch-when="Text">{{activity.text}}</div>
-									<div ng-switch-when="NickChange">* {{activity.oldNickname}} is now known as {{activity.newNickname}}</div>
-									<div ng-switch-when="Notice">* Private notice from {{activity.nick}}: {{activity.text}}</div>
+									<div ng-switch-when="NickChange" class="activity_info">* {{activity.oldNickname}} is now known as {{activity.newNickname}}</div>
+									<div ng-switch-when="Notice" class="activity_notice">* Notice from {{activity.nick}}: {{activity.text}}</div>
 									<div ng-switch-when="ChatMessage">&lt;{{activity.nick}}&gt; {{activity.text}}</div>
 									<div ng-switch-when="Action">* {{activity.nick}} {{activity.text}}</div>
-									<div ng-switch-when="Join">* Join: {{activity.who.nick}} ({{activity.who.user}}@{{activity.who.host}})</div>
-									<div ng-switch-when="Kick">* {{activity.targetNick}} was kicked by {{activity.originName}}{{activity.kickMessage ? (" (" + activity.kickMessage + ")") : ""}}</div>
-									<div ng-switch-when="KickMe">* You were kicked by {{activity.originName}}{{activity.kickMessage ? (" (" + activity.kickMessage + ")") : ""}}</div>
-									<div ng-switch-when="Part">* Part: {{activity.who.nick}} ({{activity.who.user}}@{{activity.who.host}})</div>
-									<div ng-switch-when="Quit">* Quit: {{activity.who.nick}} ({{activity.who.user}}@{{activity.who.host}}){{activity.quitMessage ? (" (" + activity.quitMessage + ")") : ""}}</div>
+									<div ng-switch-when="Join" class="activity_info">* Join: {{activity.who.nick}} ({{activity.who.user}}@{{activity.who.host}})</div>
+									<div ng-switch-when="Kick" class="activity_kick">* {{activity.targetNick}} was kicked by {{activity.originName}}{{activity.kickMessage ? (" (" + activity.kickMessage + ")") : ""}}</div>
+									<div ng-switch-when="KickMe" class="activity_kick">* You were kicked by {{activity.originName}}{{activity.kickMessage ? (" (" + activity.kickMessage + ")") : ""}}</div>
+									<div ng-switch-when="Part" class="activity_info">* Part: {{activity.who.nick}} ({{activity.who.user}}@{{activity.who.host}})</div>
+									<div ng-switch-when="Quit" class="activity_info">* Quit: {{activity.who.nick}} ({{activity.who.user}}@{{activity.who.host}}){{activity.quitMessage ? (" (" + activity.quitMessage + ")") : ""}}</div>
 									<div ng-switch-when="ModeChange">* {{activity.origin}} sets mode: {{activity.modes}} {{activity.modeArgs.join(' ')}}</div>
 								</div>
 							</div>
@@ -64,7 +64,7 @@
 						<div ng-switch-when="Info" class="activity_info">* {{activity.text}}</div>
 						<div ng-switch-when="Action">* {{activity.nick}} {{activity.text}}</div>
 						<div ng-switch-when="ChatMessage">&lt;{{activity.nick}}&gt; {{activity.text}}</div>
-						<div ng-switch-when="Notice">* Private notice from {{activity.nick}}: {{activity.text}}</div>
+						<div ng-switch-when="Notice" class="activity_notice">* Notice from {{activity.nick}}: {{activity.text}}</div>
 					</div>
 				</div>
 			</div>

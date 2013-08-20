@@ -39,14 +39,14 @@ User.prototype = {
 
 		console.log('%s state change args: %j', funcId, args);
 
-		// first, apply the change on the server
-		var stateChangeFunctionReturn = statechanges.callStateChangeFunction(this, funcId, args);
-
-		// then send it to the clients
+		// first, send it to the clients
 		this.sendToWeb('ApplyStateChange', {
 			funcId: funcId,
 			args: args
 		});
+
+		// then apply the change on the server
+		var stateChangeFunctionReturn = statechanges.callStateChangeFunction(this, funcId, args);
 
 		return stateChangeFunctionReturn;
 	},
@@ -78,44 +78,61 @@ Server.prototype = {
 	reconnect: function() {
 		irc.reconnectServer(this);
 	},
-	addChannel: function(channel) {
-		var serverIdx = this.user.servers.indexOf(this);
+	joinChannel: function(channelName) {
+		var server = this;
 
-		var channelIdx = this.user.applyStateChange('AddChannel', serverIdx, channel);
+		var exists = server.channels.some(function(channel) {
+			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+				server.user.applyStateChange('RejoinChannel', channel.toWindowPath());
 
-		// now apply the parameters that should not be sent
-		channel.server = this;
+				return true;
+			}
+		});
 
-		console.log('Successfully joined ' + channel.name);
+		if (!exists) {
+			var channel = new Channel(channelName, true);
 
-		this.user.setActiveWindow({serverIdx: serverIdx, channelIdx: channelIdx});
+			this.user.applyStateChange('AddChannel', this.getIndex(), channel);
 
-		return channelIdx;
+			// now apply the parameters that should not be sent
+			channel.server = this;
+
+			this.user.setActiveWindow(channel.toWindowPath());
+		}
 	},
 	removeChannel: function(channelName) {
 		var server = this;
 
 		server.channels.some(function(channel, channelIdx) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				if (channel.inChannel) {
-					server.send('PART ' + channelName);
-				}
-
 				server.user.applyStateChange('RemoveChannel', channel.toWindowPath());
 
 				return true;
 			}
 		});
 	},
-	addQuery: function(query) {
-		var serverIdx = this.user.servers.indexOf(this);
+	ensureQuery: function(queryName) {
+		var queryRet;
 
-		var queryIdx = this.user.applyStateChange('AddQuery', serverIdx, query);
+		var exists = this.queries.some(function(query) {
+			if (query.name.toLowerCase() === queryName.toLowerCase()) {
+				queryRet = query;
+				return true;
+			}
+		});
 
-		// now apply the parameters that should not be sent
-		query.server = this;
+		if (!exists) {
+			var query = new Query(queryName);
 
-		return queryIdx;
+			this.user.applyStateChange('AddQuery', this.getIndex(), query);
+
+			// now apply the parameters that should not be sent
+			query.server = this;
+
+			queryRet = query;
+		}
+
+		return queryRet;
 	},
 	removeQuery: function(targetName) {
 		var server = this;
@@ -136,9 +153,12 @@ Server.prototype = {
 			console.log('send called on a server with null socket');
 		}
 	},
+	getIndex: function() {
+		return this.user.servers.indexOf(this);
+	},
 	toWindowPath: function() {
 		return {
-			serverIdx: this.user.servers.indexOf(this),
+			serverIdx: this.getIndex(),
 		};
 	}
 };
@@ -155,10 +175,22 @@ function Channel(name, inChannel) {
 }
 
 Channel.prototype = {
+	rejoin: function() {
+		this.server.user.applyStateChange('Info', this.toWindowPath(), 'Attempting to rejoin channel...');
+
+		if (this.inChannel) {
+			this.server.send('PART ' + this.name);
+		}
+
+		this.server.send('JOIN ' + this.name);
+	},
+	getIndex: function() {
+		return this.server.channels.indexOf(this);
+	},
 	toWindowPath: function() {
 		return {
 			serverIdx: this.server.user.servers.indexOf(this.server),
-			channelIdx: this.server.channels.indexOf(this)
+			channelIdx: this.getIndex()
 		};
 	}
 };
@@ -172,10 +204,13 @@ function Query(name) {
 }
 
 Query.prototype = {
+	getIndex: function() {
+		return this.server.queries.indexOf(this);
+	},
 	toWindowPath: function() {
 		return {
 			serverIdx: this.server.user.servers.indexOf(this.server),
-			queryIdx: this.server.queries.indexOf(this)
+			queryIdx: this.getIndex()
 		};
 	}
 };

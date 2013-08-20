@@ -35,6 +35,12 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 function handle001(user, serverIdx, server, origin, myNickname, text) {
 	server.nickname = myNickname;
 
+	user.applyStateChange('Connect', server.getIndex());
+
+	server.channels.forEach(function(channel) {
+		channel.rejoin();
+	});
+
 	server.desiredChannels.forEach(function(channel) {
 		server.send('JOIN ' + channel);
 	});
@@ -44,7 +50,7 @@ function handle001(user, serverIdx, server, origin, myNickname, text) {
 
 function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {
 	withChannel(server, channelName,
-		function(channelIdx, channel) {
+		function(channel) {
 			// build a list of UserlistEntry
 			var userlistEntries = [];
 
@@ -56,7 +62,7 @@ function handle353(user, serverIdx, server, origin, myNickname, channelType, cha
 				}
 			});
 
-			user.applyStateChange('NamesUpdateAdd', serverIdx, channelIdx, userlistEntries);
+			user.applyStateChange('NamesUpdateAdd', channel.toWindowPath(), userlistEntries);
 		},
 		silentFailCallback
 	);
@@ -93,8 +99,8 @@ function parseUserlistEntry(nickWithFlags) {
 
 function handle366(user, serverIdx, server, origin, myNickname, channelName) {
 	withChannel(server, channelName,
-		function(channelIdx, channel) {
-			user.applyStateChange('NamesUpdate', serverIdx, channelIdx);
+		function(channel) {
+			user.applyStateChange('NamesUpdate', channel.toWindowPath());
 		},
 		silentFailCallback
 	);
@@ -108,24 +114,19 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
-			// if the channel window isn't already open, create it
-			if (!server.channels.some(function(channel) { return (channel.name === channelName); })) {
-				// the server is confirming that we've joined some channel
-				var channel = new Channel(channelName, true);
-
-				server.addChannel(channel);
-			}
+			// the server is confirming that we've joined the channel
+			server.joinChannel(channelName);
 		} else {
 			// someone joined one of the channels we should be in
 			withChannel(server, channelName,
-				function(channelIdx, channel) {
+				function(channel) {
 					var newUserlistEntry = new UserlistEntry();
 
 					newUserlistEntry.nick = origin.nick;
 					newUserlistEntry.user = origin.user;
 					newUserlistEntry.host = origin.host;
 
-					user.applyStateChange('Join', serverIdx, channelIdx, newUserlistEntry);
+					user.applyStateChange('Join', channel.toWindowPath(), newUserlistEntry);
 				},
 				silentFailCallback
 			);
@@ -138,8 +139,8 @@ function handleKick(user, serverIdx, server, origin, channelName, targetName, ki
 		withParsedTarget(targetName, function(target) {
 			if (target instanceof ClientTarget) {
 				withChannel(server, channelName,
-					function(channelIdx, channel) {
-						user.applyStateChange('Kick', serverIdx, channelIdx, origin.getNickOrName(), target.nick, kickMessage);
+					function(channel) {
+						user.applyStateChange('Kick', channel.toWindowPath(), origin.getNickOrName(), target.nick, kickMessage);
 					},
 					silentFailCallback
 				);
@@ -158,7 +159,7 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 		var handleModeArguments = arguments;
 
 		withChannel(server, target,
-			function(channelIdx, channel) {
+			function(channel) {
 				var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
 
 				var parsedModes = mode.parseChannelModes(modes, modeArgs);
@@ -218,7 +219,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 				// not CTCP reply, but a regular notice
 				if (target instanceof ChannelTarget) {
 					withChannel(server, target.name,
-						function(channelIdx, channel) {
+						function(channel) {
 							user.applyStateChange('Notice', channel.toWindowPath(), origin.getNickOrName(), text);
 						},
 						silentFailCallback
@@ -240,7 +241,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 						}
 					} else {
 						// no nickname yet, so this is most likely an AUTH notice
-						user.applyStateChange('Text', server.toWindowPath(), '-' + origin.getNickOrName() + '- ' + text);
+						user.applyStateChange('Notice', server.toWindowPath(), origin.getNickOrName(), text);
 					}
 				}
 			}
@@ -275,20 +276,19 @@ function handlePart(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the leaver matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
-			// the server is confirming that we've left some channel
-
+			// the server is confirming that we've left the channel
 			server.removeChannel(channelName);
 		} else {
 			// someone left one of the channels we should be in
 			withChannel(server, channelName,
-				function(channelIdx, channel) {
+				function(channel) {
 					var who = new UserlistEntry();
 
 					who.nick = origin.nick;
 					who.user = origin.user;
 					who.host = origin.host;
 
-					user.applyStateChange('Part', serverIdx, channelIdx, who);
+					user.applyStateChange('Part', channel.toWindowPath(), who);
 				},
 				silentFailCallback
 			);
@@ -309,7 +309,7 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 				// not CTCP, but a regular message
 				if (target instanceof ChannelTarget) {
 					withChannel(server, target.name,
-						function(channelIdx, channel) {
+						function(channel) {
 							user.applyStateChange('ChatMessage', channel.toWindowPath(), origin.getNickOrName(), text);
 						},
 						silentFailCallback
@@ -317,12 +317,9 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 				} else if (target instanceof ClientTarget) {
 					if (server.nickname !== null && server.nickname === target.nick) {
 						// we are the recipient
-						withQuery(server, origin.getNickOrName(),
-							function(queryIdx, query) {
-								user.applyStateChange('ChatMessage', query.toWindowPath(), origin.getNickOrName(), text);
-							},
-							silentFailCallback
-						);
+						var query = server.ensureQuery(origin.getNickOrName());
+
+						user.applyStateChange('ChatMessage', query.toWindowPath(), origin.getNickOrName(), text);
 					}
 				}
 			}
@@ -335,7 +332,7 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
 			if (target instanceof ChannelTarget) {
 				withChannel(server, target.name,
-					function(channelIdx, channel) {
+					function(channel) {
 						server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
 					},
 					silentFailCallback
@@ -343,12 +340,9 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 			} else if (target instanceof ClientTarget) {
 				if (server.nickname !== null && server.nickname === target.nick) {
 					// we are the recipient
-					withQuery(server, origin.getNickOrName(),
-						function(queryIdx, query) {
-							server.user.applyStateChange('ActionMessage', query.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
-						},
-						silentFailCallback
-					);
+					var query = server.ensureQuery(origin.getNickOrName());
+
+					server.user.applyStateChange('ActionMessage', query.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
 				}
 			}
 		} else {
@@ -358,9 +352,9 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 }
 
 function withChannel(server, channelName, successCallback, failureCallback) {
-	var success = server.channels.some(function(channel, channelIdx) {
+	var success = server.channels.some(function(channel) {
 		if (channel.name === channelName) {
-			successCallback(channelIdx, channel);
+			successCallback(channel);
 
 			return true;
 		} else {
@@ -370,30 +364,6 @@ function withChannel(server, channelName, successCallback, failureCallback) {
 
 	if (!success) {
 		failureCallback();
-	}
-}
-
-function withQuery(server, theirName, successCallback, failureCallback) {
-	var success = server.queries.some(function(query, queryIdx) {
-		if (query.name === theirName) {
-			successCallback(queryIdx, query);
-
-			return true;
-		} else {
-			return false;
-		}
-	});
-
-	if (!success) {
-		// if we need to create the query window
-		var query = new Query(theirName);
-		var queryIdx = server.addQuery(query);
-
-		if (queryIdx !== null) {
-			successCallback(queryIdx, query);
-		} else {
-			failureCallback();
-		}
 	}
 }
 
@@ -434,8 +404,6 @@ function reconnectServer(server) {
 		console.log('Connected to server');
 
 		server.socket = serverSocket;
-
-		server.user.applyStateChange('Connect', server.toWindowPath().serverIdx);
 
 		if (server.password) {
 			server.send('PASS ' + server.password);

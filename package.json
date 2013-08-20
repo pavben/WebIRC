@@ -10,5 +10,9 @@
   },
   "engines": {
     "node": ">= 0.8"
+  },
+  "repository" : {
+    "type" : "git",
+    "url" : "http://github.com/pavben/WebIRC.git"
   }
 }

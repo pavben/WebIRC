@@ -60,6 +60,8 @@ config.load('config.json', check(
 			sio.sockets.on('connection', function(socket) {
 				console.log('A socket with sessionId ' + socket.handshake.sessionId + ' connected.');
 
+				var sessionId = socket.handshake.sessionId;
+
 				var user = null;
 
 				users.some(function(currentUser) {
@@ -85,7 +87,9 @@ config.load('config.json', check(
 					if (user === null) {
 						// TODO: verify login
 
-						// TODO: add sessionId to loggedInSessions for user
+						// add sessionId to loggedInSessions for user
+
+						user.loggedInSessions.push(sessionId);
 
 						handleSuccessfulLogin(user, socket);
 					}

@@ -11,7 +11,11 @@ function handleClose() {
 		var server = this.activeWindow.server;
 		var channel = this.activeWindow.object;
 
-		server.removeChannel(channel.name);
+		if (channel.inChannel) {
+			server.send('PART ' + channel.name);
+		} else {
+			server.removeChannel(channel.name);
+		}
 	} else if (this.activeWindow.type === 'query') {
 		var server = this.activeWindow.server;
 		var query = this.activeWindow.object;
