@@ -68,6 +68,7 @@ function Server(serverSpec) {
 	this.queries = [];
 	this.socket = null;
 	this.activityLog = [];
+	this.connected = false;
 
 	// these are set automatically by the 'add' functions
 	this.user = null; // the user this server belongs to

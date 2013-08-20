@@ -416,7 +416,7 @@ function reconnectServer(server) {
 
 		server.socket.destroy();
 
-		server.socket = null;
+		onDisconnect(server);
 	}
 
 	var connectOptions = {
@@ -435,6 +435,8 @@ function reconnectServer(server) {
 
 		server.socket = serverSocket;
 
+		server.user.applyStateChange('Connect', server.toWindowPath().serverIdx);
+
 		if (server.password) {
 			server.send('PASS ' + server.password);
 		}
@@ -444,14 +446,14 @@ function reconnectServer(server) {
 	});
 
 	serverSocket.on('error', function(err) {
-		console.log('Server socket error: ' + err);
 		try {
 			if (server.socket !== null) {
 				server.socket.destroy();
 			}
 		} finally {
-			server.socket = null;
-			console.log('Connection to server closed due to error.');
+			console.log('Connection to server closed due to error:', err);
+
+			onDisconnect(server);
 		}
 	});
 
@@ -474,12 +476,16 @@ function reconnectServer(server) {
 	});
 
 	serverSocket.on('end', function() {
+		onDisconnect(server);
+	});
+
+	function onDisconnect(server) {
 		server.socket = null;
 
 		server.user.applyStateChange('Disconnect', server.toWindowPath().serverIdx);
 
 		console.log('Disconnected from server');
-	});
+	}
 }
 
 function processLineFromServer(line, server) {

@@ -167,8 +167,6 @@ config.load('config.json', check(
 			});
 
 			socket.on('SetActiveWindow', function(data) {
-				console.log('client requesting the active window to be set to %j', data.windowPath);
-
 				var targetWindow = user.getWindowByPath(data.windowPath);
 
 				if (targetWindow !== null) {

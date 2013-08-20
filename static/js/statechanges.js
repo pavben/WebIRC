@@ -9,8 +9,15 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 
 var sc = {
 	func: {
+		'Connect': function(serverIdx) {
+			var server = this.servers[serverIdx];
+
+			server.connected = true;
+		},
 		'Disconnect': function(serverIdx, utils) {
 			var server = this.servers[serverIdx];
+
+			server.connected = false;
 
 			function addDisconnectActivity(target) {
 				utils.addActivity(target, 'Info', {

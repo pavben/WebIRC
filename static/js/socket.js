@@ -37,8 +37,6 @@ function initializeWebSocketConnection($scope, socket) {
 	});
 
 	socket.on('NeedLogin', function(data) {
-		console.log(currentState);
-
 		// TODO
 	});
 
