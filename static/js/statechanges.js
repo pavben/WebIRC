@@ -17,8 +17,6 @@ var sc = {
 		'Disconnect': function(serverIdx, utils) {
 			var server = this.servers[serverIdx];
 
-			server.connected = false;
-
 			function addDisconnectActivity(target) {
 				utils.addActivity(target, 'Info', {
 					text: 'Disconnected'
@@ -26,11 +24,13 @@ var sc = {
 			}
 
 			// server
+			server.connected = false;
+
 			addDisconnectActivity(server);
 
 			// channels
 			server.channels.forEach(function(channel) {
-				channel.inChannel = false;
+				utils.setNotInChannel(channel);
 
 				addDisconnectActivity(channel);
 			});
@@ -116,9 +116,7 @@ var sc = {
 					kickMessage: kickMessage
 				});
 
-				// and clear the userlist since it's now out of date
-				channel.userlist = [];
-				channel.inChannel = false;
+				sc.utils.setNotInChannel(channel);
 			} else {
 				utils.userlist.removeUser(channel.userlist, targetNick);
 
@@ -334,6 +332,10 @@ var sc = {
 				console.log('serverIdx required in getWindowByPath');
 				return null;
 			}
+		},
+		setNotInChannel: function(channel) {
+			channel.userlist = [];
+			channel.inChannel = false;
 		},
 		userlist: {
 			addUser: function(userlist, userlistEntry) {
