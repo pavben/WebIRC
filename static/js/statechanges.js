@@ -277,8 +277,8 @@ var sc = {
 
 			object.activityLog.push(data);
 
-			if (object.activityLog.length > 40) {
-				object.activityLog.splice(0, 4);
+			if (object.activityLog.length > 400) {
+				object.activityLog.splice(0, 100);
 			}
 		},
 		forEveryChannelWithNick: function(server, nickname, successCallback) {
