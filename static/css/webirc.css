@@ -89,8 +89,6 @@ a:hover, a:active {
 	box-sizing:border-box;
 	overflow-x:hidden;
 	overflow-y:auto;
-	XXwhite-space:pre-wrap;
-	XXword-wrap:break-word;
 }
 .chatlog {
 	padding:1px 10px 3px 6px;
@@ -132,6 +130,16 @@ a:hover, a:active {
 	white-space: -pre-wrap;     /* Opera <7 */
 	white-space: -o-pre-wrap;   /* Opera 7 */
 	word-wrap: break-word;      /* IE */
+}
+
+.activity,
+.activity_error,
+.activity_info,
+.activity_kick,
+.activity_notice
+{
+	white-space:pre-wrap;
+	word-wrap:break-word;
 }
 
 /* THEME */
