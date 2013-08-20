@@ -9,6 +9,28 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 
 var sc = {
 	func: {
+		'Disconnect': function(serverIdx, utils) {
+			var server = this.servers[serverIdx];
+
+			function addDisconnectActivity(target) {
+				utils.addActivity(target, 'Info', {
+					text: 'Disconnected'
+				});
+			}
+
+			// server
+			addDisconnectActivity(server);
+
+			// channels
+			server.channels.forEach(function(channel) {
+				channel.inChannel = false;
+
+				addDisconnectActivity(channel);
+			});
+
+			// queries
+			server.queries.forEach(addDisconnectActivity);
+		},
 		'NamesUpdateAdd': function(serverIdx, channelIdx, userlistEntries) {
 			var channel = this.servers[serverIdx].channels[channelIdx];
 
@@ -89,6 +111,7 @@ var sc = {
 
 				// and clear the userlist since it's now out of date
 				channel.userlist = [];
+				channel.inChannel = false;
 			} else {
 				utils.userlist.removeUser(channel.userlist, targetNick);
 
@@ -153,11 +176,6 @@ var sc = {
 		'Quit': function(serverIdx, who, quitMessage, utils) {
 			var server = this.servers[serverIdx];
 
-			// if we are the quitter
-			if (server.nickname !== null && server.nickname === who.nick) {
-				// TODO: do we need to do anything special?
-			}
-
 			utils.forEveryChannelWithNick(server, who.nick,
 				function(channel) {
 					utils.userlist.removeUser(channel.userlist, who.nick);
@@ -173,6 +191,11 @@ var sc = {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
 			utils.addActivity(targetWindow.object, 'Text', { text: text });
+		},
+		'Error': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			utils.addActivity(targetWindow.object, 'Error', { text: text });
 		},
 		'ModeChange': function(windowPath, origin, modes, modeArgs, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
@@ -232,14 +255,38 @@ var sc = {
 
 					if (channel.activeWindow) {
 						if (channelIdx > 0) {
-							sc.utils.setActiveWindow(state, {serverIdx: serverIdx, channelIdx: channelIdx - 1});
+							sc.utils.setActiveWindow(state, {
+								serverIdx: serverIdx,
+								channelIdx: channelIdx - 1
+							});
 						} else {
-							sc.utils.setActiveWindow(state, {serverIdx: serverIdx});
+							sc.utils.setActiveWindow(state, {
+								serverIdx: serverIdx
+							});
 						}
 					}
 				} else if ('queryIdx' in path) {
-					// TODO: implement when query windows can be closed
-					console.log('NOT IMPL');
+					var queryIdx = path.queryIdx;
+					var query = server.queries[queryIdx];
+
+					if (query.activeWindow) {
+						if (queryIdx > 0) {
+							sc.utils.setActiveWindow(state, {
+								serverIdx: serverIdx,
+								queryIdx: queryIdx - 1
+							});
+						} else {
+							if (server.channels.length > 0) {
+								sc.utils.setActiveWindow(state, {
+									serverIdx: serverIdx, channelIdx: server.channels.length - 1
+								});
+							} else {
+								sc.utils.setActiveWindow(state, {
+									serverIdx: serverIdx
+								});
+							}
+						}
+					}
 				} else {
 					// just the server
 					console.log('NOT IMPL');

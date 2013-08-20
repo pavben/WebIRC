@@ -22,7 +22,7 @@ User.prototype = {
 
 		var serverIdx = this.servers.length - 1; // will be the last
 
-		this.setActiveWindow({serverIdx: serverIdx});
+		this.setActiveWindow({ serverIdx: serverIdx });
 	},
 	setActiveWindow: function(newActiveWindowParams) {
 		this.applyStateChange('SetActiveWindow', newActiveWindowParams);
@@ -94,19 +94,17 @@ Server.prototype = {
 	removeChannel: function(channelName) {
 		var server = this;
 
-		var success = this.channels.some(function(channel, channelIdx) {
+		server.channels.some(function(channel, channelIdx) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+				if (channel.inChannel) {
+					server.send('PART ' + channelName);
+				}
+
 				server.user.applyStateChange('RemoveChannel', channel.toWindowPath());
 
-				return true; // we've found the entry
-			} else {
-				return false; // continue
+				return true;
 			}
 		});
-
-		if (success) {
-			console.log('Parted ' + channelName);
-		}
 	},
 	addQuery: function(query) {
 		var serverIdx = this.user.servers.indexOf(this);
@@ -117,6 +115,17 @@ Server.prototype = {
 		query.server = this;
 
 		return queryIdx;
+	},
+	removeQuery: function(targetName) {
+		var server = this;
+
+		server.queries.some(function(query, queryIdx) {
+			if (query.name.toLowerCase() === targetName.toLowerCase()) {
+				server.user.applyStateChange('RemoveQuery', query.toWindowPath());
+
+				return true;
+			}
+		});
 	},
 	send: function(data) {
 		console.log('SEND: ' + data);
@@ -133,11 +142,12 @@ Server.prototype = {
 	}
 };
 
-function Channel(name) {
+function Channel(name, inChannel) {
 	this.name = name;
 	this.tempUserlist = []; // built while NAMES entries are coming in (353) and copied to userlist on 366
 	this.userlist = [];
 	this.activityLog = [];
+	this.inChannel = inChannel;
 
 	// these are set automatically by the 'add' functions
 	this.server = null;

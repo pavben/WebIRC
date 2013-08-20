@@ -111,7 +111,7 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 			// if the channel window isn't already open, create it
 			if (!server.channels.some(function(channel) { return (channel.name === channelName); })) {
 				// the server is confirming that we've joined some channel
-				var channel = new Channel(channelName);
+				var channel = new Channel(channelName, true);
 
 				server.addChannel(channel);
 			}
@@ -475,6 +475,8 @@ function reconnectServer(server) {
 
 	serverSocket.on('end', function() {
 		server.socket = null;
+
+		server.user.applyStateChange('Disconnect', server.toWindowPath().serverIdx);
 
 		console.log('Disconnected from server');
 	});

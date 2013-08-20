@@ -1,9 +1,26 @@
 var utils = require('./utils.js');
 
 var serverCommandHandlers = {
+	'CLOSE': getHandler(0, 0, handleClose),
 	'ME': getHandler(1, 1, handleMe),
 	'SERVER': getHandler(2, 0, handleServer),
 };
+
+function handleClose() {
+	if (this.activeWindow.type === 'channel') {
+		var server = this.activeWindow.server;
+		var channel = this.activeWindow.object;
+
+		server.removeChannel(channel.name);
+	} else if (this.activeWindow.type === 'query') {
+		var server = this.activeWindow.server;
+		var query = this.activeWindow.object;
+
+		server.removeQuery(query.name);
+	} else {
+		this.showError('Can\'t /close this window');
+	}
+}
 
 function handleMe(text) {
 	if (this.activeWindow.type === 'channel' || this.activeWindow.type === 'query') {
@@ -13,7 +30,7 @@ function handleMe(text) {
 
 		this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
 	} else {
-		console.log('Unsupported window type for command');
+		this.showError('Can\'t /me in this window');
 	}
 }
 
@@ -30,6 +47,10 @@ function handleServer(host, port) {
 	}
 }
 
+function showError(text) {
+	this.user.applyStateChange('Error', this.activeWindow.windowPath, text);
+}
+
 function handleClientCommand(activeWindow, command, args) {
 	if (command in serverCommandHandlers) {
 		var handlerData = serverCommandHandlers[command];
@@ -42,7 +63,8 @@ function handleClientCommand(activeWindow, command, args) {
 				user: activeWindow.server.user,
 				server: activeWindow.server,
 				activeWindow: activeWindow,
-				numArgs: parsedArgs.length
+				numArgs: parsedArgs.length,
+				showError: showError
 			};
 
 			handler.apply(handlerThisObject, parsedArgs);

@@ -133,3 +133,11 @@ a:hover, a:active {
 	white-space: -o-pre-wrap;   /* Opera 7 */
 	word-wrap: break-word;      /* IE */
 }
+
+/* THEME */
+.activity_error {
+	color: red;
+}
+.activity_info {
+	color: darkgreen;
+}
