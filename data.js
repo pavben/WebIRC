@@ -59,6 +59,7 @@ function Server(serverSpec) {
 	this.host = serverSpec.host;
 	this.port = serverSpec.port;
 	this.ssl = serverSpec.ssl || false;
+	this.password = serverSpec.password || null;
 	this.nickname = null;
 	this.desiredNickname = serverSpec.desiredNickname;
 	this.username = serverSpec.username;
