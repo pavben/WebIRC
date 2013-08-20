@@ -136,7 +136,7 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 
 function handleKick(user, serverIdx, server, origin, channelName, targetName, kickMessage) {
 	if (origin !== null) {
-		withParsedTarget(targetName, function(target) {
+		utils.withParsedTarget(targetName, function(target) {
 			if (target instanceof ClientTarget) {
 				withChannel(server, channelName,
 					function(channel) {
@@ -207,7 +207,7 @@ function handleNick(user, serverIdx, server, origin, newNickname) {
 
 function handleNotice(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
-		withParsedTarget(targetName, function(target) {
+		utils.withParsedTarget(targetName, function(target) {
 			// here we have a valid target
 
 			var ctcpMessage = utils.parseCtcpMessage(text);
@@ -298,7 +298,7 @@ function handlePart(user, serverIdx, server, origin, channelName) {
 
 function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
-		withParsedTarget(targetName, function(target) {
+		utils.withParsedTarget(targetName, function(target) {
 			// here we have a valid target
 
 			var ctcpMessage = utils.parseCtcpMessage(text);
@@ -469,7 +469,7 @@ function processLineFromServer(line, server) {
 					server.user,
 					server.user.servers.indexOf(server), // serverIdx
 					server,
-					(parseResult.origin !== null ? parseOrigin(parseResult.origin) : null)
+					(parseResult.origin !== null ? utils.parseOrigin(parseResult.origin) : null)
 				].concat(parseResult.args)
 			);
 		} else {
@@ -542,39 +542,6 @@ function parseLine(line) {
 		command: command,
 		args: args
 	};
-}
-
-// note: we only validate the nick!user@host format and not what characters can or cannot be in each
-// on failure to match, we assume str is a server origin
-function parseOrigin(str) {
-	var match;
-	if (match = str.match(/^([^!]+?)!([^@]+?)@(.+?)$/)) {
-		return new ClientOrigin(match[1], match[2], match[3]);
-	} else {
-		return new ServerOrigin(str);
-	}
-}
-
-// Possible channel types: & # + ! . ~
-function parseTarget(str) {
-	if (str.match(/^[#&+.~][^\s]{1,99}|![A-Z0-5]{5}[^\s]{1,94}$/)) {
-		return new ChannelTarget(str);
-	} else if (str.match(/^[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*$/i)) { // http://stackoverflow.com/questions/5163255/regular-expression-to-match-irc-nickname
-		return new ClientTarget(str);
-	} else {
-		return null;
-	}
-}
-
-function withParsedTarget(targetName, successCallback, failureCallback) {
-	var maybeTarget = parseTarget(targetName);
-
-	if (maybeTarget instanceof ChannelTarget ||
-		maybeTarget instanceof ClientTarget) {
-		successCallback(maybeTarget);
-	} else {
-		failureCallback();
-	}
 }
 
 function processChatboxLine(line, user, parseCommands) {

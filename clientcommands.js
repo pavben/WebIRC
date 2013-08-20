@@ -3,6 +3,7 @@ var utils = require('./utils.js');
 var serverCommandHandlers = {
 	'CLOSE': getHandler(0, 0, handleClose),
 	'ME': getHandler(1, 1, handleMe),
+	'MSG': getHandler(2, 2, handleMsg),
 	'SERVER': getHandler(2, 0, handleServer),
 };
 
@@ -38,6 +39,38 @@ function handleMe(text) {
 	}
 }
 
+function handleMsg(targetName, text) {
+	var self = this;
+
+	utils.withParsedTarget(targetName, function(target) {
+		if (self.server.connected) {
+			if (target instanceof ClientTarget) {
+				var query = self.server.ensureQuery(target.nick);
+
+				self.user.applyStateChange('ChatMessage', query.toWindowPath(), self.server.nickname, text);
+
+				self.server.send('PRIVMSG ' + target.nick + ' :' + text);
+			} else if (target instanceof ChannelTarget) {
+				var channel = self.server.findChannel(target.name);
+
+				if (channel) {
+					self.user.applyStateChange('ChatMessage', channel.toWindowPath(), self.server.nickname, text);
+				} else {
+					self.showInfo('To ' + target.name + ': ' + text);
+				}
+
+				self.server.send('PRIVMSG ' + target.name + ' :' + text);
+			} else {
+				self.showError('Unsupported target');
+			}
+		} else {
+			self.showError('Not connected');
+		}
+	}, function() {
+		self.showError('Invalid target');
+	});
+}
+
 function handleServer(host, port) {
 	switch (this.numArgs) {
 		case 2:
@@ -55,6 +88,10 @@ function showError(text) {
 	this.user.applyStateChange('Error', this.activeWindow.windowPath, text);
 }
 
+function showInfo(text) {
+	this.user.applyStateChange('Info', this.activeWindow.windowPath, text);
+}
+
 function handleClientCommand(activeWindow, command, args) {
 	if (command in serverCommandHandlers) {
 		var handlerData = serverCommandHandlers[command];
@@ -68,7 +105,8 @@ function handleClientCommand(activeWindow, command, args) {
 				server: activeWindow.server,
 				activeWindow: activeWindow,
 				numArgs: parsedArgs.length,
-				showError: showError
+				showError: showError,
+				showInfo: showInfo
 			};
 
 			handler.apply(handlerThisObject, parsedArgs);
@@ -112,6 +150,11 @@ function parseArgs(numPossibleArgs, str) {
 	}
 
 	return parsedArgs;
+}
+
+function silentFailCallback() {
+	// silent fail (not so silent just yet)
+	console.log('silentFailCallback');
 }
 
 module.exports.handleClientCommand = handleClientCommand;

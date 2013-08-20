@@ -101,6 +101,21 @@ Server.prototype = {
 			this.user.setActiveWindow(channel.toWindowPath());
 		}
 	},
+	findChannel: function(channelName) {
+		var server = this;
+
+		var channelRet = null;
+
+		server.channels.some(function(channel, channelIdx) {
+			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+				channelRet = channel;
+
+				return true;
+			}
+		});
+
+		return channelRet;
+	},
 	removeChannel: function(channelName) {
 		var server = this;
 
