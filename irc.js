@@ -137,51 +137,49 @@ function handleKick(user, serverIdx, server, origin, channelName, targetName, ki
 	}
 }
 
-function handleMode(user, serverIdx, server, origin, target, modes) {
-	// is it a user mode or a channel mode?
-	if (utils.isNickname(target)) {
-		if (target === server.nickname) {
-			console.log('User mode change: ' + modes);
+function handleMode(user, serverIdx, server, origin, targetName, modes) {
+	utils.withParsedTarget(targetName, silentFail(function(target) {
+		if (target instanceof ClientTarget) {
+			// it's a user mode
+			if (target.nick.toLowerCase() === server.nickname.toLowerCase()) {
+				console.log('User mode change: ' + modes);
+			}
+		} else if (target instanceof ChannelTarget) {
+			// it's a channel mode
+			var handleModeArguments = arguments;
+
+			server.withChannel(target.name, silentFail(function(channel) {
+				var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
+
+				var parsedModes = mode.parseChannelModes(modes, modeArgs);
+
+				user.applyStateChange('ModeChange', channel.toWindowPath(), origin.getNickOrName(), modes, modeArgs);
+
+				if (parsedModes !== null) {
+					parsedModes.forEach(function(parsedMode) {
+						// a, h, o, q, v
+						var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
+
+						if (userlistEntryAttribute !== null) {
+							channel.withUserlistEntry(parsedMode.arg, silentFail(function(userlistEntry) {
+								if (parsedMode.plus) {
+									userlistEntry[userlistEntryAttribute] = true;
+								} else {
+									delete userlistEntry[userlistEntryAttribute];
+								}
+
+								user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), userlistEntry);
+							}));
+						}
+
+						// for now, we ignore all other modes
+					});
+				} else {
+					console.log('Unable to parse channel mode change!');
+				}
+			}));
 		}
-	} else {
-		var handleModeArguments = arguments;
-
-		server.withChannel(target, silentFail(function(channel) {
-			var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
-
-			var parsedModes = mode.parseChannelModes(modes, modeArgs);
-
-			var originStr = 'Unknown';
-			if (origin !== null) {
-				originStr = (origin instanceof ClientOrigin) ? origin.nick : origin.name;
-			}
-
-			user.applyStateChange('ModeChange', channel.toWindowPath(), originStr, modes, modeArgs);
-
-			if (parsedModes !== null) {
-				parsedModes.forEach(function(parsedMode) {
-					// a, h, o, q, v
-					var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
-
-					if (userlistEntryAttribute !== null) {
-						channel.withUserlistEntry(parsedMode.arg, silentFail(function(userlistEntry) {
-							if (parsedMode.plus) {
-								userlistEntry[userlistEntryAttribute] = true;
-							} else {
-								delete userlistEntry[userlistEntryAttribute];
-							}
-
-							user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), userlistEntry);
-						}));
-					}
-
-					// for now, we ignore all other modes
-				});
-			} else {
-				console.log('Unable to parse channel mode change!');
-			}
-		}));
-	}
+	}));
 }
 
 function handleNick(user, serverIdx, server, origin, newNickname) {

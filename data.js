@@ -83,7 +83,7 @@ Server.prototype = {
 		var server = this;
 
 		server.withChannel(channelName, check(
-			function() {
+			function(err) {
 				var channel = new Channel(channelName, true);
 
 				server.user.applyStateChange('AddChannel', server.getIndex(), channel);

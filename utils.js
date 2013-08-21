@@ -26,14 +26,6 @@ function installGlobals() {
 	});
 }
 
-function isNickname(name) {
-	if (name.match(/^[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*$/i)) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
 function parseCtcpMessage(str) {
 	var match;
 	if (match = str.match(/^\u0001([^\s]+)(?: (.+))?\u0001$/)) {
@@ -87,12 +79,11 @@ function withParsedTarget(targetName, cb) {
 		maybeTarget instanceof ClientTarget) {
 		cb(null, maybeTarget);
 	} else {
-		cb(new Error('Failed to parse as a channel or client target:', targetName));
+		cb(new Error('Failed to parse as a channel or client target: ' + targetName));
 	}
 }
 
 exports.installGlobals = installGlobals;
-exports.isNickname = isNickname;
 exports.parseCtcpMessage = parseCtcpMessage;
 exports.toCtcp = toCtcp;
 exports.parseOrigin = parseOrigin;
