@@ -2,6 +2,7 @@ var utils = require('./utils.js');
 
 var serverCommandHandlers = {
 	'CLOSE': getHandler(0, 0, handleClose),
+	'HOP': getHandler(0, 0, handleHop),
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
 	'SERVER': getHandler(2, 0, handleServer),
@@ -13,6 +14,8 @@ function handleClose() {
 		var channel = this.activeWindow.object;
 
 		if (channel.inChannel) {
+			channel.rejoining = false;
+
 			server.send('PART ' + channel.name);
 		} else {
 			server.removeChannel(channel.name);
@@ -24,6 +27,16 @@ function handleClose() {
 		server.removeQuery(query.name);
 	} else {
 		this.showError('Can\'t /close this window');
+	}
+}
+
+function handleHop() {
+	if (this.activeWindow.type === 'channel') {
+		var channel = this.activeWindow.object;
+
+		channel.rejoin();
+	} else {
+		this.showError('Use /hop in a channel to rejoin');
 	}
 }
 

@@ -79,11 +79,14 @@ Server.prototype = {
 	reconnect: function() {
 		irc.reconnectServer(this);
 	},
-	joinChannel: function(channelName) {
+	joinedChannel: function(channelName) {
 		var server = this;
 
+		// TODO: use withChannel
 		var exists = server.channels.some(function(channel) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+				channel.rejoining = false;
+
 				server.user.applyStateChange('RejoinChannel', channel.toWindowPath());
 
 				return true;
@@ -186,6 +189,9 @@ function Channel(name, inChannel) {
 	this.activityLog = [];
 	this.inChannel = inChannel;
 
+	// server-only attributes
+	this.rejoining = false;
+
 	// these are set automatically by the 'add' functions
 	this.server = null;
 }
@@ -195,6 +201,8 @@ Channel.prototype = {
 		this.server.user.applyStateChange('Info', this.toWindowPath(), 'Attempting to rejoin channel...');
 
 		if (this.inChannel) {
+			this.rejoining = true;
+
 			this.server.send('PART ' + this.name);
 		}
 

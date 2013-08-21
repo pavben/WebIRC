@@ -115,7 +115,7 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 		// if the nickname of the joiner matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've joined the channel
-			server.joinChannel(channelName);
+			server.joinedChannel(channelName);
 		} else {
 			// someone joined one of the channels we should be in
 			withChannel(server, channelName,
@@ -277,7 +277,16 @@ function handlePart(user, serverIdx, server, origin, channelName) {
 		// if the nickname of the leaver matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've left the channel
-			server.removeChannel(channelName);
+			withChannel(server, channelName,
+				function(channel) {
+					if (channel.rejoining) {
+						channel.rejoining = false;
+					} else {
+						server.removeChannel(channelName);
+					}
+				},
+				silentFailCallback
+			);
 		} else {
 			// someone left one of the channels we should be in
 			withChannel(server, channelName,

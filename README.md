@@ -26,6 +26,7 @@ You can also:
 * Receive private messages and talk in them
 * Paste multi-line messages
 * Connect to IRC servers using SSL
+* /hop to rejoin the current channel
 
 ## Not yet supported
 * Sending/receiving files
