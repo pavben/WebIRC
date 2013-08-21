@@ -7,9 +7,10 @@
 	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
+	<script src="js/statechanges.js"></script>
+	<script src="js/autocomplete.js"></script>
 	<script src="js/webirc.js"></script>
 	<script src="js/socket.js"></script>
-	<script src="js/statechanges.js"></script>
 </head>
 <body ng-controller="AppCtrl" ng-style="{overflow: bodyOverflowY}">
 	<div id="outerwrapper" class="outerwrapper">
@@ -70,7 +71,7 @@
 			</div>
 		</div>
 		<div id="chatboxwrapper" class="chatboxwrapper">
-			<textarea id="chatbox" class="chatbox"></textarea>
+			<textarea chatbox id="chatbox" class="chatbox"></textarea>
 		</div>
 	</div>
 </body>

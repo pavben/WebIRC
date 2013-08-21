@@ -1,6 +1,6 @@
 # WebIRC
 
-This is a new concept for an always-on web-based IRC "client". WebIRC runs as a daemon (similar to a BNC), so you are always connected to your favorite IRC networks. Want to log in to the same session from home, work, and your mobile devices? Continue your conversations from anywhere with a modern web browser.
+This is a new concept for an always-on web-based IRC "client". WebIRC runs as a daemon (similar to a BNC), and is always connected to your favorite IRC networks. Seamlessly open the same session from home, work, and your mobile devices to continue exactly where you left off.
 
 ## Screenshot
 ![](http://img405.imageshack.us/img405/6546/y22g.png)
@@ -20,8 +20,9 @@ Then look at the console. Did it connect to your server? Visit `http://localhost
 You can also:
 
 * /join #channel, /part #channel
-* /close channels or private message windows
+* /close channels or private message windows (will later add an 'x' close on tabs)
 * Talk in channels
+* Smart tab auto-complete prioritizing recent activity
 * Receive private messages and talk in them
 * Paste multi-line messages
 * Connect to IRC servers using SSL

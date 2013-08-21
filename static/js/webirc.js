@@ -130,6 +130,35 @@ webircApp.directive('userlist', function() {
 	};
 });
 
+webircApp.directive('chatbox', function() {
+	return function(scope, element) {
+		var rawElement = element[0];
+
+		var autoComplete = initAutoComplete();
+
+		element.bind('keydown', function(e) {
+			if (e.keyCode === 9) { // tab
+				var activeWindow = sc.utils.getWindowByPath(scope.state, scope.state.currentActiveWindow);
+
+				var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeWindow);
+
+				console.log(autoCompleteResult);
+
+				if (autoCompleteResult) {
+					element.val(autoCompleteResult.chatboxValue);
+
+					rawElement.selectionStart = rawElement.selectionEnd = autoCompleteResult.cursorPos;
+				}
+
+				e.preventDefault();
+			} else {
+				// any other keypress resets the autocomplete
+				autoComplete.reset();
+			}
+		});
+	};
+});
+
 $(window).bind('load', function() {
 	initializeChatboxHandler();
 
@@ -247,3 +276,10 @@ function stripPx(text) {
 	return parseInt(text.replace('px', ''), 10);
 }
 
+function arrayRemoveDuplicates(arr) {
+	var seen = {};
+
+	return arr.filter(function(el) {
+		return seen[el] ? false : (seen[el] = true);
+	});
+}
