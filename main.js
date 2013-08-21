@@ -9,17 +9,17 @@ var https = require('https');
 var connect = require('connect');
 var cookie = require('cookie');
 var io = require('socket.io');
-var config = require('./config.js')
 var irc = require('./irc.js');
 
 var sessionKey = 'sid';
 
-// TODO: pass the config object into the success callback from config.load
-config.load('config.json', check(
+readConfig('config.json', check(
 	function(err) {
 		console.log('Error reading config.json:', err);
 	},
-	function() {
+	function(config) {
+		console.log('Read config', config);
+
 		var sessionStore = new express.session.MemoryStore();
 
 		var app = express();
@@ -28,19 +28,19 @@ config.load('config.json', check(
 			app.use(express.cookieParser());
 			app.use(express.session({
 				store: sessionStore,
-				secret: config.data.sessionSecret,
+				secret: config.sessionSecret,
 				maxAge: 24 * 60 * 60,
 				key: sessionKey
 			}));
 			app.use(express.static(__dirname + '/static'));
 		});
 
-		if (config.data.http && config.data.http.port) {
-			createWebServer(config.data.http);
+		if (config.http && config.http.port) {
+			createWebServer(config.http);
 		}
 
-		if (config.data.https && config.data.https.port) {
-			createWebServer(config.data.https);
+		if (config.https && config.https.port) {
+			createWebServer(config.https);
 		}
 
 		function createWebServer(spec) {
@@ -62,7 +62,7 @@ config.load('config.json', check(
 				sio.set('log level', 2);
 
 				sio.set('authorization', function(data, accept) {
-					var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.data.sessionSecret);
+					var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.sessionSecret);
 
 					if (sessionKey in cookies) {
 						sessionStore.get(cookies[sessionKey], function(err, session) {
@@ -205,7 +205,7 @@ config.load('config.json', check(
 			});
 		}
 
-		config.data.users.forEach(function(user) {
+		config.users.forEach(function(user) {
 			var newUser = new User(user.username, user.password);
 
 			user.servers.forEach(function(serverSpec) {
@@ -219,3 +219,15 @@ config.load('config.json', check(
 	}
 ));
 
+function readConfig(configFilePath, cb) {
+	fs.readFile(configFilePath, check(cb, function(data) {
+		var config = null;
+		try {
+			config = JSON.parse(data);
+		} catch(err) {
+			cb(err);
+		}
+
+		cb(null, config);
+	}));
+}
