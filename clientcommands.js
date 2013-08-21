@@ -50,6 +50,8 @@ function handleMsg(targetName, text) {
 				self.user.applyStateChange('ChatMessage', query.toWindowPath(), self.server.nickname, text);
 
 				self.server.send('PRIVMSG ' + target.nick + ' :' + text);
+
+				self.user.setActiveWindow(query.toWindowPath());
 			} else if (target instanceof ChannelTarget) {
 				var channel = self.server.findChannel(target.name);
 
