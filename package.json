@@ -1,18 +1,18 @@
 {
-  "name": "WebIRC",
-  "version": "0.0.1",
-  "author": "Pavel Bennett",
-  "dependencies": {
-    "connect": ">= 2.7.0",
-    "cookie": "*",
-    "express": ">= 3.0.3",
-    "socket.io": ">= 0.9.11"
-  },
-  "engines": {
-    "node": ">= 0.8"
-  },
-  "repository" : {
-    "type" : "git",
-    "url" : "http://github.com/pavben/WebIRC.git"
-  }
+	"name": "WebIRC",
+	"version": "0.0.1",
+	"author": "Pavel Bennett",
+	"dependencies": {
+		"connect": ">= 2.7.0",
+		"cookie": "*",
+		"express": ">= 3.0.3",
+		"socket.io": ">= 0.9.11"
+	},
+	"engines": {
+		"node": ">= 0.8"
+	},
+	"repository": {
+		"type": "git",
+		"url": "http://github.com/pavben/WebIRC.git"
+	}
 }

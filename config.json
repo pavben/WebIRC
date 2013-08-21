@@ -7,12 +7,19 @@
 			"port": 6667,
 			"ssl": false,
 			"password": null,
-			"desiredNickname": "webirc123",
+			"desiredNickname": "webirc",
 			"username": "webirc",
 			"realName": "webirc",
-			"desiredChannels": ["#webirc-test"]
+			"desiredChannels": ["#webirc"]
 		}]
 	}],
-	"httpListenPort": 28081,
-	"sessionSecret": "notsecret"
+	"http": {
+		"port": 28080
+	},
+	"https": {
+		"port": null,
+		"keyFile": "./key.pem",
+		"certFile": "./cert.pem"
+	},
+	"sessionSecret": "notsosecret"
 }

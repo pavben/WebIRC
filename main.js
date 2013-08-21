@@ -2,8 +2,9 @@ require('./data.js').install();
 
 var assert = require('assert');
 var express = require('express');
-var app = express();
+var fs = require('fs');
 var http = require('http');
+var https = require('https');
 var connect = require('connect');
 var cookie = require('cookie');
 var io = require('socket.io');
@@ -12,12 +13,15 @@ var irc = require('./irc.js');
 
 var sessionKey = 'sid';
 
+// TODO: pass the config object into the success callback from config.load
 config.load('config.json', check(
 	function(err) {
 		console.log('Error reading config.json:', err);
 	},
 	function() {
 		var sessionStore = new express.session.MemoryStore();
+
+		var app = express();
 
 		app.configure(function() {
 			app.use(express.cookieParser());
@@ -30,86 +34,105 @@ config.load('config.json', check(
 			app.use(express.static(__dirname + '/static'));
 		});
 
-		var server = http.createServer(app);
-		server.listen(config.data.httpListenPort);
-		var sio = io.listen(server);
+		if (config.data.http && config.data.http.port) {
+			createWebServer(config.data.http);
+		}
 
-		sio.configure(function() {
-			// TODO LOW: experiment with other socket.io transports and make sure they all pass sid correctly
-			sio.set('log level', 2);
+		if (config.data.https && config.data.https.port) {
+			createWebServer(config.data.https);
+		}
 
-			sio.set('authorization', function(data, accept) {
-				var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.data.sessionSecret);
+		function createWebServer(spec) {
+			var server;
+			if (spec.keyFile && spec.certFile) {
+				server = https.createServer({
+					key: fs.readFileSync(spec.keyFile),
+					cert: fs.readFileSync(spec.certFile),
+					rejectUnauthorized: false
+				}, app);
+			} else {
+				server = http.createServer(app);
+			}
+			server.listen(spec.port);
+			var sio = io.listen(server);
 
-				if (sessionKey in cookies) {
-					sessionStore.get(cookies[sessionKey], function(err, session) {
-						// TODO LOW: if the session cannot be looked up, tell the client to refresh, creating a new session (implicitly, of course)
-						if (session && !err) {
-							data.sessionId = cookies[sessionKey];
+			sio.configure(function() {
+				// TODO LOW: experiment with other socket.io transports and make sure they all pass sid correctly
+				sio.set('log level', 2);
 
-							accept(null, true);
+				sio.set('authorization', function(data, accept) {
+					var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.data.sessionSecret);
+
+					if (sessionKey in cookies) {
+						sessionStore.get(cookies[sessionKey], function(err, session) {
+							// TODO LOW: if the session cannot be looked up, tell the client to refresh, creating a new session (implicitly, of course)
+							if (session && !err) {
+								data.sessionId = cookies[sessionKey];
+
+								accept(null, true);
+							} else {
+								accept('Session lookup failed -- invalid session ID received from client during WebSocket authorization', false);
+							}
+						});
+					} else {
+						accept('No sid in cookie', false);
+					}
+				});
+
+				sio.sockets.on('connection', function(socket) {
+					console.log('A socket with sessionId ' + socket.handshake.sessionId + ' connected.');
+
+					var sessionId = socket.handshake.sessionId;
+
+					var user = null;
+
+					users.some(function(currentUser) {
+						// if socket.handshake.sessionId is in user.loggedInSessions
+						// if (user.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
+						if (true) {
+							user = currentUser;
+							return true;
 						} else {
-							accept('Session lookup failed -- invalid session ID received from client during WebSocket authorization', false);
+							return false;
 						}
 					});
-				} else {
-					accept('No sid in cookie', false);
-				}
-			});
 
-			sio.sockets.on('connection', function(socket) {
-				console.log('A socket with sessionId ' + socket.handshake.sessionId + ' connected.');
-
-				var sessionId = socket.handshake.sessionId;
-
-				var user = null;
-
-				users.some(function(currentUser) {
-					// if socket.handshake.sessionId is in user.loggedInSessions
-					// if (user.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
-					if (true) {
-						user = currentUser;
-						return true;
-					} else {
-						return false;
-					}
-				});
-
-				// see if this socket belongs to a user who is already logged in
-				if (user !== null) {
-					handleSuccessfulLogin(user, socket);
-				} else {
-					socket.emit('NeedLogin', {});
-				}
-
-				socket.on('Login', function(data) {
-					// only process Login if the user for this socket is null
-					if (user === null) {
-						// TODO: verify login
-
-						// add sessionId to loggedInSessions for user
-
-						user.loggedInSessions.push(sessionId);
-
-						handleSuccessfulLogin(user, socket);
-					}
-				});
-
-				socket.on('disconnect', function() {
-					// TODO LOW: support connection timeouts
-					console.log('WebSocket disconnected');
-
-					// remove the socket from activeWebSockets of the user
-					// nothing to remove if the socket was not yet logged in
+					// see if this socket belongs to a user who is already logged in
 					if (user !== null) {
-						var socketIndex = user.activeWebSockets.indexOf(socket);
-						if (socketIndex !== -1) {
-							user.activeWebSockets.splice(socketIndex, 1);
-						}
+						handleSuccessfulLogin(user, socket);
+					} else {
+						socket.emit('NeedLogin', {});
 					}
+
+					socket.on('Login', function(data) {
+						// only process Login if the user for this socket is null
+						if (user === null) {
+							// TODO: verify login
+
+							// add sessionId to loggedInSessions for user
+
+							user.loggedInSessions.push(sessionId);
+
+							handleSuccessfulLogin(user, socket);
+						}
+					});
+
+					socket.on('disconnect', function() {
+						// TODO LOW: support connection timeouts
+						console.log('WebSocket disconnected');
+
+						// remove the socket from activeWebSockets of the user
+						// nothing to remove if the socket was not yet logged in
+						if (user !== null) {
+							var socketIndex = user.activeWebSockets.indexOf(socket);
+							if (socketIndex !== -1) {
+								user.activeWebSockets.splice(socketIndex, 1);
+							}
+						}
+					});
 				});
 			});
-		});
+		}
 
 		function handleSuccessfulLogin(user, socket) {
 			user.activeWebSockets.push(socket);
