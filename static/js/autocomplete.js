@@ -17,8 +17,8 @@ function initAutoComplete() {
 						var channel = activeWindow.object;
 
 						autoCompleteSuggestions = getAutoCompleteSuggestionsForChannel(server, channel);
-					} else {
-						autoCompleteSuggestions = getGeneralAutoCompleteSuggestions(server);
+					} else if (activeWindow.type === 'server' || activeWindow.type === 'query') {
+						autoCompleteSuggestions = getGeneralAutoCompleteSuggestions(server, activeWindow.object.activityLog);
 					}
 
 					if (autoCompleteSuggestions && autoCompleteSuggestions.length > 0) {
@@ -99,8 +99,32 @@ function initAutoComplete() {
 		return ret;
 	}
 
-	function getGeneralAutoCompleteSuggestions(server) {
-		var suggestions = getNamesOfMyChannels(server).concat(getNamesOfMyQueries(server));
+	function getAutoCompleteSuggestionsForChannel(server, channel) {
+		// current channel
+		var suggestions = [channel.name];
+
+		// concat the rest of the channels
+		suggestions = suggestions.concat(getNamesOfMyChannels(server));
+
+		// append the nicks from activities and then the userlist
+		suggestions = suggestions.concat(getNicknamesFromActivities(channel.activityLog), channel.userlist.map(function(userlistEntry) {
+			return userlistEntry.nick;
+		}));
+
+		// now we have the suggestions in the order we want
+
+		// remove duplicates, preserving the order
+		suggestions = arrayRemoveDuplicates(suggestions);
+
+		return suggestions;
+	}
+
+	function getGeneralAutoCompleteSuggestions(server, activityLog) {
+		var suggestions = [].concat(
+			getNicknamesFromActivities(activityLog),
+			getNamesOfMyChannels(server),
+			getNamesOfMyQueries(server)
+		);
 
 		return suggestions;
 	}
@@ -117,33 +141,15 @@ function initAutoComplete() {
 		});
 	}
 
-	function getAutoCompleteSuggestionsForChannel(server, channel) {
-		// current channel
-		var suggestions = [channel.name];
-
-		// concat the rest of the channels
-		suggestions = suggestions.concat(getNamesOfMyChannels(server));
-
+	function getNicknamesFromActivities(activityLog) {
 		// use the last 100 activities
-		var recentActivities = channel.activityLog.slice(-100);
+		var recentActivities = activityLog.slice(-100);
 
 		// most recent first
 		recentActivities.reverse();
 
 		// get nicknames from activities (note the flattening of arrays)
-		var nicksFromActivities = Array.prototype.concat.apply([], recentActivities.map(getNicknamesFromActivity));
-
-		// append the nicks from activities and then the userlist
-		suggestions = suggestions.concat(nicksFromActivities, channel.userlist.map(function(userlistEntry) {
-			return userlistEntry.nick;
-		}));
-
-		// now we have the suggestions in the order we want
-
-		// remove duplicates, preserving the order
-		suggestions = arrayRemoveDuplicates(suggestions);
-
-		return suggestions;
+		return Array.prototype.concat.apply([], recentActivities.map(getNicknamesFromActivity));
 
 		function getNicknamesFromActivity(activity) {
 			switch (activity.type) {
