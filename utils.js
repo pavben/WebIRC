@@ -61,10 +61,11 @@ function parseOrigin(str) {
 
 // Possible channel types: & # + ! . ~
 function parseTarget(str) {
+	var match;
 	if (str.match(/^[#&+.~][^\s]{1,99}|![A-Z0-5]{5}[^\s]{1,94}$/)) {
 		return new ChannelTarget(str);
-	} else if (str.match(/^[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*$/i)) { // http://stackoverflow.com/questions/5163255/regular-expression-to-match-irc-nickname
-		return new ClientTarget(str);
+	} else if (match = str.match(/^([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)(?:@([^@]+))?$/i)) {
+		return new ClientTarget(match[1], match[2]);
 	} else {
 		return null;
 	}

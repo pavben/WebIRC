@@ -45,13 +45,18 @@ function handleMsg(targetName, text) {
 	utils.withParsedTarget(targetName, function(target) {
 		if (self.server.connected) {
 			if (target instanceof ClientTarget) {
-				var query = self.server.ensureQuery(target.nick);
+				if (!target.server) {
+					var query = self.server.ensureQuery(target.toString());
 
-				self.user.applyStateChange('ChatMessage', query.toWindowPath(), self.server.nickname, text);
+					self.user.applyStateChange('ChatMessage', query.toWindowPath(), self.server.nickname, text);
 
-				self.server.send('PRIVMSG ' + target.nick + ' :' + text);
+					self.user.setActiveWindow(query.toWindowPath());
+				} else {
+					self.showInfo('To ' + target.toString() + ': ' + text);
+				}
 
-				self.user.setActiveWindow(query.toWindowPath());
+				self.server.send('PRIVMSG ' + target.toString() + ' :' + text);
+
 			} else if (target instanceof ChannelTarget) {
 				var channel = self.server.findChannel(target.name);
 

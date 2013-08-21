@@ -262,9 +262,26 @@ ServerOrigin.prototype = {
 function ChannelTarget(name) {
 	this.name = name;
 }
+ChannelTarget.prototype = {
+	toString: function() {
+		return this.name;
+	}
+}
 
-function ClientTarget(nick) {
+function ClientTarget(nick, server) {
 	this.nick = nick;
+	this.server = server || null;
+}
+ClientTarget.prototype = {
+	toString: function() {
+		var ret = this.nick;
+
+		if (this.server) {
+			ret += '@' + this.server;
+		}
+
+		return ret;
+	}
 }
 
 var users = [];
