@@ -21,13 +21,15 @@ function initAutoComplete() {
 						autoCompleteSuggestions = getGeneralAutoCompleteSuggestions(server);
 					}
 
-					activeAutoComplete = {
-						originalChatboxValue: chatboxValue,
-						prefix: prefixResult.prefix,
-						prefixStartIndex: prefixResult.prefixStartIndex,
-						suggestions: autoCompleteSuggestions,
-						index: 0
-					};
+					if (autoCompleteSuggestions && autoCompleteSuggestions.length > 0) {
+						activeAutoComplete = {
+							originalChatboxValue: chatboxValue,
+							prefix: prefixResult.prefix,
+							prefixStartIndex: prefixResult.prefixStartIndex,
+							suggestions: autoCompleteSuggestions,
+							index: 0
+						};
+					}
 				}
 			}
 
