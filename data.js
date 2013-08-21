@@ -82,42 +82,44 @@ Server.prototype = {
 	joinedChannel: function(channelName) {
 		var server = this;
 
-		// TODO: use withChannel
-		var exists = server.channels.some(function(channel) {
-			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+		server.withChannel(channelName, check(
+			function() {
+				var channel = new Channel(channelName, true);
+
+				server.user.applyStateChange('AddChannel', server.getIndex(), channel);
+
+				// now apply the parameters that should not be sent
+				channel.server = server;
+
+				server.user.setActiveWindow(channel.toWindowPath());
+			},
+			function(channel) {
 				channel.rejoining = false;
 
 				server.user.applyStateChange('RejoinChannel', channel.toWindowPath());
-
-				return true;
 			}
-		});
-
-		if (!exists) {
-			var channel = new Channel(channelName, true);
-
-			this.user.applyStateChange('AddChannel', this.getIndex(), channel);
-
-			// now apply the parameters that should not be sent
-			channel.server = this;
-
-			this.user.setActiveWindow(channel.toWindowPath());
-		}
+		));
 	},
-	findChannel: function(channelName) {
-		var server = this;
+	withChannel: function(channelName, cb) {
+		var matchedChannel;
 
-		var channelRet = null;
-
-		server.channels.some(function(channel, channelIdx) {
+		this.channels.some(function(channel) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				channelRet = channel;
+				matchedChannel = channel;
 
 				return true;
 			}
 		});
 
-		return channelRet;
+		if (matchedChannel) {
+			cb(null, matchedChannel);
+		} else {
+			var err = new Error('No matching channel');
+
+			err.code = 'ENOENT';
+
+			cb(err);
+		}
 	},
 	removeChannel: function(channelName) {
 		var server = this;
@@ -207,6 +209,27 @@ Channel.prototype = {
 		}
 
 		this.server.send('JOIN ' + this.name);
+	},
+	withUserlistEntry: function(nick, cb) {
+		var matchedUserlistEntry;
+
+		this.userlist.some(function(userlistEntry) {
+			if (userlistEntry.name.toLowerCase() === nick.toLowerCase()) {
+				matchedUserlistEntry = userlistEntry;
+
+				return true;
+			}
+		});
+
+		if (matchedUserlistEntry) {
+			cb(null, matchedUserlistEntry);
+		} else {
+			var err = new Error('No matching userlist entry');
+
+			err.code = 'ENOENT';
+
+			cb(err);
+		}
 	},
 	getIndex: function() {
 		return this.server.channels.indexOf(this);

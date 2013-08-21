@@ -55,7 +55,9 @@ function handleMe(text) {
 function handleMsg(targetName, text) {
 	var self = this;
 
-	utils.withParsedTarget(targetName, function(target) {
+	utils.withParsedTarget(targetName, check(function(err) {
+		self.showError('Invalid target');
+	}, function(target) {
 		if (self.server.connected) {
 			if (target instanceof ClientTarget) {
 				if (!target.server) {
@@ -86,9 +88,7 @@ function handleMsg(targetName, text) {
 		} else {
 			self.showError('Not connected');
 		}
-	}, function() {
-		self.showError('Invalid target');
-	});
+	}));
 }
 
 function handleServer(host, port) {

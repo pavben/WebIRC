@@ -1,4 +1,5 @@
 require('./data.js').install();
+require('./utils.js').installGlobals();
 
 var assert = require('assert');
 var express = require('express');

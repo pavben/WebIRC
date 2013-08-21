@@ -1,5 +1,3 @@
-require('./utils.js').installGlobals();
-
 var fs = require('fs');
 
 exports.data = {};

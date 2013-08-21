@@ -8,6 +8,16 @@ function installGlobals() {
 					errorHandler.call(global, err);
 				}
 			}
+		},
+		silentFail: function(okHandler) {
+			return function(err, val) {
+				if (!err) {
+					okHandler.call(global, val);
+				} else {
+					// not so silent right now
+					console.log('silentFail caught error:', err);
+				}
+			}
 		}
 	};
 
@@ -47,7 +57,6 @@ function toCtcp(command, args) {
 	return ret;
 }
 
-
 // note: we only validate the nick!user@host format and not what characters can or cannot be in each
 // on failure to match, we assume str is a server origin
 function parseOrigin(str) {
@@ -71,14 +80,14 @@ function parseTarget(str) {
 	}
 }
 
-function withParsedTarget(targetName, successCallback, failureCallback) {
+function withParsedTarget(targetName, cb) {
 	var maybeTarget = parseTarget(targetName);
 
 	if (maybeTarget instanceof ChannelTarget ||
 		maybeTarget instanceof ClientTarget) {
-		successCallback(maybeTarget);
+		cb(null, maybeTarget);
 	} else {
-		failureCallback();
+		cb(new Error('Failed to parse as a channel or client target:', targetName));
 	}
 }
 

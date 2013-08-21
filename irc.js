@@ -49,23 +49,20 @@ function handle001(user, serverIdx, server, origin, myNickname, text) {
 }
 
 function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {
-	withChannel(server, channelName,
-		function(channel) {
-			// build a list of UserlistEntry
-			var userlistEntries = [];
+	server.withChannel(channelName, silentFail(function(channel) {
+		// build a list of UserlistEntry
+		var userlistEntries = [];
 
-			namesList.trim().split(' ').forEach(function(nickWithFlags) {
-				var userlistEntryMaybe = parseUserlistEntry(nickWithFlags);
+		namesList.trim().split(' ').forEach(function(nickWithFlags) {
+			var userlistEntryMaybe = parseUserlistEntry(nickWithFlags);
 
-				if (userlistEntryMaybe !== null) {
-					userlistEntries.push(userlistEntryMaybe);
-				}
-			});
+			if (userlistEntryMaybe !== null) {
+				userlistEntries.push(userlistEntryMaybe);
+			}
+		});
 
-			user.applyStateChange('NamesUpdateAdd', channel.toWindowPath(), userlistEntries);
-		},
-		silentFailCallback
-	);
+		user.applyStateChange('NamesUpdateAdd', channel.toWindowPath(), userlistEntries);
+	}));
 }
 
 // &owner, @op, %halfop, +voice, regular
@@ -98,12 +95,9 @@ function parseUserlistEntry(nickWithFlags) {
 }
 
 function handle366(user, serverIdx, server, origin, myNickname, channelName) {
-	withChannel(server, channelName,
-		function(channel) {
-			user.applyStateChange('NamesUpdate', channel.toWindowPath());
-		},
-		silentFailCallback
-	);
+	server.withChannel(channelName, silentFail(function(channel) {
+		user.applyStateChange('NamesUpdate', channel.toWindowPath());
+	}));
 }
 
 function handlePing(user, serverIdx, server, origin, arg) {
@@ -118,34 +112,28 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 			server.joinedChannel(channelName);
 		} else {
 			// someone joined one of the channels we should be in
-			withChannel(server, channelName,
-				function(channel) {
-					var newUserlistEntry = new UserlistEntry();
+			server.withChannel(channelName, silentFail(function(channel) {
+				var newUserlistEntry = new UserlistEntry();
 
-					newUserlistEntry.nick = origin.nick;
-					newUserlistEntry.user = origin.user;
-					newUserlistEntry.host = origin.host;
+				newUserlistEntry.nick = origin.nick;
+				newUserlistEntry.user = origin.user;
+				newUserlistEntry.host = origin.host;
 
-					user.applyStateChange('Join', channel.toWindowPath(), newUserlistEntry);
-				},
-				silentFailCallback
-			);
+				user.applyStateChange('Join', channel.toWindowPath(), newUserlistEntry);
+			}));
 		}
 	}
 }
 
 function handleKick(user, serverIdx, server, origin, channelName, targetName, kickMessage) {
 	if (origin !== null) {
-		utils.withParsedTarget(targetName, function(target) {
+		utils.withParsedTarget(targetName, silentFail(function(target) {
 			if (target instanceof ClientTarget) {
-				withChannel(server, channelName,
-					function(channel) {
-						user.applyStateChange('Kick', channel.toWindowPath(), origin.getNickOrName(), target.nick, kickMessage);
-					},
-					silentFailCallback
-				);
+				server.withChannel(channelName, silentFail(function(channel) {
+					user.applyStateChange('Kick', channel.toWindowPath(), origin.getNickOrName(), target.nick, kickMessage);
+				}));
 			}
-		});
+		}));
 	}
 }
 
@@ -158,44 +146,41 @@ function handleMode(user, serverIdx, server, origin, target, modes) {
 	} else {
 		var handleModeArguments = arguments;
 
-		withChannel(server, target,
-			function(channel) {
-				var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
+		server.withChannel(target, silentFail(function(channel) {
+			var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
 
-				var parsedModes = mode.parseChannelModes(modes, modeArgs);
+			var parsedModes = mode.parseChannelModes(modes, modeArgs);
 
-				var originStr = 'Unknown';
-				if (origin !== null) {
-					originStr = (origin instanceof ClientOrigin) ? origin.nick : origin.name;
-				}
+			var originStr = 'Unknown';
+			if (origin !== null) {
+				originStr = (origin instanceof ClientOrigin) ? origin.nick : origin.name;
+			}
 
-				user.applyStateChange('ModeChange', channel.toWindowPath(), originStr, modes, modeArgs);
+			user.applyStateChange('ModeChange', channel.toWindowPath(), originStr, modes, modeArgs);
 
-				if (parsedModes !== null) {
-					parsedModes.forEach(function(parsedMode) {
-						// a, h, o, q, v
-						var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
+			if (parsedModes !== null) {
+				parsedModes.forEach(function(parsedMode) {
+					// a, h, o, q, v
+					var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
 
-						if (userlistEntryAttribute !== null) {
-							withUserlistEntry(channel, parsedMode.arg, function(userlistEntry) {
-								if (parsedMode.plus) {
-									userlistEntry[userlistEntryAttribute] = true;
-								} else {
-									delete userlistEntry[userlistEntryAttribute];
-								}
+					if (userlistEntryAttribute !== null) {
+						channel.withUserlistEntry(parsedMode.arg, silentFail(function(userlistEntry) {
+							if (parsedMode.plus) {
+								userlistEntry[userlistEntryAttribute] = true;
+							} else {
+								delete userlistEntry[userlistEntryAttribute];
+							}
 
-								user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), userlistEntry);
-							}, silentFailCallback);
-						}
+							user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), userlistEntry);
+						}));
+					}
 
-						// for now, we ignore all other modes
-					});
-				} else {
-					console.log('Unable to parse channel mode change!');
-				}
-			},
-			silentFailCallback
-		);
+					// for now, we ignore all other modes
+				});
+			} else {
+				console.log('Unable to parse channel mode change!');
+			}
+		}));
 	}
 }
 
@@ -207,7 +192,7 @@ function handleNick(user, serverIdx, server, origin, newNickname) {
 
 function handleNotice(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
-		utils.withParsedTarget(targetName, function(target) {
+		utils.withParsedTarget(targetName, silentFail(function(target) {
 			// here we have a valid target
 
 			var ctcpMessage = utils.parseCtcpMessage(text);
@@ -218,12 +203,9 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 			} else {
 				// not CTCP reply, but a regular notice
 				if (target instanceof ChannelTarget) {
-					withChannel(server, target.name,
-						function(channel) {
-							user.applyStateChange('Notice', channel.toWindowPath(), origin.getNickOrName(), text);
-						},
-						silentFailCallback
-					);
+					server.withChannel(target.name, silentFail(function(channel) {
+						user.applyStateChange('Notice', channel.toWindowPath(), origin.getNickOrName(), text);
+					}));
 				} else if (target instanceof ClientTarget) {
 					if (server.nickname !== null) {
 						if (server.nickname === target.nick) {
@@ -245,7 +227,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 					}
 				}
 			}
-		}, silentFailCallback);
+		}));
 	}
 }
 
@@ -260,54 +242,36 @@ function handleQuit(user, serverIdx, server, origin, quitMessage) {
 	}
 }
 
-function withUserlistEntry(channel, nick, successCallback, failureCallback) {
-	var matched = channel.userlist.filter(function(userlistEntry) {
-		return (userlistEntry.nick === nick);
-	});
-
-	if (matched.length === 1) {
-		successCallback(matched.shift());
-	} else {
-		failureCallback();
-	}
-}
-
 function handlePart(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the leaver matches ours
 		if (server.nickname !== null && server.nickname === origin.nick) {
 			// the server is confirming that we've left the channel
-			withChannel(server, channelName,
-				function(channel) {
-					if (channel.rejoining) {
-						channel.rejoining = false;
-					} else {
-						server.removeChannel(channelName);
-					}
-				},
-				silentFailCallback
-			);
+			server.withChannel(channelName, silentFail(function(channel) {
+				if (channel.rejoining) {
+					channel.rejoining = false;
+				} else {
+					server.removeChannel(channelName);
+				}
+			}));
 		} else {
 			// someone left one of the channels we should be in
-			withChannel(server, channelName,
-				function(channel) {
-					var who = new UserlistEntry();
+			server.withChannel(channelName, silentFail(function(channel) {
+				var who = new UserlistEntry();
 
-					who.nick = origin.nick;
-					who.user = origin.user;
-					who.host = origin.host;
+				who.nick = origin.nick;
+				who.user = origin.user;
+				who.host = origin.host;
 
-					user.applyStateChange('Part', channel.toWindowPath(), who);
-				},
-				silentFailCallback
-			);
+				user.applyStateChange('Part', channel.toWindowPath(), who);
+			}));
 		}
 	}
 }
 
 function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
-		utils.withParsedTarget(targetName, function(target) {
+		utils.withParsedTarget(targetName, silentFail(function(target) {
 			// here we have a valid target
 
 			var ctcpMessage = utils.parseCtcpMessage(text);
@@ -317,12 +281,9 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 			} else {
 				// not CTCP, but a regular message
 				if (target instanceof ChannelTarget) {
-					withChannel(server, target.name,
-						function(channel) {
-							user.applyStateChange('ChatMessage', channel.toWindowPath(), origin.getNickOrName(), text);
-						},
-						silentFailCallback
-					);
+					server.withChannel(target.name, silentFail(function(channel) {
+						user.applyStateChange('ChatMessage', channel.toWindowPath(), origin.getNickOrName(), text);
+					}));
 				} else if (target instanceof ClientTarget) {
 					if (server.nickname !== null && server.nickname === target.nick) {
 						// we are the recipient
@@ -332,7 +293,7 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 					}
 				}
 			}
-		}, silentFailCallback);
+		}));
 	}
 }
 
@@ -340,12 +301,9 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
 			if (target instanceof ChannelTarget) {
-				withChannel(server, target.name,
-					function(channel) {
-						server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
-					},
-					silentFailCallback
-				);
+				server.withChannel(target.name, silentFail(function(channel) {
+					server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
+				}));
 			} else if (target instanceof ClientTarget) {
 				if (server.nickname !== null && server.nickname === target.nick) {
 					// we are the recipient
@@ -358,27 +316,6 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 			console.log('Received CTCP ' + ctcpMessage.command + ' from ' + origin.getNickOrName());
 		}
 	}
-}
-
-function withChannel(server, channelName, successCallback, failureCallback) {
-	var success = server.channels.some(function(channel) {
-		if (channel.name === channelName) {
-			successCallback(channel);
-
-			return true;
-		} else {
-			return false;
-		}
-	});
-
-	if (!success) {
-		failureCallback();
-	}
-}
-
-function silentFailCallback() {
-	// silent fail (not so silent just yet)
-	console.log('silentFailCallback');
 }
 
 exports.run = function() {
