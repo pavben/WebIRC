@@ -22,7 +22,7 @@ You can also:
 * /join #channel, /part #channel
 * /close channels or private message windows (will later add an 'x' close on tabs)
 * Talk in channels
-* Smart tab auto-complete prioritizing recent activity
+* Smart tab auto-complete prioritizing recent activity, including nicknames of those who recently left/quit
 * Receive private messages and talk in them
 * Paste multi-line messages
 * Connect to IRC servers using SSL

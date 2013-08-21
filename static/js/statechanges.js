@@ -159,10 +159,7 @@ var sc = {
 
 			var channel = targetWindow.object;
 
-			channel.userlist = [];
-			channel.tempUserlist.forEach(function(userlistEntry) {
-				utils.userlist.addUser(channel.userlist, userlistEntry);
-			});
+			channel.userlist = utils.userlist.sortUsers(channel.tempUserlist);
 			channel.tempUserlist = [];
 		},
 		'AddServer': function(server) {
@@ -412,6 +409,11 @@ var sc = {
 				});
 
 				return matchedUserlistEntry;
+			},
+			sortUsers: function(userlist) {
+				userlist.sort(this.sortFunction);
+
+				return userlist;
 			},
 			sortFunction: function(a, b) {
 				function getModeScore(u) {
