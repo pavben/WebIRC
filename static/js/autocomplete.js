@@ -10,20 +10,24 @@ function initAutoComplete() {
 				var prefixResult = getAutoCompletePrefix(chatboxValue, cursorPos);
 
 				if (prefixResult !== null) {
+					var server = activeWindow.server;
+					var autoCompleteSuggestions = null;
+
 					if (activeWindow.type === 'channel') {
-						var server = activeWindow.server;
 						var channel = activeWindow.object;
 
-						var autoCompleteSuggestions = getAutoCompleteSuggestionsForChannel(server, channel);
-
-						activeAutoComplete = {
-							originalChatboxValue: chatboxValue,
-							prefix: prefixResult.prefix,
-							prefixStartIndex: prefixResult.prefixStartIndex,
-							suggestions: autoCompleteSuggestions,
-							index: 0
-						};
+						autoCompleteSuggestions = getAutoCompleteSuggestionsForChannel(server, channel);
+					} else {
+						autoCompleteSuggestions = getGeneralAutoCompleteSuggestions(server);
 					}
+
+					activeAutoComplete = {
+						originalChatboxValue: chatboxValue,
+						prefix: prefixResult.prefix,
+						prefixStartIndex: prefixResult.prefixStartIndex,
+						suggestions: autoCompleteSuggestions,
+						index: 0
+					};
 				}
 			}
 
@@ -93,11 +97,30 @@ function initAutoComplete() {
 		return ret;
 	}
 
-	function getAutoCompleteSuggestionsForChannel(server, channel) {
-		// current channel, all channels (including current -- dupes removed after)
-		var suggestions = [channel.name].concat(server.channels.map(function(c) {
+	function getGeneralAutoCompleteSuggestions(server) {
+		var suggestions = getNamesOfMyChannels(server).concat(getNamesOfMyQueries(server));
+
+		return suggestions;
+	}
+
+	function getNamesOfMyChannels(server) {
+		return server.channels.map(function(c) {
 			return c.name;
-		}));
+		});
+	}
+
+	function getNamesOfMyQueries(server) {
+		return server.queries.map(function(q) {
+			return q.name;
+		});
+	}
+
+	function getAutoCompleteSuggestionsForChannel(server, channel) {
+		// current channel
+		var suggestions = [channel.name];
+
+		// concat the rest of the channels
+		suggestions = suggestions.concat(getNamesOfMyChannels(server));
 
 		// use the last 100 activities
 		var recentActivities = channel.activityLog.slice(-100);
