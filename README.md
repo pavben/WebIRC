@@ -6,7 +6,7 @@ This is a new concept for an always-on web-based IRC "client". WebIRC runs as a 
 ![](http://img405.imageshack.us/img405/6546/y22g.png)
 
 ## Status
-Early stage development. It's NOT ready, it's not stable, and many of the basic features are not yet implemented.
+Early stage development. Only the very basic features are in.
 
 ## Setting it up
 
@@ -29,6 +29,7 @@ You can also:
 * /hop to rejoin the current channel
 
 ## Not yet supported
+* Login, so it's currently open to all who can access the URL
 * Sending/receiving files
 * Multiple servers at the same time (it might work, but I haven't tried it yet)
 

@@ -142,8 +142,6 @@ webircApp.directive('chatbox', function() {
 
 				var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeWindow);
 
-				console.log(autoCompleteResult);
-
 				if (autoCompleteResult) {
 					element.val(autoCompleteResult.chatboxValue);
 
