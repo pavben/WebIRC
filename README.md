@@ -6,7 +6,7 @@ This is a new concept for an always-on web-based IRC "client". WebIRC runs as a 
 ![](http://img405.imageshack.us/img405/6546/y22g.png)
 
 ## Status
-Early stage development. Only the very basic features are in.
+Early stage development. Some of the basic features aren't in yet.
 
 ## Setting it up
 
@@ -15,9 +15,9 @@ Early stage development. Only the very basic features are in.
 3. Edit config.json to set the server details
 4. Run `node main.js`
 
-Then look at the console. Did it connect to your server? Visit `http://localhost:28081` (or whatever port you've set in config.json) to access the client. Try logging in from your iPad at the same time and see how it runs smoothly with multiple simultaneous sessions (that's part of the goal for this project).
+Then look at the console. Did it connect to your server? Visit `http://localhost:28080` (or whatever port you've set in config.json) to access the client. Try logging in from your iPad at the same time and see how it runs smoothly with multiple simultaneous sessions (that's part of the goal for this project).
 
-You can also:
+What works:
 
 * /join #channel, /part #channel
 * /close channels or private message windows (will later add an 'x' close on tabs)
@@ -27,9 +27,10 @@ You can also:
 * Paste multi-line messages
 * Connect to IRC servers using SSL
 * /hop to rejoin the current channel
+* /sessions to list currently logged-in sessions, or /logout [all]
+* Webkit notifications for when your name is mentioned
 
 ## Not yet supported
-* Login, so it's currently open to all who can access the URL
 * Sending/receiving files
 * Multiple servers at the same time (it might work, but I haven't tried it yet)
 

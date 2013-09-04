@@ -9,6 +9,10 @@ webircApp.directive('loginbox', function() {
 					username: scope.username,
 					password: scope.password
 				});
+
+				if (window.webkitNotifications && window.webkitNotifications.checkPermission() !== 0) {
+					window.webkitNotifications.requestPermission();
+				}
 			};
 
 			scope.passwordKeyDown = function(event) {

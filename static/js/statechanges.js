@@ -190,16 +190,48 @@ var sc = {
 		},
 		'ChatMessage': function(windowPath, nick, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
+			var server = targetWindow.server;
 
 			utils.addActivity(targetWindow.object, 'ChatMessage', {
 				nick: nick,
 				text: text
 			});
+
+			if (!utils.isActiveWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+				if (targetWindow.type === 'channel') {
+					var channel = targetWindow.object;
+
+					utils.notify('img/notif-generic.png', nick + ' @ ' + channel.name, '<' + nick + '> ' + text);
+				} else if (targetWindow.type === 'query') {
+					var query = targetWindow.object;
+
+					utils.notify('img/notif-generic.png', nick + ' @ private message', '<' + nick + '> ' + text);
+				}
+			}
 		},
 		'ActionMessage': function(windowPath, nick, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
+			var server = targetWindow.server;
 
 			utils.addActivity(targetWindow.object, 'Action', { nick: nick, text: text });
+
+			if (targetWindow.type === 'channel' && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+				var channel = targetWindow.object;
+
+				utils.notify('img/notif-generic.png', nick + ' @ ' + channel.name, '* ' + nick + ' ' + text);
+			}
+
+			if (!utils.isActiveWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+				if (targetWindow.type === 'channel') {
+					var channel = targetWindow.object;
+
+					utils.notify('img/notif-generic.png', nick + ' @ ' + channel.name, '* ' + nick + ' ' + text);
+				} else if (targetWindow.type === 'query') {
+					var query = targetWindow.object;
+
+					utils.notify('img/notif-generic.png', nick + ' @ private message', '* ' + nick + ' ' + text);
+				}
+			}
 		},
 		'NickChange': function(serverIdx, oldNickname, newNickname, utils) {
 			var server = this.servers[serverIdx];
@@ -343,6 +375,13 @@ var sc = {
 				console.log('serverIdx required in onCloseWindow');
 			}
 		},
+		isActiveWindow: function(state, path) {
+			var current = state.currentActiveWindow;
+
+			return (current.serverIdx === path.serverIdx
+				&& current.channelIdx === path.channelIdx
+				&& current.queryIdx === path.queryIdx);
+		},
 		setActiveWindow: function(state, path) {
 			callStateChangeFunction(state, 'SetActiveWindow', [path]);
 		},
@@ -379,6 +418,22 @@ var sc = {
 		setNotInChannel: function(channel) {
 			channel.userlist = [];
 			channel.inChannel = false;
+		},
+		isNickInText: function(nick, text) {
+			return ~text.toLowerCase().split(/[^\w\d]+/).indexOf(nick.toLowerCase());
+		},
+		notify: function(icon, title, text) {
+			if (window.webkitNotifications && window.webkitNotifications.checkPermission() === 0) {
+				var notification = window.webkitNotifications.createNotification(icon, title, text);
+
+				notification.show();
+
+				setTimeout(function() {
+					notification.cancel();
+				}, 6000);
+			} else {
+				window.webkitNotifications.requestPermission();
+			}
 		},
 		userlist: {
 			addUser: function(userlist, userlistEntry) {
