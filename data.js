@@ -52,6 +52,26 @@ User.prototype = {
 	},
 	getWindowByPath: function(path) {
 		return statechanges.utils.getWindowByPath(this, path);
+	},
+	removeActiveWebSocket: function(socket) {
+		var idx = this.activeWebSockets.indexOf(socket);
+		if (idx !== -1) {
+			this.activeWebSockets.splice(idx, 1);
+
+			return true;
+		} else {
+			return false;
+		}
+	},
+	removeLoggedInSession: function(sessionId) {
+		var idx = this.loggedInSessions.indexOf(sessionId);
+		if (idx !== -1) {
+			this.loggedInSessions.splice(idx, 1);
+
+			return true;
+		} else {
+			return false;
+		}
 	}
 };
 

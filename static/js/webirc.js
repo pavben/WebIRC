@@ -1,5 +1,39 @@
 var webircApp = angular.module('webircApp', []);
 
+webircApp.directive('loginbox', function() {
+	return {
+		scope: true,
+		link: function(scope) {
+			scope.login = function() {
+				sendToGateway('Login', {
+					username: scope.username,
+					password: scope.password
+				});
+			};
+
+			scope.passwordKeyDown = function(event) {
+				if (event.keyCode === 13) {
+					scope.login();
+				}
+			}
+		}
+	};
+});
+
+webircApp.directive('focusKey', function($timeout) {
+	return {
+		link: function(scope, element, attrs) {
+			scope.$on('FocusKey', function(e, focusKey) {
+				if (focusKey === attrs.focusKey) {
+					$timeout(function() {
+						element[0].focus();
+					});
+				}
+			});
+		}
+	};
+});
+
 // TODO: this scrolling code needs to be redesigned
 webircApp.directive('resizeMaincell', function($rootScope) {
 	return {
@@ -102,9 +136,9 @@ webircApp.directive('activitylogentry', function() {
 				resizeMaincellCtrl.delayedScroll();
 			}
 
-	        element.bind('$destroy', function() {
-	            resizeMaincellCtrl.resetScroll();
-	        });
+			element.bind('$destroy', function() {
+					resizeMaincellCtrl.resetScroll();
+			});
 		}
 	};
 });
@@ -130,7 +164,7 @@ webircApp.directive('userlist', function() {
 	};
 });
 
-webircApp.directive('chatbox', function() {
+webircApp.directive('chatbox', function($rootScope) {
 	return function(scope, element) {
 		var rawElement = element[0];
 
@@ -153,6 +187,10 @@ webircApp.directive('chatbox', function() {
 				// any other keypress resets the autocomplete
 				autoComplete.reset();
 			}
+		});
+
+		scope.$watch('state.currentActiveWindow', function(value) {
+			$rootScope.$broadcast('FocusKey', 'Chatbox');
 		});
 	};
 });
@@ -233,7 +271,7 @@ function initializeChatboxHandler() {
 	});
 }
 
-function AppCtrl($scope, socket) {
+function AppCtrl($scope, $rootScope, socket) {
 	// HACK: Ugly.
 	$scope.safeApply = function(fn) {
 		var phase = this.$root.$$phase;
@@ -247,7 +285,7 @@ function AppCtrl($scope, socket) {
 	};
 
 	// TODO: Can we have this start after page load?
-	initializeWebSocketConnection($scope, socket);
+	initializeWebSocketConnection($scope, $rootScope, socket);
 
 	// TODO: convert this into a directive
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper

@@ -12,6 +12,9 @@ body {
 	margin:0px 0px 0px 0px;
 	line-height:1;
 }
+html, body {
+	height:100%;
+}
 input {
 	border:0;
 	padding:0;
@@ -30,14 +33,71 @@ a:hover, a:active {
 	table-layout:fixed;
 	width:100%;
 }
+.fulltable {
+	display:table;
+	width:100%;
+	height:100%;
+}
 .tablerow {
 	display:table-row;
 }
 .tablecell {
 	display:table-cell;
 }
+.tablecellvmid {
+	display:table-cell;
+	vertical-align:middle;
+}
 .outerwrapper {
 	padding:10px;
+	height:100%;
+	box-sizing:border-box;
+}
+.loginbox {
+	margin:auto;
+	width:400px;
+	padding:0px 10px 10px 10px;
+}
+.loginbuttonwrapper {
+	padding-top:10px;
+}
+.loginbutton {
+	background-color:#DDDDDD;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	padding:5px;
+	color:#565656;
+	text-align:center;
+}
+.button1 {
+	box-shadow:inset 0px 1px 0px 0px #ffffff;
+	background-color:#ededed;
+	border-radius:6px;
+	border:1px solid #dcdcdc;
+	display:block;
+	color:#444444;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 12px;
+	text-decoration:none;
+	text-shadow:1px 1px 0px #ffffff;
+	cursor:pointer;
+	text-align:center;
+}
+.button1:hover {
+	background-color:#dfdfdf;
+}
+.button1:active {
+	position:relative;
+	top:1px;
+}
+.fullwidth {
+	width:100%;
+	box-sizing:border-box;
+}
+.fullheight {
+	height:100%;
 }
 .windowlistwrapper {
 	border:1px solid #BBBBBB;

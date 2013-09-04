@@ -88,19 +88,16 @@ readConfig('config.json', check(
 					var user = null;
 
 					users.some(function(currentUser) {
-						// if socket.handshake.sessionId is in user.loggedInSessions
-						// if (user.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
-						if (true) {
+						// if sessionId is already in user.loggedInSessions
+						if (currentUser.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
 							user = currentUser;
 							return true;
-						} else {
-							return false;
 						}
 					});
 
 					// see if this socket belongs to a user who is already logged in
 					if (user !== null) {
-						handleSuccessfulLogin(user, socket);
+						handleSuccessfulLogin(user, socket, sessionId);
 					} else {
 						socket.emit('NeedLogin', {});
 					}
@@ -108,13 +105,22 @@ readConfig('config.json', check(
 					socket.on('Login', function(data) {
 						// only process Login if the user for this socket is null
 						if (user === null) {
-							// TODO: verify login
+							users.some(function(currentUser) {
+								if (currentUser.username === data.username && currentUser.password === data.password) {
+									user = currentUser;
 
-							// add sessionId to loggedInSessions for user
+									return true;
+								}
+							});
 
-							user.loggedInSessions.push(sessionId);
+							if (user !== null) {
+								// add sessionId to loggedInSessions for user
+								user.loggedInSessions.push(sessionId);
 
-							handleSuccessfulLogin(user, socket);
+								handleSuccessfulLogin(user, socket, sessionId);
+							} else {
+								socket.emit('LoginFailed', {});
+							}
 						}
 					});
 
@@ -125,17 +131,15 @@ readConfig('config.json', check(
 						// remove the socket from activeWebSockets of the user
 						// nothing to remove if the socket was not yet logged in
 						if (user !== null) {
-							var socketIndex = user.activeWebSockets.indexOf(socket);
-							if (socketIndex !== -1) {
-								user.activeWebSockets.splice(socketIndex, 1);
-							}
+							user.removeActiveWebSocket(socket);
 						}
 					});
 				});
 			});
 		}
 
-		function handleSuccessfulLogin(user, socket) {
+		function handleSuccessfulLogin(user, socket, sessionId) {
+			// TODO: combine activeWebSockets with loggedInSessions
 			user.activeWebSockets.push(socket);
 
 			function cloneExceptFields(src, exceptFields) {
@@ -190,7 +194,7 @@ readConfig('config.json', check(
 				console.log(data);
 
 				data.lines.forEach(function(line) {
-					irc.processChatboxLine(line, user, data.exec);
+					irc.processChatboxLine(user, line, data.exec, sessionId);
 				});
 			});
 

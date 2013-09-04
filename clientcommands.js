@@ -3,9 +3,11 @@ var utils = require('./utils.js');
 var serverCommandHandlers = {
 	'CLOSE': getHandler(0, 0, handleClose),
 	'HOP': getHandler(0, 0, handleHop),
+	'LOGOUT': getHandler(1, 0, handleLogout),
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
 	'SERVER': getHandler(2, 0, handleServer),
+	'SESSIONS': getHandler(0, 0, handleSessions),
 };
 
 function handleClose() {
@@ -37,6 +39,30 @@ function handleHop() {
 		channel.rejoin();
 	} else {
 		this.showError('Use /hop in a channel to rejoin');
+	}
+}
+
+function handleLogout(all) {
+	var self = this;
+
+	if (all && all.toLowerCase() === 'all') {
+		var numSessions = 0;
+
+		var loggedInSessionsCopy = this.user.loggedInSessions.slice(0);
+
+		loggedInSessionsCopy.forEach(function(sessionId) {
+			if (self.user.removeLoggedInSession(sessionId)) {
+				numSessions++;
+			}
+		});
+
+		self.showInfo(numSessions + ' session(s) have been logged out. Feel free to close your browser.');
+	} else {
+		if (this.user.removeLoggedInSession(this.sessionId)) {
+			this.showInfo('Your current browser session is now logged out. Feel free to close your browser.');
+		} else {
+			this.showInfo('Your current browser session is already logged out. Feel free to close your browser.');
+		}
 	}
 }
 
@@ -104,6 +130,20 @@ function handleServer(host, port) {
 	}
 }
 
+function handleSessions() {
+	var self = this;
+
+	if (this.user.loggedInSessions.length > 0) {
+		this.showInfo('Logged-in sessions:');
+
+		this.user.loggedInSessions.forEach(function(sessionId, i) {
+			self.showInfo((i + 1) + ' - ' + sessionId + (sessionId == self.sessionId ? ' (current)' : ''));
+		});
+	} else {
+		this.showInfo('No logged-in sessions.');
+	}
+}
+
 function showError(text) {
 	this.user.applyStateChange('Error', this.activeWindow.windowPath, text);
 }
@@ -112,7 +152,7 @@ function showInfo(text) {
 	this.user.applyStateChange('Info', this.activeWindow.windowPath, text);
 }
 
-function handleClientCommand(activeWindow, command, args) {
+function handleClientCommand(activeWindow, command, args, sessionId) {
 	if (command in serverCommandHandlers) {
 		var handlerData = serverCommandHandlers[command];
 
@@ -121,6 +161,7 @@ function handleClientCommand(activeWindow, command, args) {
 		if (parsedArgs.length >= handlerData.numRequiredArgs) {
 			var handler = handlerData.handler;
 			var handlerThisObject = {
+				sessionId: sessionId,
 				user: activeWindow.server.user,
 				server: activeWindow.server,
 				activeWindow: activeWindow,

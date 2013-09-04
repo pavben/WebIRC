@@ -488,7 +488,7 @@ function parseLine(line) {
 	};
 }
 
-function processChatboxLine(line, user, parseCommands) {
+function processChatboxLine(user, line, parseCommands, sessionId) {
 	if (user.currentActiveWindow !== null) {
 		var command = null;
 		var rest = line;
@@ -506,7 +506,7 @@ function processChatboxLine(line, user, parseCommands) {
 
 		if (activeWindow !== null) {
 			if (command !== null) {
-				clientcommands.handleClientCommand(activeWindow, command, rest);
+				clientcommands.handleClientCommand(activeWindow, command, rest, sessionId);
 			} else {
 				if (activeWindow.type === 'channel') {
 					var server = activeWindow.server;
