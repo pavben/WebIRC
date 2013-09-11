@@ -275,9 +275,9 @@ function initializeChatboxHandler() {
 	});
 }
 
-function AppCtrl($scope, $rootScope, socket) {
+function AppCtrl($rootScope, socket) {
 	// HACK: Ugly.
-	$scope.safeApply = function(fn) {
+	$rootScope.safeApply = function(fn) {
 		var phase = this.$root.$$phase;
 		if (phase == '$apply' || phase == '$digest') {
 			if (typeof(fn) === 'function') {
@@ -289,13 +289,13 @@ function AppCtrl($scope, $rootScope, socket) {
 	};
 
 	// TODO: Can we have this start after page load?
-	initializeWebSocketConnection($scope, $rootScope, socket);
+	initializeWebSocketConnection($rootScope, socket);
 
 	// TODO: convert this into a directive
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chatbox'), $('#chatboxwrapper'), function() {
 		// we need to rerun $scope.getResizeParams on resize
-		$scope.safeApply();
+		$rootScope.safeApply();
 	});
 }
 

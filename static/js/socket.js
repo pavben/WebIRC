@@ -28,7 +28,7 @@ webircApp.factory('socket', function ($rootScope) {
 	};
 });
 
-function initializeWebSocketConnection($scope, $rootScope, socket) {
+function initializeWebSocketConnection($rootScope, socket) {
 	g_socket = socket;
 
 	// TODO: connect_failed isn't emitted
@@ -37,8 +37,8 @@ function initializeWebSocketConnection($scope, $rootScope, socket) {
 	});
 
 	socket.on('NeedLogin', function(data) {
-		delete $scope.state;
-		$scope.screen = 'login';
+		delete $rootScope.state;
+		$rootScope.screen = 'login';
 
 		$rootScope.$broadcast('FocusKey', 'LoginUsername');
 	});
@@ -52,14 +52,14 @@ function initializeWebSocketConnection($scope, $rootScope, socket) {
 	socket.on('CurrentState', function(currentState) {
 		console.log(currentState);
 
-		$scope.state = currentState;
-		$scope.screen = 'main';
+		$rootScope.state = currentState;
+		$rootScope.screen = 'main';
 	});
 
 	socket.on('ApplyStateChange', function(data) {
 		console.log(data);
 
-		callStateChangeFunction($scope.state, data.funcId, data.args);
+		callStateChangeFunction($rootScope.state, data.funcId, data.args);
 	});
 
 	socket.on('disconnect', function() {
@@ -68,7 +68,7 @@ function initializeWebSocketConnection($scope, $rootScope, socket) {
 		console.log('Socket closed');
 	});
 
-	$scope.requestSetActiveWindow = function(windowPath) {
+	$rootScope.requestSetActiveWindow = function(windowPath) {
 		sendToGateway('SetActiveWindow', { windowPath: windowPath });
 	}
 }
