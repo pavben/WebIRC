@@ -17,7 +17,7 @@
 		"port": 28080
 	},
 	"https": {
-		"port": null,
+		"port": 28443,
 		"keyFile": "./key.pem",
 		"certFile": "./cert.pem"
 	},
