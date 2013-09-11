@@ -1,11 +1,11 @@
 var webircApp = angular.module('webircApp', []);
 
-webircApp.directive('loginbox', function() {
+webircApp.directive('loginbox', function($rootScope) {
 	return {
 		scope: true,
 		link: function(scope) {
 			scope.login = function() {
-				sendToGateway('Login', {
+				$rootScope.sendToGateway('Login', {
 					username: scope.username,
 					password: scope.password
 				});
@@ -175,8 +175,7 @@ webircApp.directive('chatbox', function($rootScope) {
 				var lines = element.val().replace(/\r\n/g, '\n').split('\n').filter(function(line) { return (line.length > 0); });
 
 				if (lines.length > 0) {
-					// TODO: put this on $rootScope
-					sendToGateway('ChatboxSend', {lines: lines, exec: !e.shiftKey});
+					$rootScope.sendToGateway('ChatboxSend', {lines: lines, exec: !e.shiftKey});
 				}
 
 				element.val('');
@@ -270,12 +269,8 @@ webircApp.directive('chatboxAutogrow', function($rootScope) {
 	};
 });
 
-$(window).bind('load', function() {
-	angular.bootstrap(document, ['webircApp']);
-});
-
 function AppCtrl($rootScope, socket) {
-	// HACK: Ugly.
+	// TODO: still needed?
 	$rootScope.safeApply = function(fn) {
 		var phase = this.$root.$$phase;
 		if (phase == '$apply' || phase == '$digest') {
@@ -287,7 +282,6 @@ function AppCtrl($rootScope, socket) {
 		}
 	};
 
-	// TODO: Can we have this start after page load?
 	initializeWebSocketConnection($rootScope, socket);
 }
 

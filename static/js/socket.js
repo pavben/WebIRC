@@ -1,5 +1,3 @@
-var g_socket = null;
-
 webircApp.factory('socket', function ($rootScope) {
 	// connect to the webserver
 	var socket = io.connect('', {
@@ -29,7 +27,7 @@ webircApp.factory('socket', function ($rootScope) {
 });
 
 function initializeWebSocketConnection($rootScope, socket) {
-	g_socket = socket;
+	var connectedSocket = socket;
 
 	// TODO: connect_failed isn't emitted
 	socket.on('connect_failed', function() {
@@ -63,21 +61,20 @@ function initializeWebSocketConnection($rootScope, socket) {
 	});
 
 	socket.on('disconnect', function() {
-		g_socket = null;
+		connectedSocket = null;
 
 		console.log('Socket closed');
 	});
 
+	$rootScope.sendToGateway = function(msgId, data) {
+		if (connectedSocket !== null) {
+			connectedSocket.emit(msgId, data);
+		} else {
+			console.log('Not connected to WebIRC');
+		}
+	}
+
 	$rootScope.requestSetActiveWindow = function(windowPath) {
-		sendToGateway('SetActiveWindow', { windowPath: windowPath });
+		$rootScope.sendToGateway('SetActiveWindow', { windowPath: windowPath });
 	}
 }
-
-function sendToGateway(msgId, data) {
-	if (g_socket !== null) {
-		g_socket.emit(msgId, data);
-	} else {
-		console.log('sendToGateway called on a null socket');
-	}
-}
-
