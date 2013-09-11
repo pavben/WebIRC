@@ -170,10 +170,6 @@ webircApp.directive('userlist', function() {
 
 webircApp.directive('chatbox', function($rootScope) {
 	return function(scope, element) {
-		var rawElement = element[0];
-
-		var autoComplete = initAutoComplete();
-
 		element.bind('keydown', function(e) {
 			if (e.keyCode === 13) { // enter
 				var lines = element.val().replace(/\r\n/g, '\n').split('\n').filter(function(line) { return (line.length > 0); });
@@ -189,8 +185,24 @@ webircApp.directive('chatbox', function($rootScope) {
 				$(element).change();
 
 				e.preventDefault();
-			} else if (e.keyCode === 9) { // tab
-				var activeWindow = sc.utils.getWindowByPath(scope.state, scope.state.currentActiveWindow);
+			}
+		});
+
+		$rootScope.$watch('state.currentActiveWindow', function(value) {
+			$rootScope.$broadcast('FocusKey', 'Chatbox');
+		});
+	};
+});
+
+webircApp.directive('chatboxAutocomplete', function($rootScope) {
+	return function(scope, element) {
+		var rawElement = element[0];
+
+		var autoComplete = initAutoComplete();
+
+		element.bind('keydown', function(e) {
+			if (e.keyCode === 9) { // tab
+				var activeWindow = sc.utils.getWindowByPath($rootScope.state, $rootScope.state.currentActiveWindow);
 
 				var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeWindow);
 
@@ -206,68 +218,61 @@ webircApp.directive('chatbox', function($rootScope) {
 				autoComplete.reset();
 			}
 		});
+	};
+});
 
-		scope.$watch('state.currentActiveWindow', function(value) {
-			$rootScope.$broadcast('FocusKey', 'Chatbox');
-		});
+webircApp.directive('chatboxAutogrow', function($rootScope) {
+	return function(scope, element) {
+		var shadow = angular.element('<div/>').addClass('chatboxshadow');
+
+		// append the shadow to the chatbox's parent (chatboxwrapper)
+		element.parent().append(shadow);
+
+		var chatBox = $(element);
+
+		var checkHeight = function() {
+			// manually control scrolling as it causes visual glitches
+			chatBox.css('overflow-y', 'hidden');
+			shadow.css('width', chatBox.width());
+
+			var previousHeight = chatBox.height();
+
+			var newContentHtml = chatBox.val().replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/&/g, '&amp;')
+				.replace(/\n$/, '<br/>.')
+				.replace(/\n/g, '<br/>')
+				.replace(/ {2,}/g, function(space) { return (new Array(space.length).join('&nbsp;')) + ' '; })
+				.replace(/^$/g, '.');
+
+			shadow.html(newContentHtml);
+
+			var targetHeight = $(shadow).height();
+			var minHeight = stripPx(chatBox.css('line-height'));
+			if (targetHeight > 150) {
+				targetHeight = 150;
+
+				// now scrolling will be needed
+				chatBox.css('overflow-y', 'auto');
+			} else if (targetHeight < minHeight) {
+				targetHeight = minHeight;
+			}
+
+			if (targetHeight != previousHeight) {
+				chatBox.css('height', targetHeight);
+				$rootScope.safeApply();
+			}
+		};
+		element.bind('input paste keypress keydown change', checkHeight);
+
+		// call it initially to set the initial height
+		checkHeight();
 	};
 });
 
 $(window).bind('load', function() {
 	angular.bootstrap(document, ['webircApp']);
 });
-
-function initializeAutoGrowingTextArea(chatBox, appendShadowTo, resizeCallback) {
-	var shadow = $('<div/>').addClass('chatboxshadow').appendTo(appendShadowTo);
-
-	var checkHeight = function() {
-		// manually control scrolling as it causes visual glitches
-		chatBox.css('overflow-y', 'hidden');
-		shadow.css('width', chatBox.width());
-
-		var previousHeight = chatBox.height();
-
-		var newContentHtml = chatBox.val().replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/&/g, '&amp;')
-			.replace(/\n$/, '<br/>.')
-			.replace(/\n/g, '<br/>')
-			.replace(/ {2,}/g, function(space) { return (new Array(space.length).join('&nbsp;')) + ' '; })
-			.replace(/^$/g, '.');
-
-		shadow.html(newContentHtml);
-
-		var targetHeight = shadow.height();
-		var minHeight = stripPx(chatBox.css('line-height'));
-		if (targetHeight > 150) {
-			targetHeight = 150;
-
-			// now scrolling will be needed
-			chatBox.css('overflow-y', 'auto');
-		} else if (targetHeight < minHeight) {
-			targetHeight = minHeight;
-		}
-
-		if (targetHeight != previousHeight) {
-			chatBox.css('height', targetHeight);
-			resizeCallback();
-		}
-	};
-	bindTextChangeEvents(chatBox, checkHeight);
-
-	// call it initially to set the initial height
-	checkHeight();
-}
-
-function bindTextChangeEvents(field, checkForChangeFunction) {
-	field.bind({
-		'input': checkForChangeFunction,
-		'paste': checkForChangeFunction,
-		'keypress': checkForChangeFunction,
-		'keydown': checkForChangeFunction,
-		'change': checkForChangeFunction
-	});
-}
 
 function AppCtrl($rootScope, socket) {
 	// HACK: Ugly.
@@ -284,13 +289,6 @@ function AppCtrl($rootScope, socket) {
 
 	// TODO: Can we have this start after page load?
 	initializeWebSocketConnection($rootScope, socket);
-
-	// TODO: convert this into a directive
-	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
-	initializeAutoGrowingTextArea($('#chatbox'), $('#chatboxwrapper'), function() {
-		// we need to rerun $scope.getResizeParams on resize
-		$rootScope.safeApply();
-	});
 }
 
 function getTargetHeightForMaincell() {
