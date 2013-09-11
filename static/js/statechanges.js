@@ -451,6 +451,10 @@ var sc = {
 				if (window.webkitNotifications.checkPermission() === 0) {
 					var notification = window.webkitNotifications.createNotification(icon, title, text);
 
+					notification.onclick = function() {
+						window.focus();
+					}
+
 					notification.show();
 
 					setTimeout(function() {
