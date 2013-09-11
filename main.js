@@ -66,8 +66,8 @@ readConfig('config.json', check(
 
 					if (sessionKey in cookies) {
 						sessionStore.get(cookies[sessionKey], function(err, session) {
-							// TODO LOW: if the session cannot be looked up, tell the client to refresh, creating a new session (implicitly, of course)
-							if (session && !err) {
+							// TODO LOW: if the session cannot be looked up, tell the client to refresh, creating a new session
+							if (!err && session) {
 								data.sessionId = cookies[sessionKey];
 
 								accept(null, true);

@@ -269,7 +269,7 @@ webircApp.directive('chatboxAutogrow', function($rootScope) {
 	};
 });
 
-function AppCtrl($rootScope, socket) {
+function AppCtrl($rootScope, socketFactory) {
 	// TODO: still needed?
 	$rootScope.safeApply = function(fn) {
 		var phase = this.$root.$$phase;
@@ -282,7 +282,7 @@ function AppCtrl($rootScope, socket) {
 		}
 	};
 
-	initializeWebSocketConnection($rootScope, socket);
+	initializeSocketConnection($rootScope, socketFactory);
 }
 
 function getTargetHeightForMaincell() {
