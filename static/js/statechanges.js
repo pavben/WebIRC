@@ -197,7 +197,7 @@ var sc = {
 				text: text
 			});
 
-			if (!utils.isActiveWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+			if (!utils.isActiveAndVisibleWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
 				if (targetWindow.type === 'channel') {
 					var channel = targetWindow.object;
 
@@ -221,7 +221,7 @@ var sc = {
 				utils.notify('img/notif-generic.png', nick + ' @ ' + channel.name, '* ' + nick + ' ' + text);
 			}
 
-			if (!utils.isActiveWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+			if (!utils.isActiveAndVisibleWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
 				if (targetWindow.type === 'channel') {
 					var channel = targetWindow.object;
 
@@ -375,12 +375,36 @@ var sc = {
 				console.log('serverIdx required in onCloseWindow');
 			}
 		},
+		isPageVisible: function() {
+			var documentKey;
+
+			if (typeof document === 'object') {
+				if (typeof document.documentKey !== 'undefined') {
+					documentKey = 'hidden';
+				} else if (typeof document.webkitHidden !== 'undefined') {
+					documentKey = 'webkitHidden';
+				} else if (typeof document.mozHidden !== 'undefined') {
+					documentKey = 'mozHidden';
+				} else if (typeof document.msHidden !== 'undefined') {
+					documentKey = 'msHidden';
+				}
+			}
+
+			if (documentKey) {
+				return !document[documentKey];
+			} else {
+				return null;
+			}
+		},
 		isActiveWindow: function(state, path) {
 			var current = state.currentActiveWindow;
 
 			return (current.serverIdx === path.serverIdx
 				&& current.channelIdx === path.channelIdx
 				&& current.queryIdx === path.queryIdx);
+		},
+		isActiveAndVisibleWindow: function(state, path) {
+			return sc.utils.isPageVisible() && sc.utils.isActiveWindow(state, path);
 		},
 		setActiveWindow: function(state, path) {
 			callStateChangeFunction(state, 'SetActiveWindow', [path]);
@@ -423,16 +447,18 @@ var sc = {
 			return ~text.toLowerCase().split(/[^\w\d]+/).indexOf(nick.toLowerCase());
 		},
 		notify: function(icon, title, text) {
-			if (window.webkitNotifications && window.webkitNotifications.checkPermission() === 0) {
-				var notification = window.webkitNotifications.createNotification(icon, title, text);
+			if (typeof window === 'object' && window.webkitNotifications) {
+				if (window.webkitNotifications.checkPermission() === 0) {
+					var notification = window.webkitNotifications.createNotification(icon, title, text);
 
-				notification.show();
+					notification.show();
 
-				setTimeout(function() {
-					notification.cancel();
-				}, 6000);
-			} else {
-				window.webkitNotifications.requestPermission();
+					setTimeout(function() {
+						notification.cancel();
+					}, 6000);
+				} else {
+					window.webkitNotifications.requestPermission();
+				}
 			}
 		},
 		userlist: {
