@@ -175,7 +175,21 @@ webircApp.directive('chatbox', function($rootScope) {
 		var autoComplete = initAutoComplete();
 
 		element.bind('keydown', function(e) {
-			if (e.keyCode === 9) { // tab
+			if (e.keyCode === 13) { // enter
+				var lines = element.val().replace(/\r\n/g, '\n').split('\n').filter(function(line) { return (line.length > 0); });
+
+				if (lines.length > 0) {
+					// TODO: put this on $rootScope
+					sendToGateway('ChatboxSend', {lines: lines, exec: !e.shiftKey});
+				}
+
+				element.val('');
+
+				// TODO: remove this when the auto-growing chatbox stuff is put into a directive
+				$(element).change();
+
+				e.preventDefault();
+			} else if (e.keyCode === 9) { // tab
 				var activeWindow = sc.utils.getWindowByPath(scope.state, scope.state.currentActiveWindow);
 
 				var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeWindow);
@@ -200,8 +214,6 @@ webircApp.directive('chatbox', function($rootScope) {
 });
 
 $(window).bind('load', function() {
-	initializeChatboxHandler();
-
 	angular.bootstrap(document, ['webircApp']);
 });
 
@@ -254,24 +266,6 @@ function bindTextChangeEvents(field, checkForChangeFunction) {
 		'keypress': checkForChangeFunction,
 		'keydown': checkForChangeFunction,
 		'change': checkForChangeFunction
-	});
-}
-
-function initializeChatboxHandler() {
-	var chatbox = $('#chatbox');
-
-	chatbox.keypress(function(e) {
-		if (e.which === 13) {
-			var lines = chatbox.val().replace(/\r\n/g, '\n').split('\n').filter(function(line) { return (line.length > 0); });
-
-			if (lines.length > 0) {
-				sendToGateway('ChatboxSend', {lines: lines, exec: !e.shiftKey});
-			}
-
-			chatbox.val('').change();
-
-			return false;
-		}
 	});
 }
 
