@@ -15,6 +15,7 @@ var serverCommandHandlers = {
 	'NOTICE': handleCommandRequireArgs(2, handleNotice),
 	'PART': handleCommandRequireArgs(1, handlePart),
 	'PING': handleCommandRequireArgs(1, handlePing),
+	'PONG': handleCommandRequireArgs(2, handlePong),
 	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
 	'QUIT': handleCommandRequireArgs(1, handleQuit),
 };
@@ -104,6 +105,10 @@ function handle366(user, serverIdx, server, origin, myNickname, channelName) {
 
 function handlePing(user, serverIdx, server, origin, arg) {
 	server.send('PONG :' + arg);
+}
+
+function handlePong(user, serverIdx, server, origin, arg) {
+	// ignore for now
 }
 
 function handleJoin(user, serverIdx, server, origin, channelName) {
