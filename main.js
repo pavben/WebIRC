@@ -62,21 +62,25 @@ readConfig('config.json', check(
 				sio.set('log level', 2);
 
 				sio.set('authorization', function(data, accept) {
-					var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.sessionSecret);
+					if ('cookie' in data.headers) {
+						var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.sessionSecret);
 
-					if (sessionKey in cookies) {
-						sessionStore.get(cookies[sessionKey], function(err, session) {
-							// TODO LOW: if the session cannot be looked up, tell the client to refresh, creating a new session
-							if (!err && session) {
-								data.sessionId = cookies[sessionKey];
+						if (sessionKey in cookies) {
+							sessionStore.get(cookies[sessionKey], function(err, session) {
+								// TODO LOW: if the session cannot be looked up, tell the client to refresh, creating a new session
+								if (!err && session) {
+									data.sessionId = cookies[sessionKey];
 
-								accept(null, true);
-							} else {
-								accept('Session lookup failed -- invalid session ID received from client during WebSocket authorization', false);
-							}
-						});
+									accept(null, true);
+								} else {
+									accept('Session lookup failed -- invalid session ID received from client during WebSocket authorization', false);
+								}
+							});
+						} else {
+							accept('No sid in cookie', false);
+						}
 					} else {
-						accept('No sid in cookie', false);
+						accept('No cookie header', false);
 					}
 				});
 
