@@ -301,6 +301,7 @@ var sc = {
 	utils: {
 		addActivity: function(object, type, data) {
 			data.type = type;
+			data.time = sc.utils.currentTime();
 
 			assert(Array.isArray(object.activityLog), "addActivity called on an object without a valid activityLog");
 
@@ -309,6 +310,9 @@ var sc = {
 			if (object.activityLog.length > 400) {
 				object.activityLog.splice(0, 100);
 			}
+		},
+		currentTime: function() {
+			return Math.floor(new Date().getTime() / 1000);
 		},
 		forEveryChannelWithNick: function(server, nickname, successCallback) {
 			server.channels.forEach(function(channel, channelIdx) {
