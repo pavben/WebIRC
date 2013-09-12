@@ -180,9 +180,6 @@ webircApp.directive('chatbox', function($rootScope) {
 
 				element.val('');
 
-				// TODO: remove this when the auto-growing chatbox stuff is put into a directive
-				$(element).change();
-
 				e.preventDefault();
 			}
 		});
