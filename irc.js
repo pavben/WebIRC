@@ -45,6 +45,8 @@ function handle001(user, serverIdx, server, origin, myNickname, text) {
 		server.send('JOIN ' + channel);
 	});
 
+	server.startPings();
+
 	user.applyStateChange('Text', server.toWindowPath(), text);
 }
 
@@ -392,6 +394,8 @@ function reconnectServer(server) {
 	});
 
 	function onDisconnect(server) {
+		server.endPings();
+
 		server.socket = null;
 
 		server.user.applyStateChange('Disconnect', server.toWindowPath().serverIdx);

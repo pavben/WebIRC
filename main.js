@@ -166,7 +166,8 @@ readConfig('config.json', check(
 					'socket',
 					'user',
 					'channels',
-					'queries'
+					'queries',
+					'timeoutPings'
 				]);
 
 				serverCopy.channels = server.channels.map(function(channel) {

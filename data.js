@@ -1,3 +1,4 @@
+var assert = require('assert');
 // irc.js include moved to the bottom due to circular dependency
 var statechanges = require('./static/js/statechanges.js');
 
@@ -194,12 +195,37 @@ Server.prototype = {
 			console.log('send called on a server with null socket');
 		}
 	},
+	startPings: function() {
+		assert(typeof this.timeoutPings === 'undefined'); // must end any existing ones before starting
+
+		var self = this;
+
+		var pingInterval = 60000;
+
+		function sendPing() {
+			// TODO LOW: do we care if we receive the correct token back? not checking for now
+			var randomToken = Math.floor(Math.random()*99999);
+
+			self.send('PING :' + randomToken);
+
+			self.timeoutPings = setTimeout(sendPing, pingInterval);
+		}
+
+		self.timeoutPings = setTimeout(sendPing, pingInterval);
+	},
+	endPings: function() {
+		if (this.timeoutPings) {
+			clearTimeout(this.timeoutPings);
+
+			delete this.timeoutPings;
+		}
+	},
 	getIndex: function() {
 		return this.user.servers.indexOf(this);
 	},
 	toWindowPath: function() {
 		return {
-			serverIdx: this.getIndex(),
+			serverIdx: this.getIndex()
 		};
 	}
 };
