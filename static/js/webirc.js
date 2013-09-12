@@ -141,7 +141,7 @@ webircApp.directive('activitylogentry', function() {
 			}
 
 			element.bind('$destroy', function() {
-					resizeMaincellCtrl.resetScroll();
+				resizeMaincellCtrl.resetScroll();
 			});
 		}
 	};
@@ -232,7 +232,8 @@ webircApp.directive('chatboxAutogrow', function($rootScope) {
 		var checkHeight = function() {
 			// manually control scrolling as it causes visual glitches
 			chatBox.css('overflow-y', 'hidden');
-			shadow.css('width', chatBox.width());
+
+			shadow.css('width', chatBox.width() + 'px');
 
 			var previousHeight = chatBox.height();
 
