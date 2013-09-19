@@ -469,6 +469,7 @@ var sc = {
 				}
 			}
 		},
+		// returns the index of the element, if found, or null otherwise
 		binarySearch: function(element, sortedList, sortFunction) {
 			var lo = 0;
 			var hi = sortedList.length - 1;
@@ -493,17 +494,42 @@ var sc = {
 
 			return null;
 		},
+		// returns the index at which the element should be inserted
+		binarySearchInsert: function(element, sortedList, sortFunction) {
+			// p(index) = val at index is same or larger than element
+			function p(index) {
+				return (sortFunction(element, sortedList[index]) <= 0);
+			}
+
+			var lo = 0;
+			var hi = sortedList.length - 1;
+			var mid, result;
+
+			while (lo < hi) {
+				mid = lo + Math.floor((hi - lo) / 2);
+
+				result = p(mid);
+
+				if (result) {
+					// mid is too high or just right
+					hi = mid;
+				} else {
+					// mid is too low
+					lo = mid + 1;
+				}
+			}
+
+			// now lo == hi
+			if (p(lo)) {
+				return lo;
+			} else {
+				// the element was not found and belongs at the end of the list
+				return sortedList.length;
+			}
+		},
 		userlist: {
 			addUser: function(userlist, userlistEntry) {
-				// TODO: make this logarithmic
-				var insertIdx = 0;
-				for (var i = 0; i < userlist.length; i++) {
-					if (this.sortFunction(userlistEntry, userlist[i]) >= 0) {
-						insertIdx = i + 1;
-					} else {
-						break;
-					}
-				}
+				var insertIdx = sc.utils.binarySearchInsert(userlistEntry, userlist, this.sortFunction);
 
 				userlist.splice(insertIdx, 0, userlistEntry);
 			},
