@@ -138,21 +138,32 @@ webircApp.directive('chatlog', function() {
 		require: '^resizeMaincell',
 		compile: function(element, attr, linker) {
 			return function($scope, $element, $attr, resizeMaincellCtrl) {
+				var lastLen = 0;
+
 				$scope.$watchCollection($attr.activityLog, function(activityLog) {
-					console.log(activityLog);
+					if (activityLog.length > lastLen) {
+						// get only the newly-added entries
+						var newEntries = activityLog.slice(lastLen);
 
-					// TODO: make this not so wasteful
-					$element.children().remove();
+						// and append them
+						newEntries.forEach(function(activity) {
+							$element.append(elementFromActivity(activity));
+						});
 
-					activityLog.forEach(function(activity) {
-						$element.append(elementFromActivity(activity));
-					});
+						resizeMaincellCtrl.delayedScroll();
+					} else {
+						// some elements were removed
+						// this won't happen often, so we can be lazy and re-generate the entire chatlog
+						$element.children().remove();
 
-					// TODO: if new element
-					resizeMaincellCtrl.delayedScroll();
+						activityLog.forEach(function(activity) {
+							$element.append(elementFromActivity(activity));
+						});
 
-					// TODO: on chatlog purge
-					resizeMaincellCtrl.resetScroll();
+						resizeMaincellCtrl.resetScroll();
+					}
+
+					lastLen = activityLog.length;
 				});
 			}
 		}
