@@ -260,7 +260,7 @@ Channel.prototype = {
 		var matchedUserlistEntry;
 
 		this.userlist.some(function(userlistEntry) {
-			if (userlistEntry.name.toLowerCase() === nick.toLowerCase()) {
+			if (userlistEntry.nick.toLowerCase() === nick.toLowerCase()) {
 				matchedUserlistEntry = userlistEntry;
 
 				return true;

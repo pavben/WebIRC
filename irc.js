@@ -148,6 +148,8 @@ function handleKick(user, serverIdx, server, origin, channelName, targetName, ki
 }
 
 function handleMode(user, serverIdx, server, origin, targetName, modes) {
+	var handleModeArguments = arguments;
+
 	utils.withParsedTarget(targetName, silentFail(function(target) {
 		if (target instanceof ClientTarget) {
 			// it's a user mode
@@ -156,8 +158,6 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 			}
 		} else if (target instanceof ChannelTarget) {
 			// it's a channel mode
-			var handleModeArguments = arguments;
-
 			server.withChannel(target.name, silentFail(function(channel) {
 				var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
 
@@ -177,7 +177,6 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 								} else {
 									delete userlistEntry[userlistEntryAttribute];
 								}
-
 								user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), userlistEntry);
 							}));
 						}

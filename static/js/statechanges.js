@@ -469,7 +469,7 @@ var sc = {
 				}
 			}
 		},
-		// returns the index of the element, if found, or null otherwise
+		// returns the index of the element if found, or null otherwise
 		binarySearch: function(element, sortedList, sortFunction) {
 			var lo = 0;
 			var hi = sortedList.length - 1;
@@ -519,11 +519,10 @@ var sc = {
 				}
 			}
 
-			// now lo == hi
-			if (p(lo)) {
+			if (lo < sortedList.length && p(lo)) {
 				return lo;
 			} else {
-				// the element was not found and belongs at the end of the list
+				// the element was not found and belongs at the end of the list (possibly 0 if the list is empty)
 				return sortedList.length;
 			}
 		},
