@@ -532,7 +532,7 @@ function processChatboxLine(user, line, parseCommands, sessionId) {
 
 					server.send('PRIVMSG ' + query.name + ' :' + rest);
 				} else {
-					console.log('Non-command in a non-channel/non-query window');
+					user.applyStateChange('Error', activeWindow.windowPath, 'Only commands are processed in this window');
 				}
 			}
 		}
