@@ -132,19 +132,83 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 	}
 });
 
-webircApp.directive('activitylogentry', function() {
+webircApp.directive('chatlog', function() {
 	return {
+		restrict: 'E',
 		require: '^resizeMaincell',
-		link: function(scope, element, attrs, resizeMaincellCtrl) {
-			if (scope.$last) {
-				resizeMaincellCtrl.delayedScroll();
-			}
+		compile: function(element, attr, linker) {
+			return function($scope, $element, $attr, resizeMaincellCtrl) {
+				$scope.$watchCollection($attr.activityLog, function(activityLog) {
+					console.log(activityLog);
 
-			element.bind('$destroy', function() {
-				resizeMaincellCtrl.resetScroll();
-			});
+					// TODO: make this not so wasteful
+					$element.children().remove();
+
+					activityLog.forEach(function(activity) {
+						$element.append(elementFromActivity(activity));
+					});
+
+					// TODO: if new element
+					resizeMaincellCtrl.delayedScroll();
+
+					// TODO: on chatlog purge
+					resizeMaincellCtrl.resetScroll();
+				});
+			}
 		}
 	};
+
+	function elementFromActivity(activity) {
+		switch (activity.type) {
+			case 'Action':
+				return basicText('activity', '* ' + activity.nick + ' ' + activity.text);
+			case 'ChatMessage':
+				return basicText('activity', '<' + activity.nick + '> ' + activity.text);
+			case 'Error':
+				return basicText('activity_error', '* ' + activity.text);
+			case 'Info':
+				return basicText('activity_info', '* ' + activity.text);
+			case 'Join':
+				return basicText('activity_info', '* Join: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')');
+			case 'Kick':
+				var msg = '* ' + activity.targetNick + ' was kicked by ' + activity.originName;
+
+				if (activity.kickMessage) {
+					msg += ' (' + activity.kickMessage + ')';
+				}
+				return basicText('activity_kick', msg);
+			case 'KickMe':
+				var msg = '* You were kicked by ' + activity.originName;
+
+				if (activity.kickMessage) {
+					msg += ' (' + activity.kickMessage + ')';
+				}
+				return basicText('activity_kick', msg);
+			case 'ModeChange':
+				return basicText('activity_info', '* ' + activity.origin + ' sets mode: ' + activity.modes + ' ' + activity.modeArgs.join(' '));
+			case 'NickChange':
+				return basicText('activity_info', '* ' + activity.oldNickname + ' is now known as ' + activity.newNickname);
+			case 'Notice':
+				return basicText('activity_notice', '* Notice from ' + activity.nick + ': ' + activity.text);
+			case 'Part':
+				return basicText('activity_info', '* Part: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')');
+			case 'Quit':
+				var msg = '* Quit: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')';
+
+				if (activity.quitMessage) {
+					msg += ' (' + activity.quitMessage + ')';
+				}
+				return basicText('activity_info', msg);
+			case 'Text':
+				return basicText('activity', activity.text);
+			default:
+				return basicText('activity', '*** Unsupported activit type: ' + activity.type);
+		}
+
+		function basicText(className, text) {
+			return angular.element('<div/>').addClass(className).text(text);
+		}
+	}
 });
 
 webircApp.directive('userlist', function() {
@@ -217,7 +281,7 @@ webircApp.directive('chatboxAutocomplete', function($rootScope) {
 	};
 });
 
-webircApp.directive('chatboxAutogrow', function($rootScope) {
+webircApp.directive('chatboxAutogrow', function($rootScope, $timeout) {
 	return function(scope, element) {
 		var shadow = angular.element('<div/>').addClass('chatboxshadow');
 
@@ -257,29 +321,19 @@ webircApp.directive('chatboxAutogrow', function($rootScope) {
 
 			if (targetHeight != previousHeight) {
 				chatBox.css('height', targetHeight);
-				$rootScope.safeApply();
+				$rootScope.$apply();
 			}
 		};
 		element.bind('input paste keypress keydown change', checkHeight);
 
 		// call it initially to set the initial height
-		checkHeight();
+		$timeout(function() {
+			checkHeight();
+		});
 	};
 });
 
 function AppCtrl($rootScope, socketFactory) {
-	// TODO: still needed?
-	$rootScope.safeApply = function(fn) {
-		var phase = this.$root.$$phase;
-		if (phase == '$apply' || phase == '$digest') {
-			if (typeof(fn) === 'function') {
-				fn();
-			}
-		} else {
-			this.$apply();
-		}
-	};
-
 	initializeSocketConnection($rootScope, socketFactory);
 }
 
