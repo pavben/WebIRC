@@ -311,7 +311,7 @@ Query.prototype = {
 function UserlistEntry() {
 	this.nick = null;
 
-	// optional: user, host, owner, op, halfop, voice
+	// optional: user, host, owner, admin, op, halfop, voice
 }
 
 function ClientOrigin(nick, user, host) {

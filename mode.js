@@ -73,14 +73,14 @@ function parseModes(modes, args, modesWithParams) {
 
 function getUserlistEntryAttributeByMode(mode) {
 	switch (mode) {
-		case 'a':
-			return 'admin';
-		case 'h':
-			return 'halfop';
-		case 'o':
-			return 'op';
 		case 'q':
 			return 'owner';
+		case 'a':
+			return 'admin';
+		case 'o':
+			return 'op';
+		case 'h':
+			return 'halfop';
 		case 'v':
 			return 'voice';
 		default:

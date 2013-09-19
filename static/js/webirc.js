@@ -228,6 +228,8 @@ webircApp.directive('userlist', function() {
 		link: function(scope) {
 			scope.getUserlistNamePrefix = function(userlistEntry) {
 				if ('owner' in userlistEntry) {
+					return '~';
+				} else if ('admin' in userlistEntry) {
 					return '&';
 				} else if ('op' in userlistEntry) {
 					return '@';

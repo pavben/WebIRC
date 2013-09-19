@@ -469,6 +469,30 @@ var sc = {
 				}
 			}
 		},
+		binarySearch: function(element, sortedList, sortFunction) {
+			var lo = 0;
+			var hi = sortedList.length - 1;
+			var mid, result;
+
+			while (lo <= hi) {
+				mid = lo + Math.floor((hi - lo) / 2);
+
+				result = sortFunction(element, sortedList[mid]);
+
+				if (result < 0) {
+					// mid is too high
+					hi = mid - 1;
+				} else if (result > 0) {
+					// mid is too low
+					lo = mid + 1;
+				} else {
+					// mid is the exact index of element
+					return mid;
+				}
+			}
+
+			return null;
+		},
 		userlist: {
 			addUser: function(userlist, userlistEntry) {
 				// TODO: make this logarithmic
@@ -484,38 +508,63 @@ var sc = {
 				userlist.splice(insertIdx, 0, userlistEntry);
 			},
 			removeUser: function(userlist, nick) {
-				var matchedUserlistEntry = null;
+				var userlistEntryIndex = this.findUserlistEntryByNick(nick, userlist);
 
-				userlist.some(function(userlistEntry, i) {
-					if (userlistEntry.nick === nick) {
-						matchedUserlistEntry = userlistEntry;
+				if (userlistEntryIndex !== null) {
+					var userlistEntry = userlist[userlistEntryIndex];
 
-						userlist.splice(i, 1);
-						return true;
-					} else {
-						return false;
-					}
-				});
+					userlist.splice(userlistEntryIndex, 1);
 
-				return matchedUserlistEntry;
+					return userlistEntry;
+				} else {
+					return null;
+				}
 			},
 			sortUsers: function(userlist) {
 				userlist.sort(this.sortFunction);
 
 				return userlist;
 			},
+			findUserlistEntryByNick: function(nick, userlist) {
+				var self = this;
+
+				var matchIndex = null;
+
+				this.userlistModes.some(function(userlistMode) {
+					// create a dummy userlist entry that will be used in the binary search
+					var dummyUserlistEntry = {
+						nick: nick
+					};
+
+					// since the userlist is sorted by names as well as highest modes, and we aren't told which highest mode our target has, search for the target using each mode until found
+					if (userlistMode !== null) {
+						dummyUserlistEntry[userlistMode] = true;
+					}
+
+					var maybeIndex = sc.utils.binarySearch(dummyUserlistEntry, userlist, self.sortFunction);
+
+					if (maybeIndex !== null) {
+						matchIndex = maybeIndex;
+						return true; // terminate the search
+					}
+				});
+
+				return matchIndex;
+			},
 			sortFunction: function(a, b) {
 				function getModeScore(u) {
 					if ('owner' in u) {
 						return 0;
-					} else if ('op' in u) {
+					} else if ('admin' in u) {
 						return 1;
-					} else if ('halfop' in u) {
+					} else if ('op' in u) {
 						return 2;
-					} else if ('voice' in u) {
+					} else if ('halfop' in u) {
 						return 3;
-					} else {
+					} else if ('voice' in u) {
 						return 4;
+					} else {
+						return 5;
 					}
 				}
 
@@ -538,7 +587,15 @@ var sc = {
 						return 0;
 					}
 				}
-			}
+			},
+			userlistModes: [
+				'owner',
+				'admin',
+				'op',
+				'halfop',
+				'voice',
+				null
+			].reverse() // the reverse is an optimization since the user is most likely to be found without a mode
 		}
 	}
 };

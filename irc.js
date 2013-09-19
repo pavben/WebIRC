@@ -68,15 +68,18 @@ function handle353(user, serverIdx, server, origin, myNickname, channelType, cha
 	}));
 }
 
-// &owner, @op, %halfop, +voice, regular
+// ~owner, &admin, @op, %halfop, +voice, regular
 // combinations possible, e.g. &@name
 function parseUserlistEntry(nickWithFlags) {
 	var userlistEntry = new UserlistEntry();
 
 	for (var i = 0; i < nickWithFlags.length; i++) {
 		switch (nickWithFlags.charAt(i)) {
-			case '&':
+			case '~':
 				userlistEntry.owner = true;
+				break;
+			case '&':
+				userlistEntry.admin = true;
 				break;
 			case '@':
 				userlistEntry.op = true;
