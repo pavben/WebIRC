@@ -318,6 +318,8 @@ function ClientOrigin(nick, user, host) {
 	this.nick = nick;
 	this.user = user;
 	this.host = host;
+
+	this.type = 'client';
 }
 
 ClientOrigin.prototype = {
@@ -328,6 +330,8 @@ ClientOrigin.prototype = {
 
 function ServerOrigin(name) {
 	this.name = name;
+
+	this.type = 'server';
 }
 
 ServerOrigin.prototype = {

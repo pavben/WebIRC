@@ -170,11 +170,13 @@ webircApp.directive('chatlog', function() {
 	};
 
 	function elementFromActivity(activity) {
+		var originNickOrName = sc.utils.originNickOrName;
+
 		switch (activity.type) {
-			case 'Action':
-				return basicText('activity', '* ' + activity.nick + ' ' + activity.text);
+			case 'ActionMessage':
+				return basicText('activity_action', '* ' + originNickOrName(activity.origin) + ' ' + activity.text);
 			case 'ChatMessage':
-				return basicText('activity', '<' + activity.nick + '> ' + activity.text);
+				return basicText('activity', '<' + originNickOrName(activity.origin) + '> ' + activity.text);
 			case 'Error':
 				return basicText('activity_error', '* ' + activity.text);
 			case 'Info':
@@ -182,25 +184,29 @@ webircApp.directive('chatlog', function() {
 			case 'Join':
 				return basicText('activity_info', '* Join: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')');
 			case 'Kick':
-				var msg = '* ' + activity.targetNick + ' was kicked by ' + activity.originName;
+				var msg = '* ' + activity.targetNick + ' was kicked by ' + originNickOrName(activity.origin);
 
 				if (activity.kickMessage) {
 					msg += ' (' + activity.kickMessage + ')';
 				}
 				return basicText('activity_kick', msg);
 			case 'KickMe':
-				var msg = '* You were kicked by ' + activity.originName;
+				var msg = '* You were kicked by ' + originNickOrName(activity.origin);
 
 				if (activity.kickMessage) {
 					msg += ' (' + activity.kickMessage + ')';
 				}
 				return basicText('activity_kick', msg);
 			case 'ModeChange':
-				return basicText('activity_info', '* ' + activity.origin + ' sets mode: ' + activity.modes + ' ' + activity.modeArgs.join(' '));
+				return basicText('activity_info', '* ' + originNickOrName(activity.origin) + ' sets mode: ' + activity.modes + ' ' + activity.modeArgs.join(' '));
+			case 'MyActionMessage':
+				return basicText('activity_action', '* ' + activity.nick + ' ' + activity.text);
+			case 'MyChatMessage':
+				return basicText('activity_mychat', '<' + activity.nick + '> ' + activity.text);
 			case 'NickChange':
 				return basicText('activity_info', '* ' + activity.oldNickname + ' is now known as ' + activity.newNickname);
 			case 'Notice':
-				return basicText('activity_notice', '* Notice from ' + activity.nick + ': ' + activity.text);
+				return basicText('activity_notice', '* Notice from ' + originNickOrName(activity.origin) + ': ' + activity.text);
 			case 'Part':
 				return basicText('activity_info', '* Part: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')');
 			case 'Quit':

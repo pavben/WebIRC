@@ -153,29 +153,37 @@ function initAutoComplete() {
 
 		function getNicknamesFromActivity(activity) {
 			switch (activity.type) {
-				case 'Action':
-					return [activity.nick];
+				case 'ActionMessage':
+					return listOriginNickOrEmpty(activity.origin);
 				case 'ChatMessage':
-					return [activity.nick];
+					return listOriginNickOrEmpty(activity.origin);
 				case 'Join':
 					return [activity.who.nick];
 				case 'Kick':
-					return [activity.targetNick, activity.originName];
+					return listOriginNickOrEmpty(activity.origin).concat([activity.targetNick]);
 				case 'KickMe':
-					return [activity.originName];
+					return listOriginNickOrEmpty(activity.origin);
 				case 'ModeChange':
 					// this could contain mode args that aren't nicks, but whatever for now
-					return [activity.who.nick].concat(activity.modeArgs);
+					return listOriginNickOrEmpty(activity.origin).concat(activity.modeArgs);
 				case 'NickChange':
 					return [activity.oldNickname, activity.newNickname];
 				case 'Notice':
-					return [activity.nick];
+					return listOriginNickOrEmpty(activity.origin);
 				case 'Part':
 					return [activity.who.nick];
 				case 'Quit':
 					return [activity.who.nick];
 				default:
 					return [];
+			}
+
+			function listOriginNickOrEmpty(origin) {
+				if (origin.type === 'client') {
+					return [origin.nick];
+				} else {
+					return [];
+				}
 			}
 		}
 	}

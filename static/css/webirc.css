@@ -196,9 +196,11 @@ a:hover, a:active {
 }
 
 .activity,
+.activity_action,
 .activity_error,
 .activity_info,
 .activity_kick,
+.activity_mychat,
 .activity_notice
 {
 	white-space:pre-wrap;
@@ -206,6 +208,9 @@ a:hover, a:active {
 }
 
 /* THEME */
+.activity_action {
+	color: maroon;
+}
 .activity_error {
 	color: red;
 }
@@ -213,6 +218,9 @@ a:hover, a:active {
 	color: darkgreen;
 }
 .activity_kick {
+	color: darkred;
+}
+.activity_mychat {
 	color: darkred;
 }
 .activity_notice {

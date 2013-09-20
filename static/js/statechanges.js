@@ -76,7 +76,7 @@ var sc = {
 
 			utils.addActivity(channel, 'Join', { who: newUserlistEntry });
 		},
-		'Kick': function(windowPath, originName, targetNick, kickMessage, utils) {
+		'Kick': function(windowPath, origin, targetNick, kickMessage, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
 			assert(targetWindow.type === 'channel');
@@ -87,7 +87,7 @@ var sc = {
 			if (targetNick === server.nickname) {
 				// we are being kicked
 				utils.addActivity(channel, 'KickMe', {
-					originName: originName,
+					origin: origin,
 					kickMessage: kickMessage
 				});
 
@@ -97,11 +97,29 @@ var sc = {
 
 				// someone else being kicked
 				utils.addActivity(channel, 'Kick', {
-					originName: originName,
+					origin: origin,
 					targetNick: targetNick,
 					kickMessage: kickMessage
 				});
 			}
+		},
+		'MyActionMessage': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+			var server = targetWindow.server;
+
+			utils.addActivity(targetWindow.object, 'MyActionMessage', {
+				nick: server.nickname,
+				text: text
+			});
+		},
+		'MyChatMessage': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+			var server = targetWindow.server;
+
+			utils.addActivity(targetWindow.object, 'MyChatMessage', {
+				nick: server.nickname,
+				text: text
+			});
 		},
 		'Part': function(windowPath, who, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
@@ -188,48 +206,57 @@ var sc = {
 			newActiveWindow.object.activeWindow = true;
 			this.currentActiveWindow = newActiveWindowPath;
 		},
-		'ChatMessage': function(windowPath, nick, text, utils) {
+		'ChatMessage': function(windowPath, origin, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 			var server = targetWindow.server;
 
 			utils.addActivity(targetWindow.object, 'ChatMessage', {
-				nick: nick,
+				origin: origin,
 				text: text
 			});
 
-			if (!utils.isActiveAndVisibleWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+			var originMe = (origin.type === 'client' && origin.nick === server.nickname);
+			var originNickOrName = utils.originNickOrName(origin);
+
+			if (!utils.isActiveAndVisibleWindow(this, windowPath) && !originMe && utils.isNickInText(server.nickname, text)) {
 				if (targetWindow.type === 'channel') {
 					var channel = targetWindow.object;
 
-					utils.notify('img/notif-generic.png', nick + ' @ ' + channel.name, '<' + nick + '> ' + text);
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '<' + originNickOrName + '> ' + text);
 				} else if (targetWindow.type === 'query') {
 					var query = targetWindow.object;
 
-					utils.notify('img/notif-generic.png', nick + ' @ private message', '<' + nick + '> ' + text);
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '<' + originNickOrName + '> ' + text);
 				}
 			}
 		},
-		'ActionMessage': function(windowPath, nick, text, utils) {
+		'ActionMessage': function(windowPath, origin, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 			var server = targetWindow.server;
 
-			utils.addActivity(targetWindow.object, 'Action', { nick: nick, text: text });
+			utils.addActivity(targetWindow.object, 'ActionMessage', {
+				origin: origin,
+				text: text
+			});
 
-			if (targetWindow.type === 'channel' && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+			var originMe = (origin.type === 'client' && origin.nick === server.nickname);
+			var originNickOrName = utils.originNickOrName(origin);
+
+			if (targetWindow.type === 'channel' && !originMe && utils.isNickInText(server.nickname, text)) {
 				var channel = targetWindow.object;
 
-				utils.notify('img/notif-generic.png', nick + ' @ ' + channel.name, '* ' + nick + ' ' + text);
+				utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text);
 			}
 
-			if (!utils.isActiveAndVisibleWindow(this, windowPath) && nick !== server.nickname && utils.isNickInText(server.nickname, text)) {
+			if (!utils.isActiveAndVisibleWindow(this, windowPath) && !originMe && utils.isNickInText(server.nickname, text)) {
 				if (targetWindow.type === 'channel') {
 					var channel = targetWindow.object;
 
-					utils.notify('img/notif-generic.png', nick + ' @ ' + channel.name, '* ' + nick + ' ' + text);
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text);
 				} else if (targetWindow.type === 'query') {
 					var query = targetWindow.object;
 
-					utils.notify('img/notif-generic.png', nick + ' @ private message', '* ' + nick + ' ' + text);
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '* ' + originNickOrName + ' ' + text);
 				}
 			}
 		},
@@ -258,10 +285,10 @@ var sc = {
 				}
 			);
 		},
-		'Notice': function(windowPath, nick, text, utils) {
+		'Notice': function(windowPath, origin, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			utils.addActivity(targetWindow.object, 'Notice', { nick: nick, text: text });
+			utils.addActivity(targetWindow.object, 'Notice', { origin: origin, text: text });
 		},
 		'Quit': function(serverIdx, who, quitMessage, utils) {
 			var server = this.servers[serverIdx];
@@ -467,6 +494,16 @@ var sc = {
 				} else {
 					window.webkitNotifications.requestPermission();
 				}
+			}
+		},
+		originNickOrName: function(origin) {
+			switch (origin.type) {
+				case 'client':
+					return origin.nick;
+				case 'server':
+					return origin.name;
+				default:
+					return '*Unknown*';
 			}
 		},
 		// returns the index of the element if found, or null otherwise

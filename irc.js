@@ -140,7 +140,7 @@ function handleKick(user, serverIdx, server, origin, channelName, targetName, ki
 		utils.withParsedTarget(targetName, silentFail(function(target) {
 			if (target instanceof ClientTarget) {
 				server.withChannel(channelName, silentFail(function(channel) {
-					user.applyStateChange('Kick', channel.toWindowPath(), origin.getNickOrName(), target.nick, kickMessage);
+					user.applyStateChange('Kick', channel.toWindowPath(), origin, target.nick, kickMessage);
 				}));
 			}
 		}));
@@ -163,7 +163,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 
 				var parsedModes = mode.parseChannelModes(modes, modeArgs);
 
-				user.applyStateChange('ModeChange', channel.toWindowPath(), origin.getNickOrName(), modes, modeArgs);
+				user.applyStateChange('ModeChange', channel.toWindowPath(), origin, modes, modeArgs);
 
 				if (parsedModes !== null) {
 					parsedModes.forEach(function(parsedMode) {
@@ -211,7 +211,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 				// not CTCP reply, but a regular notice
 				if (target instanceof ChannelTarget) {
 					server.withChannel(target.name, silentFail(function(channel) {
-						user.applyStateChange('Notice', channel.toWindowPath(), origin.getNickOrName(), text);
+						user.applyStateChange('Notice', channel.toWindowPath(), origin, text);
 					}));
 				} else if (target instanceof ClientTarget) {
 					if (server.nickname !== null) {
@@ -221,16 +221,16 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 
 							if (activeWindow !== null) {
 								if (activeWindow.type === 'server' || activeWindow.type === 'channel' || activeWindow.type === 'query') {
-									user.applyStateChange('Notice', activeWindow.object.toWindowPath(), origin.getNickOrName(), text);
+									user.applyStateChange('Notice', activeWindow.object.toWindowPath(), origin, text);
 								} else {
 									// if the active is not a supported window type, show the notice in the server window
-									user.applyStateChange('Notice', activeWindow.server.toWindowPath(), origin.getNickOrName(), text);
+									user.applyStateChange('Notice', activeWindow.server.toWindowPath(), origin, text);
 								}
 							}
 						}
 					} else {
 						// no nickname yet, so this is most likely an AUTH notice
-						user.applyStateChange('Notice', server.toWindowPath(), origin.getNickOrName(), text);
+						user.applyStateChange('Notice', server.toWindowPath(), origin, text);
 					}
 				}
 			}
@@ -289,14 +289,14 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 				// not CTCP, but a regular message
 				if (target instanceof ChannelTarget) {
 					server.withChannel(target.name, silentFail(function(channel) {
-						user.applyStateChange('ChatMessage', channel.toWindowPath(), origin.getNickOrName(), text);
+						user.applyStateChange('ChatMessage', channel.toWindowPath(), origin, text);
 					}));
 				} else if (target instanceof ClientTarget) {
 					if (server.nickname !== null && server.nickname === target.nick) {
 						// we are the recipient
 						var query = server.ensureQuery(origin.getNickOrName());
 
-						user.applyStateChange('ChatMessage', query.toWindowPath(), origin.getNickOrName(), text);
+						user.applyStateChange('ChatMessage', query.toWindowPath(), origin, text);
 					}
 				}
 			}
@@ -309,14 +309,14 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
 			if (target instanceof ChannelTarget) {
 				server.withChannel(target.name, silentFail(function(channel) {
-					server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
+					server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin, ctcpMessage.args);
 				}));
 			} else if (target instanceof ClientTarget) {
 				if (server.nickname !== null && server.nickname === target.nick) {
 					// we are the recipient
 					var query = server.ensureQuery(origin.getNickOrName());
 
-					server.user.applyStateChange('ActionMessage', query.toWindowPath(), origin.getNickOrName(), ctcpMessage.args);
+					server.user.applyStateChange('ActionMessage', query.toWindowPath(), origin, ctcpMessage.args);
 				}
 			}
 		} else {
@@ -523,14 +523,14 @@ function processChatboxLine(user, line, parseCommands, sessionId) {
 					var server = activeWindow.server;
 					var channel = activeWindow.object;
 
-					user.applyStateChange('ChatMessage', channel.toWindowPath(), server.nickname, rest);
+					user.applyStateChange('MyChatMessage', channel.toWindowPath(), rest);
 
 					server.send('PRIVMSG ' + channel.name + ' :' + rest);
 				} else if (activeWindow.type === 'query') {
 					var server = activeWindow.server;
 					var query = activeWindow.object;
 
-					user.applyStateChange('ChatMessage', query.toWindowPath(), server.nickname, rest);
+					user.applyStateChange('MyChatMessage', query.toWindowPath(), rest);
 
 					server.send('PRIVMSG ' + query.name + ' :' + rest);
 				} else {

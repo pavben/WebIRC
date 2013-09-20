@@ -70,7 +70,7 @@ function handleMe(text) {
 	if (this.activeWindow.type === 'channel' || this.activeWindow.type === 'query') {
 		var channelOrQuery = this.activeWindow.object;
 
-		this.user.applyStateChange('ActionMessage', this.activeWindow.windowPath, this.server.nickname, text);
+		this.user.applyStateChange('MyActionMessage', this.activeWindow.windowPath, text);
 
 		this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
 	} else {
@@ -89,7 +89,7 @@ function handleMsg(targetName, text) {
 				if (!target.server) {
 					var query = self.server.ensureQuery(target.toString());
 
-					self.user.applyStateChange('ChatMessage', query.toWindowPath(), self.server.nickname, text);
+					self.user.applyStateChange('MyChatMessage', query.toWindowPath(), text);
 
 					self.user.setActiveWindow(query.toWindowPath());
 				} else {
@@ -102,7 +102,7 @@ function handleMsg(targetName, text) {
 				var channel = self.server.findChannel(target.name);
 
 				if (channel) {
-					self.user.applyStateChange('ChatMessage', channel.toWindowPath(), self.server.nickname, text);
+					self.user.applyStateChange('MyChatMessage', channel.toWindowPath(), text);
 				} else {
 					self.showInfo('To ' + target.name + ': ' + text);
 				}
