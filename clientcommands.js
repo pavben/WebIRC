@@ -1,4 +1,5 @@
 var utils = require('./utils.js');
+var test = require('./test.js');
 
 var serverCommandHandlers = {
 	'CLOSE': getHandler(0, 0, handleClose),
@@ -8,6 +9,7 @@ var serverCommandHandlers = {
 	'MSG': getHandler(2, 2, handleMsg),
 	'SERVER': getHandler(2, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
+	'TEST': getHandler(1, 1, handleTest),
 };
 
 function handleClose() {
@@ -142,6 +144,10 @@ function handleSessions() {
 	} else {
 		this.showInfo('No logged-in sessions.');
 	}
+}
+
+function handleTest(testId) {
+	test.runTest(this, testId);
 }
 
 function showError(text) {
