@@ -23,10 +23,12 @@ var sc = {
 
 			server.queries.push(query);
 		},
-		'Connect': function(serverIdx) {
+		'Connect': function(serverIdx, myNickname) {
 			var server = this.servers[serverIdx];
 
 			server.connected = true;
+
+			server.nickname = myNickname;
 		},
 		'Disconnect': function(serverIdx, utils) {
 			var server = this.servers[serverIdx];
@@ -41,6 +43,8 @@ var sc = {
 
 				// server
 				server.connected = false;
+
+				server.nickname = null;
 
 				addDisconnectActivity(server);
 
@@ -242,12 +246,6 @@ var sc = {
 			var originMe = (origin.type === 'client' && origin.nick === server.nickname);
 			var originNickOrName = utils.originNickOrName(origin);
 
-			if (targetWindow.type === 'channel' && !originMe && utils.isNickInText(server.nickname, text)) {
-				var channel = targetWindow.object;
-
-				utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text);
-			}
-
 			if (!utils.isActiveAndVisibleWindow(this, windowPath) && !originMe && utils.isNickInText(server.nickname, text)) {
 				if (targetWindow.type === 'channel') {
 					var channel = targetWindow.object;
@@ -264,7 +262,7 @@ var sc = {
 			var server = this.servers[serverIdx];
 
 			// if the nickname change origin matches ours
-			if (server.nickname !== null && server.nickname === oldNickname) {
+			if (server.nickname === oldNickname) {
 				server.nickname = newNickname;
 			}
 

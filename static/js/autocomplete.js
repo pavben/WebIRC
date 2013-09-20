@@ -111,13 +111,15 @@ function initAutoComplete() {
 			return userlistEntry.nick;
 		}));
 
-		// remove my name
-		suggestions = suggestions.filter(function(nick) {
-			return nick !== server.nickname;
-		});
+		if (server.nickname !== null) {
+			// remove my name
+			suggestions = suggestions.filter(function(nick) {
+				return (nick !== server.nickname);
+			});
 
-		// and add our name at the end
-		suggestions.push(server.nickname);
+			// and add our name at the end
+			suggestions.push(server.nickname);
+		}
 
 		// now we have the suggestions in the order we want
 

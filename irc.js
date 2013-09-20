@@ -34,9 +34,7 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 }
 
 function handle001(user, serverIdx, server, origin, myNickname, text) {
-	server.nickname = myNickname;
-
-	user.applyStateChange('Connect', server.getIndex());
+	user.applyStateChange('Connect', server.getIndex(), myNickname);
 
 	server.channels.forEach(function(channel) {
 		channel.rejoin();
@@ -117,7 +115,7 @@ function handlePong(user, serverIdx, server, origin, arg) {
 function handleJoin(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the joiner matches ours
-		if (server.nickname !== null && server.nickname === origin.nick) {
+		if (server.nickname === origin.nick) {
 			// the server is confirming that we've joined the channel
 			server.joinedChannel(channelName);
 		} else {
@@ -214,18 +212,16 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 						user.applyStateChange('Notice', channel.toWindowPath(), origin, text);
 					}));
 				} else if (target instanceof ClientTarget) {
-					if (server.nickname !== null) {
-						if (server.nickname === target.nick) {
-							// we are the recipient
-							var activeWindow = user.getWindowByPath(user.currentActiveWindow);
+					if (server.nickname === target.nick) {
+						// we are the recipient
+						var activeWindow = user.getWindowByPath(user.currentActiveWindow);
 
-							if (activeWindow !== null) {
-								if (activeWindow.type === 'server' || activeWindow.type === 'channel' || activeWindow.type === 'query') {
-									user.applyStateChange('Notice', activeWindow.object.toWindowPath(), origin, text);
-								} else {
-									// if the active is not a supported window type, show the notice in the server window
-									user.applyStateChange('Notice', activeWindow.server.toWindowPath(), origin, text);
-								}
+						if (activeWindow !== null) {
+							if (activeWindow.type === 'server' || activeWindow.type === 'channel' || activeWindow.type === 'query') {
+								user.applyStateChange('Notice', activeWindow.object.toWindowPath(), origin, text);
+							} else {
+								// if the active is not a supported window type, show the notice in the server window
+								user.applyStateChange('Notice', activeWindow.server.toWindowPath(), origin, text);
 							}
 						}
 					} else {
@@ -241,7 +237,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 function handleQuit(user, serverIdx, server, origin, quitMessage) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if we are the quitter
-		if (server.nickname !== null && server.nickname === origin.nick) {
+		if (server.nickname === origin.nick) {
 			// do we need to do anything special?
 		}
 
@@ -252,7 +248,7 @@ function handleQuit(user, serverIdx, server, origin, quitMessage) {
 function handlePart(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the leaver matches ours
-		if (server.nickname !== null && server.nickname === origin.nick) {
+		if (server.nickname === origin.nick) {
 			// the server is confirming that we've left the channel
 			server.withChannel(channelName, silentFail(function(channel) {
 				if (channel.rejoining) {
@@ -292,7 +288,7 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 						user.applyStateChange('ChatMessage', channel.toWindowPath(), origin, text);
 					}));
 				} else if (target instanceof ClientTarget) {
-					if (server.nickname !== null && server.nickname === target.nick) {
+					if (server.nickname === target.nick) {
 						// we are the recipient
 						var query = server.ensureQuery(origin.getNickOrName());
 
@@ -312,7 +308,7 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 					server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin, ctcpMessage.args);
 				}));
 			} else if (target instanceof ClientTarget) {
-				if (server.nickname !== null && server.nickname === target.nick) {
+				if (server.nickname === target.nick) {
 					// we are the recipient
 					var query = server.ensureQuery(origin.getNickOrName());
 
