@@ -155,37 +155,48 @@ function initAutoComplete() {
 		// use the last 100 activities
 		var recentActivities = activityLog.slice(-100);
 
+		var recentNames = [];
+		var ignoreNames = {};
+
 		// most recent first
-		recentActivities.reverse();
-
-		// get nicknames from activities (note the flattening of arrays)
-		return Array.prototype.concat.apply([], recentActivities.map(getNicknamesFromActivity));
-
-		function getNicknamesFromActivity(activity) {
+		recentActivities.reverse().forEach(function(activity) {
 			switch (activity.type) {
 				case 'ActionMessage':
-					return listOriginNickOrEmpty(activity.origin);
+					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					break;
 				case 'ChatMessage':
-					return listOriginNickOrEmpty(activity.origin);
+					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					break;
 				case 'Join':
-					return [activity.who.nick];
+					addNicksCheckIgnore([activity.who.nick]);
+					break;
 				case 'Kick':
-					return listOriginNickOrEmpty(activity.origin).concat([activity.targetNick]);
+					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin).concat([activity.targetNick]));
+					break;
 				case 'KickMe':
-					return listOriginNickOrEmpty(activity.origin);
+					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					break;
 				case 'ModeChange':
 					// this could contain mode args that aren't nicks, but whatever for now
-					return listOriginNickOrEmpty(activity.origin).concat(activity.modeArgs);
+					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin).concat(activity.modeArgs));
+					break;
 				case 'NickChange':
-					return [activity.oldNickname, activity.newNickname];
+					// set the old nickname as ignored for the events before this one
+					ignoreNames[activity.oldNickname] = true;
+
+					addNicksCheckIgnore([activity.newNickname]);
+					break;
 				case 'Notice':
-					return listOriginNickOrEmpty(activity.origin);
+					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					break;
 				case 'Part':
-					return [activity.who.nick];
+					addNicksCheckIgnore([activity.who.nick]);
+					break;
 				case 'Quit':
-					return [activity.who.nick];
+					addNicksCheckIgnore([activity.who.nick]);
+					break;
 				default:
-					return [];
+					// ignore
 			}
 
 			function listOriginNickOrEmpty(origin) {
@@ -195,7 +206,17 @@ function initAutoComplete() {
 					return [];
 				}
 			}
-		}
+
+			function addNicksCheckIgnore(nicks) {
+				nicks.forEach(function(nick) {
+					if (!(nick in ignoreNames)) {
+						recentNames.push(nick);
+					}
+				});
+			}
+		});
+
+		return recentNames;
 	}
 
 	function applySuggestionToChatbox(suggestion, activeAutoComplete) {
