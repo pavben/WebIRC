@@ -174,3 +174,19 @@ a:hover, a:active {
 .activity_notice {
 	color: #AD75F4;
 }
+
+.userlist_color_owner {
+	color: #F90071;
+}
+.userlist_color_admin {
+	color: #66DAF1;
+}
+.userlist_color_op {
+	color: #A6E807;
+}
+.userlist_color_halfop {
+	color: #AD75F4;
+}
+.userlist_color_voice {
+	color: #FE9700;
+}

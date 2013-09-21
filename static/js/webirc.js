@@ -247,6 +247,22 @@ webircApp.directive('userlist', function() {
 					return '';
 				}
 			};
+
+			scope.getUserlistClass = function(userlistEntry) {
+				if ('owner' in userlistEntry) {
+					return 'userlist_color_owner';
+				} else if ('admin' in userlistEntry) {
+					return 'userlist_color_admin';
+				} else if ('op' in userlistEntry) {
+					return 'userlist_color_op';
+				} else if ('halfop' in userlistEntry) {
+					return 'userlist_color_halfop';
+				} else if ('voice' in userlistEntry) {
+					return 'userlist_color_voice';
+				} else {
+					return null;
+				}
+			};
 		}
 	};
 });

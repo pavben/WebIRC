@@ -51,7 +51,7 @@
 								</div>
 								<div class="userlistcell">
 									<div userlist class="userlist" ng-style="{height: maincellHeight}">
-										<div ng-repeat="user in channel.userlist" class="userlistentry">{{getUserlistNamePrefix(user)}}{{user.nick}}</div>
+										<div ng-repeat="user in channel.userlist" class="userlistentry" ng-class="getUserlistClass(user)">{{getUserlistNamePrefix(user)}}{{user.nick}}</div>
 									</div>
 								</div>
 							</div>
