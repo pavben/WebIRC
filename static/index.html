@@ -3,6 +3,7 @@
 <head>
 	<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
 	<title>WebIRC</title>
+	<link href="//fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" type="text/css" />
 	<link href="css/webirc.css" rel="stylesheet" type="text/css" />
 	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
@@ -13,57 +14,60 @@
 	<script src="js/socket.js"></script>
 </head>
 <body ng-controller="AppCtrl" ng-style="{overflow: bodyOverflowY}">
-	<div id="outerwrapper" class="outerwrapper">
-		<div ng-show="screen === 'login'" class="fullheight">
-			<div class="fulltable">
-				<div class="tablecellvmid">
-					<div loginbox class="loginbox">
-						<div class="chatboxwrapper">
-							<input type="text" class="chatbox" placeholder="Username" ng-model="username" focus-key="LoginUsername" />
-						</div>
-						<div class="chatboxwrapper">
-							<input type="password" class="chatbox" placeholder="Password" ng-model="password" ng-keydown="passwordKeyDown($event)" />
-						</div>
-						<div class="loginbuttonwrapper">
-							<div class="button1 fullwidth" ng-click="login()">Login</div>
-						</div>
+	<div ng-show="screen === 'login'" class="fullheight">
+		<div class="fulltable">
+			<div class="tablecellvmid">
+				<div loginbox class="loginbox">
+					<div class="chatboxwrapper">
+						<input type="text" class="chatbox" placeholder="Username" ng-model="username" focus-key="LoginUsername" />
+					</div>
+					<div class="chatboxwrapper">
+						<input type="password" class="chatbox" placeholder="Password" ng-model="password" ng-keydown="passwordKeyDown($event)" />
+					</div>
+					<div class="loginbuttonwrapper">
+						<div class="button1 centertext" ng-click="login()">Login</div>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div ng-show="screen === 'main'">
-			<div ng-repeat="server in state.servers" class="windowlistwrapper">
-				<div ng-click="requestSetActiveWindow({serverIdx: $index})" class="windowlistbutton">{{server.host}}</div>
-				<div ng-repeat="channel in server.channels" ng-click="requestSetActiveWindow({serverIdx: $parent.$index, channelIdx: $index})" class="windowlistbutton">{{channel.name}}</div>
-				<div ng-repeat="query in server.queries" ng-click="requestSetActiveWindow({serverIdx: $parent.$index, queryIdx: $index})" class="windowlistbutton">{{query.name}}</div>
-			</div>
-			<div id="maincell">
-				<div ng-repeat="server in state.servers">
-					<chatlog activity-log="server.activityLog" class="chatlog" resize-maincell="server.activeWindow" ng-show="server.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
-					<div ng-repeat="channel in server.channels" ng-show="channel.activeWindow" class="fixedtable">
-						<div class="tablerow">
-							<div class="tablecell">
-								<chatlog activity-log="channel.activityLog" class="chatlog" resize-maincell="channel.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
-							</div>
-							<div class="mainspacercell"></div>
-							<div class="userlistcell">
-								<div userlist class="userlist" ng-style="{height: maincellHeight}">
-									<div ng-repeat="user in channel.userlist">{{getUserlistNamePrefix(user)}}{{user.nick}}</div>
+	</div>
+	<div ng-show="screen === 'main'" class="fullheight">
+		<div class="fulltable">
+			<div class="tablerow">
+				<div class="leftbarcell">
+					<div ng-repeat="server in state.servers">
+						<div ng-click="requestSetActiveWindow({serverIdx: $index})" class="button1">{{server.host}}</div>
+						<div ng-repeat="channel in server.channels" ng-click="requestSetActiveWindow({serverIdx: $parent.$index, channelIdx: $index})" class="button1">{{channel.name}}</div>
+						<div ng-repeat="query in server.queries" ng-click="requestSetActiveWindow({serverIdx: $parent.$index, queryIdx: $index})" class="button1">{{query.name}}</div>
+					</div>
+				</div>
+				<div class="rightcell">
+					<div ng-repeat="server in state.servers">
+						<chatlog activity-log="server.activityLog" class="chatlog" resize-maincell="server.activeWindow" ng-show="server.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
+						<div ng-repeat="channel in server.channels" ng-show="channel.activeWindow" class="fixedtable">
+							<div class="tablerow">
+								<div class="tablecell">
+									<chatlog activity-log="channel.activityLog" class="chatlog" resize-maincell="channel.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
+								</div>
+								<div class="userlistcell">
+									<div userlist class="userlist" ng-style="{height: maincellHeight}">
+										<div ng-repeat="user in channel.userlist" class="userlistentry">{{getUserlistNamePrefix(user)}}{{user.nick}}</div>
+									</div>
 								</div>
 							</div>
 						</div>
+						<div ng-repeat="query in server.queries" ng-show="query.activeWindow">
+							<chatlog activity-log="query.activityLog" class="chatlog" resize-maincell="query.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
+						</div>
 					</div>
-					<div ng-repeat="query in server.queries" ng-show="query.activeWindow">
-						<chatlog activity-log="query.activityLog" class="chatlog" resize-maincell="query.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
+					<div id="chatboxwrapper" class="chatboxwrapper">
+						<textarea chatbox chatbox-autocomplete chatbox-autogrow id="chatbox" class="chatbox" focus-key="Chatbox"></textarea>
 					</div>
 				</div>
 			</div>
-			<div id="chatboxwrapper" class="chatboxwrapper">
-				<textarea chatbox chatbox-autocomplete chatbox-autogrow id="chatbox" class="chatbox" focus-key="Chatbox"></textarea>
-			</div>
 		</div>
-		<div ng-show="screen !== 'login' && screen !== 'main'">
-		</div>
+	</div>
+	<div ng-show="screen !== 'login' && screen !== 'main'">
 	</div>
 </body>
 </html>

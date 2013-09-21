@@ -357,15 +357,10 @@ function AppCtrl($rootScope, socketFactory) {
 }
 
 function getTargetHeightForMaincell() {
-	var maincellDiv = $('#maincell');
 	var chatboxWrapper = $('#chatboxwrapper');
-	var outerWrapper = $('#outerwrapper');
 
 	return ($(window).height()
-		- maincellDiv.offset().top
-		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
 		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
-		- stripPx(outerWrapper.css('padding-bottom'))
 	);
 }
 
