@@ -156,44 +156,45 @@ function initAutoComplete() {
 		var recentActivities = activityLog.slice(-100);
 
 		var recentNames = [];
-		var ignoreNames = {};
 
-		// most recent first
-		recentActivities.reverse().forEach(function(activity) {
+		// oldest first
+		recentActivities.forEach(function(activity) {
 			switch (activity.type) {
 				case 'ActionMessage':
-					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					addNames(listOriginNickOrEmpty(activity.origin));
 					break;
 				case 'ChatMessage':
-					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					addNames(listOriginNickOrEmpty(activity.origin));
 					break;
 				case 'Join':
-					addNicksCheckIgnore([activity.who.nick]);
+					addNames([activity.who.nick]);
 					break;
 				case 'Kick':
-					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin).concat([activity.targetNick]));
+					addNames(listOriginNickOrEmpty(activity.origin).concat([activity.targetNick]));
 					break;
 				case 'KickMe':
-					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					addNames(listOriginNickOrEmpty(activity.origin));
 					break;
 				case 'ModeChange':
 					// this could contain mode args that aren't nicks, but whatever for now
-					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin).concat(activity.modeArgs));
+					addNames(listOriginNickOrEmpty(activity.origin).concat(activity.modeArgs));
 					break;
 				case 'NickChange':
-					// set the old nickname as ignored for the events before this one
-					ignoreNames[activity.oldNickname] = true;
+					// remove oldNickname from recentNames as we don't want it to show up in autocomplete
+					recentNames = recentNames.filter(function(nick) {
+						return (nick !== activity.oldNickname);
+					});
 
-					addNicksCheckIgnore([activity.newNickname]);
+					addNames([activity.newNickname]);
 					break;
 				case 'Notice':
-					addNicksCheckIgnore(listOriginNickOrEmpty(activity.origin));
+					addNames(listOriginNickOrEmpty(activity.origin));
 					break;
 				case 'Part':
-					addNicksCheckIgnore([activity.who.nick]);
+					addNames([activity.who.nick]);
 					break;
 				case 'Quit':
-					addNicksCheckIgnore([activity.who.nick]);
+					addNames([activity.who.nick]);
 					break;
 				default:
 					// ignore
@@ -207,16 +208,15 @@ function initAutoComplete() {
 				}
 			}
 
-			function addNicksCheckIgnore(nicks) {
-				nicks.forEach(function(nick) {
-					if (!(nick in ignoreNames)) {
-						recentNames.push(nick);
-					}
+			function addNames(names) {
+				names.forEach(function(name) {
+					recentNames.push(name);
 				});
 			}
 		});
 
-		return recentNames;
+		// return the recent names in the "most recent first" order
+		return recentNames.reverse();
 	}
 
 	function applySuggestionToChatbox(suggestion, activeAutoComplete) {
