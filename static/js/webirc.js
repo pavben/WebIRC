@@ -206,7 +206,7 @@ webircApp.directive('chatlog', function() {
 			case 'NickChange':
 				return basicText('activity_info', '* ' + activity.oldNickname + ' is now known as ' + activity.newNickname);
 			case 'Notice':
-				return basicText('activity_notice', '* Notice from ' + originNickOrName(activity.origin) + ': ' + activity.text);
+				return basicText('activity_notice', '-' + originNickOrName(activity.origin) + '- ' + activity.text);
 			case 'Part':
 				return basicText('activity_info', '* Part: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')');
 			case 'Quit':
