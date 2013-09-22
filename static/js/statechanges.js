@@ -85,7 +85,7 @@ var sc = {
 
 			utils.userlist.addUser(channel.userlist, newUserlistEntry);
 
-			utils.addActivity(this, channel, 'Join', { who: newUserlistEntry }, ActivityType.Event);
+			utils.addActivity(this, channel, 'Join', { who: newUserlistEntry }, ActivityType.None);
 		},
 		'Kick': function(windowPath, origin, targetNick, kickMessage, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);

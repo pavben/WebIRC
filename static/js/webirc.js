@@ -139,7 +139,7 @@ webircApp.directive('windowlistbutton', function() {
 			return function($scope, $element, $attr) {
 				var alertCount = 0;
 				var eventCount = 0;
-				var isHover = false;
+				var isCurrent = false;
 
 				// the elements
 				var trElement = angular.element('<div/>').addClass('tablerow');
@@ -162,50 +162,45 @@ webircApp.directive('windowlistbutton', function() {
 					$scope.requestSetActiveWindow(windowPath);
 				});
 
-				// right cell on hover will always be the close
 				rightcellElement.on('mousedown', function() {
-					if (isHover) {
+					if (isCurrent) {
+						// if current, the right cell contains the close button
 						$scope.requestCloseWindow(windowPath);
 					} else {
+						// otherwise treat it the same as clicking on the label
 						$scope.requestSetActiveWindow(windowPath);
 					}
 				});
 
-				if ($attr.alertCount) {
-					$scope.$watch($attr.alertCount, function(newAlertCount) {
-						alertCount = newAlertCount;
-
-						updateView();
-					});
-				}
-
-				if ($attr.eventCount) {
-					$scope.$watch($attr.eventCount, function(newEventCount) {
-						eventCount = newEventCount;
-
-						updateView();
-					});
-				}
-
-				$element.on('mouseenter', function() {
-					isHover = true;
+				$scope.$watch($attr.windowObject + '.numEvents', function(newEventCount) {
+					eventCount = newEventCount;
 
 					updateView();
 				});
 
-				$element.on('mouseleave', function() {
-					isHover = false;
+				$scope.$watch($attr.windowObject + '.numAlerts', function(newAlertCount) {
+					alertCount = newAlertCount;
+
+					updateView();
+				});
+
+				$scope.$watch($attr.windowObject + '.activeWindow', function(activeWindow) {
+					isCurrent = !!activeWindow;
 
 					updateView();
 				});
 
 				function updateView() {
+					$element.removeClass('windowlistbutton_current');
+
 					rightcellElement.children().remove();
 
-					if (isHover) {
-						var closeInner = angular.element('<div/>').addClass('windowlistbutton_rightinnerclose');
+					if (isCurrent) {
+						$element.addClass('windowlistbutton_current');
+					}
 
-						closeInner.text('X');
+					if (isCurrent) {
+						var closeInner = angular.element('<div/>').addClass('windowlistbutton_rightinnerclose');
 
 						rightcellElement.append(closeInner);
 					} else if (alertCount > 0) {
