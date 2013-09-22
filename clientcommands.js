@@ -2,7 +2,6 @@ var utils = require('./utils.js');
 var test = require('./test.js');
 
 var serverCommandHandlers = {
-	'CLOSE': getHandler(0, 0, handleClose),
 	'HOP': getHandler(0, 0, handleHop),
 	'LOGOUT': getHandler(1, 0, handleLogout),
 	'ME': getHandler(1, 1, handleMe),
@@ -11,28 +10,6 @@ var serverCommandHandlers = {
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
 };
-
-function handleClose() {
-	if (this.activeWindow.type === 'channel') {
-		var server = this.activeWindow.server;
-		var channel = this.activeWindow.object;
-
-		if (channel.inChannel) {
-			channel.rejoining = false;
-
-			server.send('PART ' + channel.name);
-		} else {
-			server.removeChannel(channel.name);
-		}
-	} else if (this.activeWindow.type === 'query') {
-		var server = this.activeWindow.server;
-		var query = this.activeWindow.object;
-
-		server.removeQuery(query.name);
-	} else {
-		this.showError('Can\'t /close this window');
-	}
-}
 
 function handleHop() {
 	if (this.activeWindow.type === 'channel') {

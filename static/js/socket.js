@@ -113,4 +113,8 @@ function initializeSocketConnection($rootScope, socketFactory) {
 	$rootScope.requestSetActiveWindow = function(windowPath) {
 		$rootScope.sendToGateway('SetActiveWindow', { windowPath: windowPath });
 	}
+
+	$rootScope.requestCloseWindow = function(windowPath) {
+		$rootScope.sendToGateway('CloseWindow', { windowPath: windowPath });
+	}
 }

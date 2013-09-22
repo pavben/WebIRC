@@ -141,7 +141,53 @@ a:hover, a:active {
 .centertext {
 	text-align:center;
 }
+/* windowlistbutton */
+windowlistbutton {
+	display:table;
+	table-layout:fixed;
+	width:100%;
+	cursor:pointer;
+}
+windowlistbutton:hover {
+	background-color:#3E3E32;
+	border-radius:5px;
+}
+windowlistbutton:active {
+	position:relative;
+	top:1px;
+}
+.windowlistbutton_maincell {
+	display:table-cell;
+	padding:5px 7px 5px 7px;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	overflow:hidden;
+	vertical-align:middle;
+}
+.windowlistbutton_rightcell {
+	display:table-cell;
+	padding:2px 2px 2px 2px;
+	width:25px;
+	vertical-align:middle;
+}
+.windowlistbutton_rightinneralert,
+.windowlistbutton_rightinnerevent,
+.windowlistbutton_rightinnerclose {
+	padding:3px 3px 3px 3px;
+	border-radius:5px;
+	text-align:center;
+}
+.windowlistbutton_rightinneralert {
+	background-color:#F90071;
+}
+.windowlistbutton_rightinnerevent {
+	background-color:#3E3E32;
+}
+.windowlistbutton_rightinnerclose {
+	background-color:#5E5E4C;
+}
 
+/* chatlog activities */
 .activity,
 .activity_action,
 .activity_error,
@@ -155,7 +201,6 @@ a:hover, a:active {
 	padding:1px 0px 1px 0px;
 }
 
-/* THEME */
 .activity_action {
 	color: #E6DF6D;
 }
@@ -175,6 +220,7 @@ a:hover, a:active {
 	color: #AD75F4;
 }
 
+/* userlist mode colors */
 .userlist_color_owner {
 	color: #F90071;
 }

@@ -227,6 +227,9 @@ Server.prototype = {
 		return {
 			serverIdx: this.getIndex()
 		};
+	},
+	closeWindow: function() {
+		// TODO: implement closing server windows
 	}
 };
 
@@ -285,6 +288,15 @@ Channel.prototype = {
 			serverIdx: this.server.user.servers.indexOf(this.server),
 			channelIdx: this.getIndex()
 		};
+	},
+	closeWindow: function() {
+		if (this.inChannel) {
+			this.rejoining = false;
+
+			this.server.send('PART ' + this.name);
+		} else {
+			this.server.removeChannel(this.name);
+		}
 	}
 };
 
@@ -305,6 +317,9 @@ Query.prototype = {
 			serverIdx: this.server.user.servers.indexOf(this.server),
 			queryIdx: this.getIndex()
 		};
+	},
+	closeWindow: function() {
+		this.server.removeQuery(this.name);
 	}
 };
 

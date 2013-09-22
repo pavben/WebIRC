@@ -132,11 +132,108 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 	}
 });
 
+webircApp.directive('windowlistbutton', function() {
+	return {
+		restrict: 'E',
+		compile: function(element, attr) {
+			return function($scope, $element, $attr) {
+				var alertCount = 0;
+				var eventCount = 0;
+				var isHover = false;
+
+				// the elements
+				var trElement = angular.element('<div/>').addClass('tablerow');
+				var maincellElement = angular.element('<div/>').addClass('windowlistbutton_maincell');
+				var rightcellElement = angular.element('<div/>').addClass('windowlistbutton_rightcell');
+
+				trElement.append(maincellElement);
+				trElement.append(rightcellElement);
+
+				$element.append(trElement);
+
+				// attributes
+				var buttonLabel = $scope.$eval($attr.label);
+
+				maincellElement.text(buttonLabel);
+
+				var windowPath = $scope.$eval($attr.windowPath);
+
+				maincellElement.on('mousedown', function() {
+					$scope.requestSetActiveWindow(windowPath);
+				});
+
+				// right cell on hover will always be the close
+				rightcellElement.on('mousedown', function() {
+					if (isHover) {
+						$scope.requestCloseWindow(windowPath);
+					} else {
+						$scope.requestSetActiveWindow(windowPath);
+					}
+				});
+
+				if ($attr.alertCount) {
+					$scope.$watch($attr.alertCount, function(newAlertCount) {
+						alertCount = newAlertCount;
+
+						updateView();
+					});
+				}
+
+				if ($attr.eventCount) {
+					$scope.$watch($attr.eventCount, function(newEventCount) {
+						eventCount = newEventCount;
+
+						updateView();
+					});
+				}
+
+				$element.on('mouseenter', function() {
+					isHover = true;
+
+					updateView();
+				});
+
+				$element.on('mouseleave', function() {
+					isHover = false;
+
+					updateView();
+				});
+
+				function updateView() {
+					rightcellElement.children().remove();
+
+					if (isHover) {
+						var closeInner = angular.element('<div/>').addClass('windowlistbutton_rightinnerclose');
+
+						closeInner.text('X');
+
+						rightcellElement.append(closeInner);
+					} else if (alertCount > 0) {
+						var alertInner = angular.element('<div/>').addClass('windowlistbutton_rightinneralert');
+
+						alertInner.text(alertCount < 10 ? alertCount : '9+');
+
+						rightcellElement.append(alertInner);
+					} else if (eventCount > 0) {
+						var eventInner = angular.element('<div/>').addClass('windowlistbutton_rightinnerevent');
+
+						eventInner.text(eventCount < 10 ? eventCount : '9+');
+
+						rightcellElement.append(eventInner);
+					}
+				}
+
+				updateView();
+			}
+		}
+	}
+});
+
 webircApp.directive('chatlog', function() {
 	return {
 		restrict: 'E',
 		require: '^resizeMaincell',
-		compile: function(element, attr, linker) {
+		compile: function(element, attr) {
 			return function($scope, $element, $attr, resizeMaincellCtrl) {
 				var lastLen = 0;
 

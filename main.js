@@ -212,6 +212,16 @@ readConfig('config.json', check(
 					console.log('Invalid windowPath in SetActiveWindow from client');
 				}
 			});
+
+			socket.on('CloseWindow', function(data) {
+				var targetWindow = user.getWindowByPath(data.windowPath);
+
+				if (targetWindow !== null) {
+					targetWindow.object.closeWindow();
+				} else {
+					console.log('Invalid windowPath in CloseWindow from client');
+				}
+			});
 		}
 
 		config.users.forEach(function(user) {

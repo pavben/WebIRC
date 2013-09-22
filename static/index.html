@@ -5,8 +5,8 @@
 	<title>WebIRC</title>
 	<link href="//fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" type="text/css" />
 	<link href="css/webirc.css" rel="stylesheet" type="text/css" />
-	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
 	<script src="js/statechanges.js"></script>
 	<script src="js/autocomplete.js"></script>
@@ -36,9 +36,9 @@
 			<div class="tablerow">
 				<div class="leftbarcell">
 					<div ng-repeat="server in state.servers">
-						<div ng-click="requestSetActiveWindow({serverIdx: $index})" class="button1">{{server.host}}</div>
-						<div ng-repeat="channel in server.channels" ng-click="requestSetActiveWindow({serverIdx: $parent.$index, channelIdx: $index})" class="button1">{{channel.name}}</div>
-						<div ng-repeat="query in server.queries" ng-click="requestSetActiveWindow({serverIdx: $parent.$index, queryIdx: $index})" class="button1">{{query.name}}</div>
+						<windowlistbutton label="server.host" window-path="{ serverIdx: $index }" event-count="0" alert-count="0"></windowlistbutton>
+						<windowlistbutton ng-repeat="channel in server.channels" label="channel.name" window-path="{ serverIdx: $parent.$index, channelIdx: $index }" event-count="0" alert-count="0"></windowlistbutton>
+						<windowlistbutton ng-repeat="query in server.queries" label="query.name" window-path="{ serverIdx: $parent.$index, queryIdx: $index }" event-count="0" alert-count="0"></windowlistbutton>
 					</div>
 				</div>
 				<div class="rightcell">

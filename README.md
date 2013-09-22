@@ -20,7 +20,6 @@ Then look at the console. Did it connect to your server? Visit `http://localhost
 What works:
 
 * /join #channel, /part #channel
-* /close channels or private message windows (will later add an 'x' close on tabs)
 * Talk in channels
 * Smart tab auto-complete prioritizing recent activity, including nicknames of those who recently left/quit
 * Receive private messages and talk in them
@@ -32,7 +31,7 @@ What works:
 
 ## Not yet supported
 * Sending/receiving files
-* Multiple servers at the same time (it might work, but I haven't tried it yet)
+* Multiple servers at the same time
 
 ## License
 MIT
