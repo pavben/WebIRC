@@ -90,6 +90,8 @@ function Server(serverSpec) {
 	this.queries = [];
 	this.socket = null;
 	this.activityLog = [];
+	this.numEvents = 0;
+	this.numAlerts = 0;
 	this.connected = false;
 
 	// these are set automatically by the 'add' functions
@@ -238,6 +240,8 @@ function Channel(name, inChannel) {
 	this.tempUserlist = []; // built while NAMES entries are coming in (353) and copied to userlist on 366
 	this.userlist = [];
 	this.activityLog = [];
+	this.numEvents = 0;
+	this.numAlerts = 0;
 	this.inChannel = inChannel;
 
 	// server-only attributes
@@ -303,6 +307,8 @@ Channel.prototype = {
 function Query(name) {
 	this.name = name;
 	this.activityLog = [];
+	this.numEvents = 0;
+	this.numAlerts = 0;
 
 	// these are set automatically by the 'add' functions
 	this.server = null;
