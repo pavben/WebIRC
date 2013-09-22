@@ -197,40 +197,42 @@ function handleNick(user, serverIdx, server, origin, newNickname) {
 
 function handleNotice(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
-		utils.withParsedTarget(targetName, silentFail(function(target) {
-			// here we have a valid target
+		if (server.nickname !== null) {
+			utils.withParsedTarget(targetName, silentFail(function(target) {
+				// here we have a valid target
 
-			var ctcpMessage = utils.parseCtcpMessage(text);
+				var ctcpMessage = utils.parseCtcpMessage(text);
 
-			if (ctcpMessage !== null) {
-				//handleCtcp(serverIdx, server, origin, target, ctcpMessage);
-				console.log('CTCP reply handling not implemented');
-			} else {
-				// not CTCP reply, but a regular notice
-				if (target instanceof ChannelTarget) {
-					server.withChannel(target.name, silentFail(function(channel) {
-						user.applyStateChange('Notice', channel.toWindowPath(), origin, text);
-					}));
-				} else if (target instanceof ClientTarget) {
-					if (server.nickname === target.nick) {
-						// we are the recipient
-						var activeWindow = user.getWindowByPath(user.currentActiveWindow);
+				if (ctcpMessage !== null) {
+					//handleCtcp(serverIdx, server, origin, target, ctcpMessage);
+					console.log('CTCP reply handling not implemented');
+				} else {
+					// not CTCP reply, but a regular notice
+					if (target instanceof ChannelTarget) {
+						server.withChannel(target.name, silentFail(function(channel) {
+							user.applyStateChange('Notice', channel.toWindowPath(), origin, text);
+						}));
+					} else if (target instanceof ClientTarget) {
+						if (server.nickname === target.nick) {
+							// we are the recipient
+							var activeWindow = user.getWindowByPath(user.currentActiveWindow);
 
-						if (activeWindow !== null) {
-							if (activeWindow.type === 'server' || activeWindow.type === 'channel' || activeWindow.type === 'query') {
-								user.applyStateChange('Notice', activeWindow.object.toWindowPath(), origin, text);
-							} else {
-								// if the active is not a supported window type, show the notice in the server window
-								user.applyStateChange('Notice', activeWindow.server.toWindowPath(), origin, text);
+							if (activeWindow !== null) {
+								if (activeWindow.type === 'server' || activeWindow.type === 'channel' || activeWindow.type === 'query') {
+									user.applyStateChange('Notice', activeWindow.object.toWindowPath(), origin, text);
+								} else {
+									// if the active is not a supported window type, show the notice in the server window
+									user.applyStateChange('Notice', activeWindow.server.toWindowPath(), origin, text);
+								}
 							}
 						}
-					} else {
-						// no nickname yet, so this is most likely an AUTH notice
-						user.applyStateChange('Notice', server.toWindowPath(), origin, text);
 					}
 				}
-			}
-		}));
+			}));
+		} else {
+			// a notice before the 001, so we ignore the target and assume it's for us
+			user.applyStateChange('Notice', server.toWindowPath(), origin, text);
+		}
 	}
 }
 
