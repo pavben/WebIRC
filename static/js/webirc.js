@@ -156,7 +156,12 @@ webircApp.directive('windowlistbutton', function() {
 
 				maincellElement.text(buttonLabel);
 
-				var windowPath = $scope.$eval($attr.windowPath);
+				var windowPath = null;
+
+				// windowPath can change if the index of the window changes
+				$scope.$watch($attr.windowPath, function(newWindowPath) {
+					windowPath = newWindowPath;
+				}, true);
 
 				maincellElement.on('mousedown', function() {
 					$scope.requestSetActiveWindow(windowPath);
