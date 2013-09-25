@@ -64,7 +64,7 @@ a:hover, a:active {
 .leftbarcell {
 	display:table-cell;
 	width:160px;
-	padding:50px 0px 10px 5px;
+	padding:60px 0px 10px 5px;
 }
 .rightcell {
 	display:table-cell;
@@ -199,6 +199,9 @@ windowlistbutton:active {
 }
 .windowlistbutton_rightcell:not(:hover) .windowlistbutton_rightinnerclose {
 	color:#7C7C6D;
+}
+.serverbutton {
+	margin-top:8px;
 }
 
 /* chatlog activities */

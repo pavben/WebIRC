@@ -22,6 +22,7 @@ Features:
 * Smart tab auto-complete prioritizing recent activity, including nicknames of those who recently left/quit
 * Paste multi-line messages
 * Connect to IRC servers using SSL
+* Connect to multiple servers at the same time
 * Webkit notifications for when your name is mentioned
 
 Commands:
@@ -34,8 +35,10 @@ Commands:
 * All other commands are treated as raw and sent to the server directly. For example, you can do: `/privmsg #chan :text`
 
 ## Not yet supported
-* Sending/receiving files
-* Adding more than 1 server to the servers list (needs to be polished, but it should work)
+* Activity timestamps
+* Clickable links in messages
+* File transfers
+* Scripting engine
 
 ## License
 MIT

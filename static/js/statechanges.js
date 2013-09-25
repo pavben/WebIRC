@@ -156,15 +156,8 @@ var sc = {
 				text: 'Rejoined channel ' + channel.name
 			}, ActivityType.None);
 		},
-		'RemoveChannel': function(windowPath, utils) {
-			utils.onCloseWindow(this, windowPath);
-
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'channel');
-
-			// remove the channel
-			targetWindow.server.channels.splice(windowPath.channelIdx, 1);
+		'RemoveWindow': function(windowPath, utils) {
+			utils.removeWindow(this, windowPath);
 		},
 		'Text': function(windowPath, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
@@ -194,16 +187,6 @@ var sc = {
 		'AddServer': function(server) {
 			this.servers.push(server);
 		},
-		'RemoveQuery': function(windowPath, utils) {
-			utils.onCloseWindow(this, windowPath);
-
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'query');
-
-			// remove the channel
-			targetWindow.server.queries.splice(windowPath.queryIdx, 1);
-		},
 		'SetActiveWindow': function(newActiveWindowPath, utils) {
 			// if there is already an active window, remove the 'activeWindow' flag from it
 			if (this.currentActiveWindow !== null) {
@@ -212,13 +195,15 @@ var sc = {
 				delete currentActiveWindow.object.activeWindow;
 			}
 
-			var newActiveWindow = utils.getWindowByPath(this, newActiveWindowPath);
+			if (newActiveWindowPath !== null) {
+				var newActiveWindow = utils.getWindowByPath(this, newActiveWindowPath);
 
-			newActiveWindow.object.activeWindow = true;
+				newActiveWindow.object.activeWindow = true;
 
-			// reset the events and alerts
-			newActiveWindow.object.numEvents = 0;
-			newActiveWindow.object.numAlerts = 0;
+				// reset the events and alerts
+				newActiveWindow.object.numEvents = 0;
+				newActiveWindow.object.numAlerts = 0;
+			}
 
 			this.currentActiveWindow = newActiveWindowPath;
 		},
@@ -397,16 +382,58 @@ var sc = {
 				return (nickname === userlistEntry.nick);
 			});
 		},
-		onCloseWindow: function(state, path) {
-			if ('serverIdx' in path) {
-				var serverIdx = path.serverIdx;
-				var server = state.servers[serverIdx];
+		removeWindow: function(state, removePath) {
+			assert('serverIdx' in removePath, 'serverIdx required in onCloseWindow');
 
-				if ('channelIdx' in path) {
-					var channelIdx = path.channelIdx;
-					var channel = server.channels[channelIdx];
+			var activePath = state.currentActiveWindow;
 
-					if (channel.activeWindow) {
+			assert(activePath !== null, 'Must have an active window when calling removeWindow')
+
+			if (removePath.serverIdx <= activePath.serverIdx) {
+				if ('channelIdx' in removePath && 'channelIdx' in activePath && removePath.channelIdx <= activePath.channelIdx) {
+					removeWindowResetActive(true);
+				} else if ('queryIdx' in removePath && 'queryIdx' in activePath && removePath.queryIdx <= activePath.queryIdx) {
+					removeWindowResetActive(true);
+				} else {
+					removeWindowResetActive(false);
+				}
+			} else {
+				removeWindowResetActive(false);
+			}
+
+			function removeWindowResetActive(resetActive) {
+				var windowToRemove = sc.utils.getWindowByPath(state, removePath);
+
+				if (resetActive) {
+					// set no active window
+					sc.utils.setActiveWindow(state, null);
+				}
+
+				// remove the window from the list
+				switch (windowToRemove.type) {
+					case 'server':
+						state.servers.splice(removePath.serverIdx, 1);
+						break;
+					case 'channel':
+						windowToRemove.server.channels.splice(removePath.channelIdx, 1);
+						break;
+					case 'query':
+						windowToRemove.server.queries.splice(removePath.queryIdx, 1);
+						break;
+					default:
+						assert(false, 'Unknown window type');
+				}
+
+				if (resetActive) {
+					// activate the next appropriate window
+					// keep in mind that activePath was the old path of the active window and may no longer be valid
+
+					var serverIdx = removePath.serverIdx;
+					var server = windowToRemove.server;
+
+					if ('channelIdx' in activePath) {
+						var channelIdx = activePath.channelIdx;
+
 						if (channelIdx > 0) {
 							sc.utils.setActiveWindow(state, {
 								serverIdx: serverIdx,
@@ -417,12 +444,9 @@ var sc = {
 								serverIdx: serverIdx
 							});
 						}
-					}
-				} else if ('queryIdx' in path) {
-					var queryIdx = path.queryIdx;
-					var query = server.queries[queryIdx];
+					} else if ('queryIdx' in activePath) {
+						var queryIdx = activePath.queryIdx;
 
-					if (query.activeWindow) {
 						if (queryIdx > 0) {
 							sc.utils.setActiveWindow(state, {
 								serverIdx: serverIdx,
@@ -439,13 +463,42 @@ var sc = {
 								});
 							}
 						}
+					} else {
+						// closing the server window
+						if (serverIdx > 0) {
+							// the server window being closed is not the first
+							var previousServerIdx = serverIdx - 1;
+							var previousServer = state.servers[previousServerIdx];
+
+							// if there are queries/channels, set the last one as active
+							if (previousServer.queries.length > 0) {
+								sc.utils.setActiveWindow(state, {
+									serverIdx: previousServerIdx,
+									queryIdx: previousServer.queries.length - 1
+								});
+							} else if (previousServer.channels.length > 0) {
+								sc.utils.setActiveWindow(state, {
+									serverIdx: previousServerIdx,
+									channelIdx: previousServer.channels.length - 1
+								});
+							} else {
+								sc.utils.setActiveWindow(state, {
+									serverIdx: previousServerIdx
+								});
+							}
+						} else {
+							// the server window being closed is the very first
+
+							// there must be at least one other server window remaining
+							assert(state.servers.length >= 1);
+
+							// here we maintain the same index, because we're making the NEXT server active, and its index was just reduced to serverIdx
+							sc.utils.setActiveWindow(state, {
+								serverIdx: serverIdx
+							});
+						}
 					}
-				} else {
-					// just the server
-					console.log('NOT IMPL');
 				}
-			} else {
-				console.log('serverIdx required in onCloseWindow');
 			}
 		},
 		isPageVisible: function() {

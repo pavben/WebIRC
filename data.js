@@ -102,6 +102,23 @@ Server.prototype = {
 	reconnect: function() {
 		irc.reconnectServer(this);
 	},
+	disconnect: function(isDeadSocket) {
+		if (this.socket !== null) {
+			if (!isDeadSocket) {
+				this.send('QUIT :');
+			}
+
+			this.socket.destroy();
+
+			this.socket = null;
+		}
+
+		this.endPings();
+
+		this.user.applyStateChange('Disconnect', this.getIndex());
+
+		console.log('Disconnected from server:', this.host + ':' + this.port);
+	},
 	joinedChannel: function(channelName) {
 		var server = this;
 
@@ -149,7 +166,7 @@ Server.prototype = {
 
 		server.channels.some(function(channel, channelIdx) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				server.user.applyStateChange('RemoveChannel', channel.toWindowPath());
+				server.user.applyStateChange('RemoveWindow', channel.toWindowPath());
 
 				return true;
 			}
@@ -183,7 +200,7 @@ Server.prototype = {
 
 		server.queries.some(function(query, queryIdx) {
 			if (query.name.toLowerCase() === targetName.toLowerCase()) {
-				server.user.applyStateChange('RemoveQuery', query.toWindowPath());
+				server.user.applyStateChange('RemoveWindow', query.toWindowPath());
 
 				return true;
 			}
@@ -231,7 +248,28 @@ Server.prototype = {
 		};
 	},
 	closeWindow: function() {
-		// TODO: implement closing server windows
+		// only allow closing the server window if it's not the only one
+		if (this.user.servers.length > 1) {
+			// close all the queries
+			for (var i = this.queries.length - 1; i >= 0; i--) {
+				this.queries[i].closeWindow();
+			}
+
+			// close all the channels
+			for (var i = this.channels.length - 1; i >= 0; i--) {
+				this.channels[i].closeWindow();
+			}
+
+			// disconnect if connected
+			if (this.connected) {
+				this.disconnect();
+			}
+
+			// and finally remove the server itself
+			this.user.applyStateChange('RemoveWindow', this.toWindowPath());
+		} else {
+			console.log('Cannot close the only server window.');
+		}
 	}
 };
 

@@ -335,11 +335,7 @@ exports.run = function() {
 
 function reconnectServer(server) {
 	if (server.socket !== null) {
-		server.send('QUIT :');
-
-		server.socket.destroy();
-
-		onDisconnect(server);
+		server.disconnect();
 	}
 
 	var connectOptions = {
@@ -367,15 +363,10 @@ function reconnectServer(server) {
 	});
 
 	serverSocket.on('error', function(err) {
-		try {
-			if (server.socket !== null) {
-				server.socket.destroy();
-			}
-		} finally {
-			console.log('Connection to server closed due to error:', err);
+		// TODO: show this to the user
+		console.log('Connection to server closed due to error:', err);
 
-			onDisconnect(server);
-		}
+		server.disconnect(true);
 	});
 
 	var readBuffer = '';
@@ -397,18 +388,8 @@ function reconnectServer(server) {
 	});
 
 	serverSocket.on('end', function() {
-		onDisconnect(server);
+		server.disconnect(true);
 	});
-
-	function onDisconnect(server) {
-		server.endPings();
-
-		server.socket = null;
-
-		server.user.applyStateChange('Disconnect', server.toWindowPath().serverIdx);
-
-		console.log('Disconnected from server');
-	}
 }
 
 function processLineFromServer(line, server) {
