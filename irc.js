@@ -20,6 +20,13 @@ var serverCommandHandlers = {
 	'QUIT': handleCommandRequireArgs(1, handleQuit),
 };
 
+// commands allowed to be processed before registration (001)
+var preregAllowedCommands = [
+	'001',
+	'PING',
+	'NOTICE'
+];
+
 function handleCommandRequireArgs(requiredNumArgs, handler) {
 	// note: allArgs includes user, serverIdx, server, and origin -- these are not counted in numArgs as numArgs represends the number of args after the command
 	return function(numArgs, allArgs) {
@@ -238,11 +245,6 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 
 function handleQuit(user, serverIdx, server, origin, quitMessage) {
 	if (origin !== null && origin instanceof ClientOrigin) {
-		// if we are the quitter
-		if (server.nickname === origin.nick) {
-			// do we need to do anything special?
-		}
-
 		user.applyStateChange('Quit', serverIdx, origin, quitMessage);
 	}
 }
@@ -416,15 +418,20 @@ function processLineFromServer(line, server) {
 
 	if (parseResult !== null) {
 		if (parseResult.command in serverCommandHandlers) {
-			serverCommandHandlers[parseResult.command](
-				parseResult.args.length,
-				[
-					server.user,
-					server.user.servers.indexOf(server), // serverIdx
-					server,
-					(parseResult.origin !== null ? utils.parseOrigin(parseResult.origin) : null)
-				].concat(parseResult.args)
-			);
+			// either already registered (001) or it's a command that's allowed to be received before registration
+			if (server.nickname !== null || ~preregAllowedCommands.indexOf(parseResult.command)) {
+				serverCommandHandlers[parseResult.command](
+					parseResult.args.length,
+					[
+						server.user,
+						server.user.servers.indexOf(server), // serverIdx
+						server,
+						(parseResult.origin !== null ? utils.parseOrigin(parseResult.origin) : null)
+					].concat(parseResult.args)
+				);
+			} else {
+				server.user.applyStateChange('Error', server.toWindowPath(), 'Server protocol violation: Received ' + parseResult.command + ' before registration.');
+			}
 		} else {
 			server.user.applyStateChange('Text', server.toWindowPath(), parseResult.command + ' ' + parseResult.args.join(' '));
 		}
