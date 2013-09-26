@@ -173,14 +173,13 @@ windowlistbutton:active {
 }
 .windowlistbutton_rightcell {
 	display:table-cell;
-	padding:2px 2px 2px 2px;
 	width:25px;
 	vertical-align:middle;
 }
 .windowlistbutton_rightinneralert,
 .windowlistbutton_rightinnerevent,
 .windowlistbutton_rightinnerclose {
-	padding:3px 3px 3px 3px;
+	padding:3px;
 	border-radius:5px;
 	text-align:center;
 }
