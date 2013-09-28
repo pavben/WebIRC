@@ -390,12 +390,12 @@ var sc = {
 			assert(activePath !== null, 'Must have an active window when calling removeWindow')
 
 			if (removePath.serverIdx <= activePath.serverIdx) {
-				if ('channelIdx' in removePath && 'channelIdx' in activePath && removePath.channelIdx <= activePath.channelIdx) {
-					removeWindowResetActive(true);
-				} else if ('queryIdx' in removePath && 'queryIdx' in activePath && removePath.queryIdx <= activePath.queryIdx) {
-					removeWindowResetActive(true);
+				if ('channelIdx' in removePath && 'channelIdx' in activePath) {
+					removeWindowResetActive(removePath.channelIdx <= activePath.channelIdx);
+				} else if ('queryIdx' in removePath && 'queryIdx' in activePath) {
+					removeWindowResetActive(removePath.queryIdx <= activePath.queryIdx);
 				} else {
-					removeWindowResetActive(false);
+					removeWindowResetActive(!('channelIdx' in removePath || 'queryIdx' in removePath));
 				}
 			} else {
 				removeWindowResetActive(false);

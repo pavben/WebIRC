@@ -2,6 +2,7 @@ var utils = require('./utils.js');
 var test = require('./test.js');
 
 var serverCommandHandlers = {
+	'CLOSE': getHandler(0, 0, handleClose),
 	'HOP': getHandler(0, 0, handleHop),
 	'LOGOUT': getHandler(1, 0, handleLogout),
 	'ME': getHandler(1, 1, handleMe),
@@ -10,6 +11,10 @@ var serverCommandHandlers = {
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
 };
+
+function handleClose() {
+	this.activeWindow.object.closeWindow();
+}
 
 function handleHop() {
 	if (this.activeWindow.type === 'channel') {
