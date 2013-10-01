@@ -210,7 +210,8 @@ windowlistbutton:active {
 .activity_info,
 .activity_kick,
 .activity_mychat,
-.activity_notice
+.activity_notice,
+.activity_whois
 {
 	white-space:pre-wrap;
 	word-wrap:break-word;
@@ -234,6 +235,9 @@ windowlistbutton:active {
 }
 .activity_notice {
 	color: #AD75F4;
+}
+.activity_whois {
+	color: #66DAF1;
 }
 
 /* userlist mode colors */

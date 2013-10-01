@@ -315,6 +315,8 @@ webircApp.directive('chatlog', function() {
 				return basicText('activity_info', msg);
 			case 'Text':
 				return basicText('activity', activity.text);
+			case 'Whois':
+				return basicText('activity_whois', '* ' + activity.text);
 			default:
 				return basicText('activity', '*** Unsupported activit type: ' + activity.type);
 		}

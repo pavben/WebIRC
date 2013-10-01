@@ -273,6 +273,16 @@ Server.prototype = {
 	showInfo: function(text) {
 		this.user.applyStateChange('Info', this.toWindowPath(), text);
 	},
+	showWhois: function(text) {
+		this.user.applyStateChange('Whois', this.getActiveOrServerWindow(), text);
+	},
+	getActiveOrServerWindow: function() {
+		if (this.user.currentActiveWindow && this.user.currentActiveWindow.serverIdx == this.getIndex()) {
+			return this.user.currentActiveWindow;
+		} else {
+			return this.toWindowPath();
+		}
+	},
 	getIndex: function() {
 		return this.user.servers.indexOf(this);
 	},

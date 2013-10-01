@@ -15,8 +15,14 @@ var serverCommandHandlers = {
 	'255': handleCommandRequireArgs(2, genericHandler()),
 	'265': handleCommandRequireArgs(4, genericHandler()),
 	'266': handleCommandRequireArgs(4, genericHandler()),
+	'311': handleCommandRequireArgs(6, handle311), // RPL_WHOISUSER
+	'312': handleCommandRequireArgs(4, handle312), // RPL_WHOISSERVER
+	'317': handleCommandRequireArgs(4, handle317), // RPL_WHOISIDLE
+	'318': ignoreHandler, // RPL_ENDOFWHOIS
+	'319': handleCommandRequireArgs(3, handle319), // RPL_WHOISCHANNELS
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
+	'378': handleCommandRequireArgs(3, handle378), // RPL_MOTD
 	'401': handleCommandRequireArgs(2, handle401), // ERR_NOSUCHNICK
 	'422': handleCommandRequireArgs(2, genericHandler()),
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
@@ -60,6 +66,9 @@ function genericHandler(skipArgs) {
 	}
 }
 
+function ignoreHandler() {
+}
+
 function handle001(user, serverIdx, server, origin, myNickname, text) {
 	user.applyStateChange('Connect', server.getIndex(), myNickname);
 
@@ -92,6 +101,29 @@ function handle254(user, serverIdx, server, origin, myNickname, numChannels, cha
 	server.showInfo(numChannels + ' ' + channelsFormed);
 }
 
+function handle311(user, serverIdx, server, origin, myNickname, nick, user, host, star, realName) {
+	server.showWhois(nick + ' is ' + user + '@' + host + ' (' + realName + ')');
+}
+
+function handle312(user, serverIdx, server, origin, myNickname, nick, serverName, serverDesc) {
+	server.showWhois(nick + ' is connected to ' + serverName + ' (' + serverDesc + ')');
+}
+
+function handle317(user, serverIdx, server, origin, myNickname, nick, secondsIdle, signonTime) {
+	var signonSecondsAgo = Math.floor(new Date().getTime() / 1000) - signonTime;
+
+	// if our clock or the server's clock is out of sync, treat it as 0
+	if (signonSecondsAgo < 0) {
+		signonSecondsAgo = 0;
+	}
+
+	server.showWhois(nick + ' has been idle for ' + secondsIdle + ' seconds (signed on ' + signonSecondsAgo + ' seconds ago)');
+}
+
+function handle319(user, serverIdx, server, origin, myNickname, nick, channels) {
+	server.showWhois(nick + ' is on ' + channels);
+}
+
 function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		// build a list of UserlistEntry
@@ -107,6 +139,10 @@ function handle353(user, serverIdx, server, origin, myNickname, channelType, cha
 
 		user.applyStateChange('NamesUpdateAdd', channel.toWindowPath(), userlistEntries);
 	}));
+}
+
+function handle378(user, serverIdx, server, origin, myNickname, nick, text) {
+	server.showWhois(nick + ' ' + text);
 }
 
 // ~owner, &admin, @op, %halfop, +voice, regular

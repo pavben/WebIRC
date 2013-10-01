@@ -164,6 +164,11 @@ var sc = {
 
 			utils.addActivity(this, targetWindow.object, 'Text', { text: text }, ActivityType.None);
 		},
+		'Whois': function(windowPath, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			utils.addActivity(this, targetWindow.object, 'Whois', { text: text }, ActivityType.None);
+		},
 		// SORTED ABOVE THIS LINE
 		'NamesUpdateAdd': function(windowPath, userlistEntries, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
