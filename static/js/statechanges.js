@@ -159,6 +159,14 @@ var sc = {
 		'RemoveWindow': function(windowPath, utils) {
 			utils.removeWindow(this, windowPath);
 		},
+		'SetTopic': function(windowPath, origin, newTopic, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			utils.addActivity(this, targetWindow.object, 'SetTopic', {
+				origin: origin,
+				newTopic: newTopic
+			}, ActivityType.Event);
+		},
 		'Text': function(windowPath, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 

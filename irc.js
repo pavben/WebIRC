@@ -35,6 +35,7 @@ var serverCommandHandlers = {
 	'PONG': handleCommandRequireArgs(2, handlePong),
 	'PRIVMSG': handleCommandRequireArgs(2, handlePrivmsg),
 	'QUIT': handleCommandRequireArgs(1, handleQuit),
+	'TOPIC': handleCommandRequireArgs(2, handleTopic),
 };
 
 // commands allowed to be processed before registration (001)
@@ -319,12 +320,6 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 	}
 }
 
-function handleQuit(user, serverIdx, server, origin, quitMessage) {
-	if (origin !== null && origin instanceof ClientOrigin) {
-		user.applyStateChange('Quit', serverIdx, origin, quitMessage);
-	}
-}
-
 function handlePart(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the leaver matches ours
@@ -378,6 +373,18 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 			}
 		}));
 	}
+}
+
+function handleQuit(user, serverIdx, server, origin, quitMessage) {
+	if (origin !== null && origin instanceof ClientOrigin) {
+		user.applyStateChange('Quit', serverIdx, origin, quitMessage);
+	}
+}
+
+function handleTopic(user, serverIdx, server, origin, channelName, newTopic) {
+	server.withChannel(channelName, silentFail(function(channel) {
+		user.applyStateChange('SetTopic', channel.toWindowPath(), origin, newTopic);
+	}));
 }
 
 function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {

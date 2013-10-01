@@ -196,6 +196,9 @@ function initAutoComplete() {
 				case 'Quit':
 					addNames([activity.who.nick]);
 					break;
+				case 'SetTopic':
+					addNames(listOriginNickOrEmpty(activity.origin));
+					break;
 				default:
 					// ignore
 			}

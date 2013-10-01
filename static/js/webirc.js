@@ -313,6 +313,8 @@ webircApp.directive('chatlog', function() {
 					msg += ' (' + activity.quitMessage + ')';
 				}
 				return basicText('activity_info', msg);
+			case 'SetTopic':
+				return basicText('activity_info', '* ' + originNickOrName(activity.origin) + ' sets topic to: ' + activity.newTopic);
 			case 'Text':
 				return basicText('activity', activity.text);
 			case 'Whois':
