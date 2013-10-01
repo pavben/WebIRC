@@ -6,9 +6,19 @@ var utils = require('./utils.js');
 
 var serverCommandHandlers = {
 	'001': handleCommandRequireArgs(1, handle001),
+	'002': handleCommandRequireArgs(2, genericHandler()),
+	'003': handleCommandRequireArgs(2, genericHandler()),
+	'004': handleCommandRequireArgs(5, handle004),
+	'005': handleCommandRequireArgs(2, handle005),
+	'251': handleCommandRequireArgs(2, genericHandler()),
+	'254': handleCommandRequireArgs(3, handle254),
+	'255': handleCommandRequireArgs(2, genericHandler()),
+	'265': handleCommandRequireArgs(4, genericHandler()),
+	'266': handleCommandRequireArgs(4, genericHandler()),
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
 	'401': handleCommandRequireArgs(2, handle401), // ERR_NOSUCHNICK
+	'422': handleCommandRequireArgs(2, genericHandler()),
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'KICK': handleCommandRequireArgs(2, handleKick),
 	'MODE': handleCommandRequireArgs(2, handleMode),
@@ -41,6 +51,15 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 	};
 }
 
+function genericHandler(skipArgs) {
+	return function() {
+		var server = arguments[2];
+		var text = arguments[arguments.length - 1];
+
+		server.showInfo(text);
+	}
+}
+
 function handle001(user, serverIdx, server, origin, myNickname, text) {
 	user.applyStateChange('Connect', server.getIndex(), myNickname);
 
@@ -54,7 +73,23 @@ function handle001(user, serverIdx, server, origin, myNickname, text) {
 
 	server.startPings();
 
-	user.applyStateChange('Text', server.toWindowPath(), text);
+	server.showInfo(text);
+}
+
+function handle004(user, serverIdx, server, origin, myNickname, serverName, serverVersion, userModes, channelModes) {
+	server.showInfo('Server ' + serverName + ' running ' + serverVersion);
+	server.showInfo('Supported user modes: ' + userModes);
+	server.showInfo('Supported channel modes: ' + channelModes);
+}
+
+function handle005(user, serverIdx, server, origin) {
+	var keyValues = Array.prototype.slice.call(arguments, 5, arguments.length - 1);
+
+	server.showInfo('Server settings: ' + keyValues.join(' '));
+}
+
+function handle254(user, serverIdx, server, origin, myNickname, numChannels, channelsFormed) {
+	server.showInfo(numChannels + ' ' + channelsFormed);
 }
 
 function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {

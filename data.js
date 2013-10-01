@@ -270,6 +270,9 @@ Server.prototype = {
 			delete this.timeoutPings;
 		}
 	},
+	showInfo: function(text) {
+		this.user.applyStateChange('Info', this.toWindowPath(), text);
+	},
 	getIndex: function() {
 		return this.user.servers.indexOf(this);
 	},
