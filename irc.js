@@ -1,5 +1,6 @@
 var clientcommands = require('./clientcommands.js');
 var mode = require('./mode.js');
+var moment = require('moment');
 var net = require('net');
 var tls = require('tls');
 var utils = require('./utils.js');
@@ -20,6 +21,8 @@ var serverCommandHandlers = {
 	'317': handleCommandRequireArgs(4, handle317), // RPL_WHOISIDLE
 	'318': ignoreHandler, // RPL_ENDOFWHOIS
 	'319': handleCommandRequireArgs(3, handle319), // RPL_WHOISCHANNELS
+	'332': handleCommandRequireArgs(3, handle332), // RPL_TOPIC
+	'333': handleCommandRequireArgs(4, handle333), // RPL_TOPICWHOTIME
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
 	'378': handleCommandRequireArgs(3, handle378), // RPL_MOTD
@@ -111,18 +114,27 @@ function handle312(user, serverIdx, server, origin, myNickname, nick, serverName
 }
 
 function handle317(user, serverIdx, server, origin, myNickname, nick, secondsIdle, signonTime) {
-	var signonSecondsAgo = Math.floor(new Date().getTime() / 1000) - signonTime;
+	var signonDate = new Date(signonTime * 1000);
 
-	// if our clock or the server's clock is out of sync, treat it as 0
-	if (signonSecondsAgo < 0) {
-		signonSecondsAgo = 0;
-	}
-
-	server.showWhois(nick + ' has been idle for ' + secondsIdle + ' seconds (signed on ' + signonSecondsAgo + ' seconds ago)');
+	server.showWhois(nick + ' has been idle for ' + moment().add('seconds', secondsIdle).fromNow(true) + ' (signed on ' + moment(signonDate).fromNow() + ')');
 }
 
 function handle319(user, serverIdx, server, origin, myNickname, nick, channels) {
 	server.showWhois(nick + ' is on ' + channels);
+}
+
+function handle332(user, serverIdx, server, origin, myNickname, channelName, topicText) {
+	server.withChannel(channelName, silentFail(function(channel) {
+		user.applyStateChange('Info', channel.toWindowPath(), 'Topic is: ' + topicText);
+	}));
+}
+
+function handle333(user, serverIdx, server, origin, myNickname, channelName, setByNick, topicTime) {
+	server.withChannel(channelName, silentFail(function(channel) {
+		var topicDate = new Date(topicTime * 1000);
+
+		user.applyStateChange('Info', channel.toWindowPath(), 'Set ' + moment(topicDate).fromNow() + ' by ' + setByNick);
+	}));
 }
 
 function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {

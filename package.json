@@ -6,7 +6,8 @@
 		"connect": ">= 2.7.0",
 		"cookie": "*",
 		"express": ">= 3.0.3",
-		"socket.io": ">= 0.9.11"
+		"socket.io": ">= 0.9.11",
+		"moment": "*"
 	},
 	"engines": {
 		"node": ">= 0.8"
