@@ -22,7 +22,7 @@ function handleHop() {
 
 		channel.rejoin();
 	} else {
-		this.showError('Use /hop in a channel to rejoin');
+		this.user.showError('Use /hop in a channel to rejoin');
 	}
 }
 
@@ -40,12 +40,12 @@ function handleLogout(all) {
 			}
 		});
 
-		self.showInfo(numSessions + ' session(s) have been logged out. Feel free to close your browser.');
+		self.user.showInfo(numSessions + ' session(s) have been logged out. Feel free to close your browser.');
 	} else {
 		if (this.user.removeLoggedInSession(this.sessionId)) {
-			this.showInfo('Your current browser session is now logged out. Feel free to close your browser.');
+			this.user.showInfo('Your current browser session is now logged out. Feel free to close your browser.');
 		} else {
-			this.showInfo('Your current browser session is already logged out. Feel free to close your browser.');
+			this.user.showInfo('Your current browser session is already logged out. Feel free to close your browser.');
 		}
 	}
 }
@@ -58,7 +58,7 @@ function handleMe(text) {
 
 		this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
 	} else {
-		this.showError('Can\'t /me in this window');
+		this.user.showError('Can\'t /me in this window');
 	}
 }
 
@@ -66,9 +66,11 @@ function handleMsg(targetName, text) {
 	var self = this;
 
 	utils.withParsedTarget(targetName, check(function(err) {
-		self.showError('Invalid target');
+		self.user.showError('Invalid target');
 	}, function(target) {
 		if (self.server.connected) {
+			var displayed = false;
+
 			if (target instanceof ClientTarget) {
 				if (!target.server) {
 					var query = self.server.ensureQuery(target.toString());
@@ -76,27 +78,25 @@ function handleMsg(targetName, text) {
 					self.user.applyStateChange('MyChatMessage', query.toWindowPath(), text);
 
 					self.user.setActiveWindow(query.toWindowPath());
-				} else {
-					self.showInfo('To ' + target.toString() + ': ' + text);
+
+					displayed = true;
 				}
-
-				self.server.send('PRIVMSG ' + target.toString() + ' :' + text);
-
 			} else if (target instanceof ChannelTarget) {
-				var channel = self.server.findChannel(target.name);
-
-				if (channel) {
+				self.server.withChannel(target.name, silentFail(function(channel) {
 					self.user.applyStateChange('MyChatMessage', channel.toWindowPath(), text);
-				} else {
-					self.showInfo('To ' + target.name + ': ' + text);
-				}
 
-				self.server.send('PRIVMSG ' + target.name + ' :' + text);
-			} else {
-				self.showError('Unsupported target');
+					displayed = true;
+				}));
 			}
+
+			if (!displayed) {
+				self.user.showInfo('To ' + targetName + ': ' + text);
+			}
+
+			// send the message to the unparsed target name
+			self.server.send('PRIVMSG ' + targetName + ' :' + text);
 		} else {
-			self.showError('Not connected');
+			self.user.showError('Not connected');
 		}
 	}));
 }
@@ -118,26 +118,18 @@ function handleSessions() {
 	var self = this;
 
 	if (this.user.loggedInSessions.length > 0) {
-		this.showInfo('Logged-in sessions:');
+		this.user.showInfo('Logged-in sessions:');
 
 		this.user.loggedInSessions.forEach(function(sessionId, i) {
-			self.showInfo((i + 1) + ' - ' + sessionId + (sessionId == self.sessionId ? ' (current)' : ''));
+			self.user.showInfo((i + 1) + ' - ' + sessionId + (sessionId == self.sessionId ? ' (current)' : ''));
 		});
 	} else {
-		this.showInfo('No logged-in sessions.');
+		this.user.showInfo('No logged-in sessions.');
 	}
 }
 
 function handleTest(testId) {
 	test.runTest(this, testId);
-}
-
-function showError(text) {
-	this.user.applyStateChange('Error', this.activeWindow.windowPath, text);
-}
-
-function showInfo(text) {
-	this.user.applyStateChange('Info', this.activeWindow.windowPath, text);
 }
 
 function handleClientCommand(activeWindow, command, args, sessionId) {
@@ -153,9 +145,7 @@ function handleClientCommand(activeWindow, command, args, sessionId) {
 				user: activeWindow.server.user,
 				server: activeWindow.server,
 				activeWindow: activeWindow,
-				numArgs: parsedArgs.length,
-				showError: showError,
-				showInfo: showInfo
+				numArgs: parsedArgs.length
 			};
 
 			handler.apply(handlerThisObject, parsedArgs);

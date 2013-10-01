@@ -8,6 +8,7 @@ var serverCommandHandlers = {
 	'001': handleCommandRequireArgs(1, handle001),
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
+	'401': handleCommandRequireArgs(2, handle401), // ERR_NOSUCHNICK
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'KICK': handleCommandRequireArgs(2, handleKick),
 	'MODE': handleCommandRequireArgs(2, handleMode),
@@ -109,6 +110,10 @@ function handle366(user, serverIdx, server, origin, myNickname, channelName) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		user.applyStateChange('NamesUpdate', channel.toWindowPath());
 	}));
+}
+
+function handle401(user, serverIdx, server, origin, myNickname, targetName) {
+	user.showError('No such nick/channel: ' + targetName);
 }
 
 function handlePing(user, serverIdx, server, origin, arg) {

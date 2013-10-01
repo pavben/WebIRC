@@ -73,6 +73,16 @@ User.prototype = {
 		} else {
 			return false;
 		}
+	},
+	showError: function(text) {
+		if (this.currentActiveWindow) {
+			this.applyStateChange('Error', this.currentActiveWindow, text);
+		}
+	},
+	showInfo: function(text) {
+		if (this.currentActiveWindow) {
+			this.applyStateChange('Info', this.currentActiveWindow, text);
+		}
 	}
 };
 
@@ -194,6 +204,27 @@ Server.prototype = {
 		}
 
 		return queryRet;
+	},
+	withQuery: function(queryName, cb) { // might be unused, but here for completeness
+		var matchedQuery;
+
+		this.queries.some(function(query) {
+			if (query.name.toLowerCase() === queryName.toLowerCase()) {
+				matchedQuery = query;
+
+				return true;
+			}
+		});
+
+		if (matchedQuery) {
+			cb(null, matchedQuery);
+		} else {
+			var err = new Error('No matching query');
+
+			err.code = 'ENOENT';
+
+			cb(err);
+		}
 	},
 	removeQuery: function(targetName) {
 		var server = this;
