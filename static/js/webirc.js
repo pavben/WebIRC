@@ -269,58 +269,79 @@ webircApp.directive('chatlog', function() {
 	function elementFromActivity(activity) {
 		var originNickOrName = sc.utils.originNickOrName;
 
-		switch (activity.type) {
-			case 'ActionMessage':
+		var activityHandlers = {
+			'ActionMessage': function(activity) {
 				return basicText('activity_action', '* ' + originNickOrName(activity.origin) + ' ' + activity.text);
-			case 'ChatMessage':
+			},
+			'ChatMessage': function(activity) {
 				return basicText('activity', '<' + originNickOrName(activity.origin) + '> ' + activity.text);
-			case 'Error':
+			},
+			'Error': function(activity) {
 				return basicText('activity_error', '* ' + activity.text);
-			case 'Info':
+			},
+			'Info': function(activity) {
 				return basicText('activity_info', '* ' + activity.text);
-			case 'Join':
+			},
+			'Join': function(activity) {
 				return basicText('activity_info', '* Join: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')');
-			case 'Kick':
+			},
+			'Kick': function(activity) {
 				var msg = '* ' + activity.targetNick + ' was kicked by ' + originNickOrName(activity.origin);
 
 				if (activity.kickMessage) {
 					msg += ' (' + activity.kickMessage + ')';
 				}
 				return basicText('activity_kick', msg);
-			case 'KickMe':
+			},
+			'KickMe': function(activity) {
 				var msg = '* You were kicked by ' + originNickOrName(activity.origin);
 
 				if (activity.kickMessage) {
 					msg += ' (' + activity.kickMessage + ')';
 				}
 				return basicText('activity_kick', msg);
-			case 'ModeChange':
+			},
+			'ModeChange': function(activity) {
 				return basicText('activity_info', '* ' + originNickOrName(activity.origin) + ' sets mode: ' + activity.modes + ' ' + activity.modeArgs.join(' '));
-			case 'MyActionMessage':
+			},
+			'MyActionMessage': function(activity) {
 				return basicText('activity_action', '* ' + activity.nick + ' ' + activity.text);
-			case 'MyChatMessage':
+			},
+			'MyChatMessage': function(activity) {
 				return basicText('activity_mychat', '<' + activity.nick + '> ' + activity.text);
-			case 'NickChange':
+			},
+			'NickChange': function(activity) {
 				return basicText('activity_info', '* ' + activity.oldNickname + ' is now known as ' + activity.newNickname);
-			case 'Notice':
+			},
+			'Notice': function(activity) {
 				return basicText('activity_notice', '-' + originNickOrName(activity.origin) + '- ' + activity.text);
-			case 'Part':
+			},
+			'Part': function(activity) {
 				return basicText('activity_info', '* Part: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')');
-			case 'Quit':
+			},
+			'Quit': function(activity) {
 				var msg = '* Quit: ' + activity.who.nick + ' (' + activity.who.user + '@' + activity.who.host + ')';
 
 				if (activity.quitMessage) {
 					msg += ' (' + activity.quitMessage + ')';
 				}
 				return basicText('activity_info', msg);
-			case 'SetTopic':
+			},
+			'SetTopic': function(activity) {
 				return basicText('activity_info', '* ' + originNickOrName(activity.origin) + ' sets topic to: ' + activity.newTopic);
-			case 'Text':
+			},
+			'Text': function(activity) {
 				return basicText('activity', activity.text);
-			case 'Whois':
+			},
+			'Whois': function(activity) {
 				return basicText('activity_whois', '* ' + activity.text);
-			default:
-				return basicText('activity', '*** Unsupported activit type: ' + activity.type);
+			}
+		};
+
+		if (activity.type in activityHandlers) {
+			return activityHandlers[activity.type](activity);
+		} else {
+			return basicText('activity', '*** Unsupported activity type: ' + activity.type);
 		}
 
 		function basicText(className, text) {
