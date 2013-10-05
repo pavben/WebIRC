@@ -17,10 +17,14 @@ function handleClose() {
 }
 
 function handleHop() {
-	if (this.activeWindow.type === 'channel') {
-		var channel = this.activeWindow.object;
+	var self = this;
 
-		channel.rejoin();
+	if (this.activeWindow.type === 'channel') {
+		this.server.ifConnected(function() {
+			var channel = self.activeWindow.object;
+
+			channel.rejoin();
+		});
 	} else {
 		this.user.showError('Use /hop in a channel to rejoin');
 	}
@@ -51,12 +55,16 @@ function handleLogout(all) {
 }
 
 function handleMe(text) {
+	var self = this;
+
 	if (this.activeWindow.type === 'channel' || this.activeWindow.type === 'query') {
-		var channelOrQuery = this.activeWindow.object;
+		this.server.ifConnected(function() {
+			var channelOrQuery = self.activeWindow.object;
 
-		this.user.applyStateChange('MyActionMessage', this.activeWindow.windowPath, text);
+			self.user.applyStateChange('MyActionMessage', self.activeWindow.windowPath, text);
 
-		this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
+			self.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
+		});
 	} else {
 		this.user.showError('Can\'t /me in this window');
 	}
@@ -68,7 +76,7 @@ function handleMsg(targetName, text) {
 	utils.withParsedTarget(targetName, check(function(err) {
 		self.user.showError('Invalid target');
 	}, function(target) {
-		if (self.server.connected) {
+		self.server.ifConnected(function() {
 			var displayed = false;
 
 			if (target instanceof ClientTarget) {
@@ -95,9 +103,7 @@ function handleMsg(targetName, text) {
 
 			// send the message to the unparsed target name
 			self.server.send('PRIVMSG ' + targetName + ' :' + text);
-		} else {
-			self.user.showError('Not connected');
-		}
+		});
 	}));
 }
 

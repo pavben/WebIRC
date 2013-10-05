@@ -270,8 +270,15 @@ Server.prototype = {
 			delete this.timeoutPings;
 		}
 	},
-	showInfo: function(text) {
-		this.user.applyStateChange('Info', this.toWindowPath(), text);
+	showError: function(text, preferActive) {
+		var targetWindow = preferActive ? this.getActiveOrServerWindow() : this.toWindowPath();
+
+		this.user.applyStateChange('Error', targetWindow, text);
+	},
+	showInfo: function(text, preferActive) {
+		var targetWindow = preferActive ? this.getActiveOrServerWindow() : this.toWindowPath();
+
+		this.user.applyStateChange('Info', targetWindow, text);
 	},
 	showWhois: function(text) {
 		this.user.applyStateChange('Whois', this.getActiveOrServerWindow(), text);
@@ -281,6 +288,13 @@ Server.prototype = {
 			return this.user.currentActiveWindow;
 		} else {
 			return this.toWindowPath();
+		}
+	},
+	ifConnected: function(successCallback) {
+		if (this.connected) {
+			successCallback();
+		} else {
+			this.showError('Not connected', true);
 		}
 	},
 	getIndex: function() {

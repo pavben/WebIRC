@@ -606,31 +606,35 @@ function processChatboxLine(user, line, parseCommands, sessionId) {
 
 		var activeWindow = user.getWindowByPath(user.currentActiveWindow);
 
+		var server = activeWindow.server;
+
 		if (activeWindow !== null) {
 			if (command !== null) {
 				clientcommands.handleClientCommand(activeWindow, command, rest, sessionId);
 			} else {
 				if (activeWindow.type === 'channel') {
-					var server = activeWindow.server;
-					var channel = activeWindow.object;
+					server.ifConnected(function() {
+						var channel = activeWindow.object;
 
-					user.applyStateChange('MyChatMessage', channel.toWindowPath(), rest);
+						user.applyStateChange('MyChatMessage', channel.toWindowPath(), rest);
 
-					server.send('PRIVMSG ' + channel.name + ' :' + rest);
+						server.send('PRIVMSG ' + channel.name + ' :' + rest);
+					});
 				} else if (activeWindow.type === 'query') {
-					var server = activeWindow.server;
-					var query = activeWindow.object;
+					server.ifConnected(function() {
+						var query = activeWindow.object;
 
-					user.applyStateChange('MyChatMessage', query.toWindowPath(), rest);
+						user.applyStateChange('MyChatMessage', query.toWindowPath(), rest);
 
-					server.send('PRIVMSG ' + query.name + ' :' + rest);
+						server.send('PRIVMSG ' + query.name + ' :' + rest);
+					});
 				} else {
-					user.applyStateChange('Error', activeWindow.windowPath, 'Only commands are processed in this window');
+					server.showError('Only commands are processed in this window', true);
 				}
 			}
 		}
 	} else {
-		console.log('No active window in processChatboxLine');
+		assert(false, 'No active window in processChatboxLine');
 	}
 }
 
