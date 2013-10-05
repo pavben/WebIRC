@@ -21,6 +21,7 @@ var serverCommandHandlers = {
 	'317': handleCommandRequireArgs(4, handle317), // RPL_WHOISIDLE
 	'318': ignoreHandler, // RPL_ENDOFWHOIS
 	'319': handleCommandRequireArgs(3, handle319), // RPL_WHOISCHANNELS
+	'330': handleCommandRequireArgs(4, handle330), // RPL_WHOISACCOUNT
 	'332': handleCommandRequireArgs(3, handle332), // RPL_TOPIC
 	'333': handleCommandRequireArgs(4, handle333), // RPL_TOPICWHOTIME
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
@@ -122,6 +123,10 @@ function handle317(user, serverIdx, server, origin, myNickname, nick, secondsIdl
 
 function handle319(user, serverIdx, server, origin, myNickname, nick, channels) {
 	server.showWhois(nick + ' is on ' + channels);
+}
+
+function handle330(user, serverIdx, server, origin, myNickname, nick, authName, text) {
+	server.showWhois(nick + ' ' + text + ' ' + authName);
 }
 
 function handle332(user, serverIdx, server, origin, myNickname, channelName, topicText) {
