@@ -237,7 +237,7 @@ var sc = {
 			if (!originMe && utils.isNickInText(server.nickname, text)) {
 				activityType = ActivityType.Alert;
 
-				if (!utils.isActiveAndVisibleWindow(this, windowPath)) {
+				if (!utils.isActiveAndFocusedWindow(this, windowPath)) {
 					if (targetWindow.type === 'channel') {
 						var channel = targetWindow.object;
 
@@ -272,7 +272,7 @@ var sc = {
 			if (!originMe && utils.isNickInText(server.nickname, text)) {
 				activityType = ActivityType.Alert;
 
-				if (!utils.isActiveAndVisibleWindow(this, windowPath)) {
+				if (!utils.isActiveAndFocusedWindow(this, windowPath)) {
 					if (targetWindow.type === 'channel') {
 						var channel = targetWindow.object;
 
@@ -514,26 +514,8 @@ var sc = {
 				}
 			}
 		},
-		isPageVisible: function() {
-			var documentKey;
-
-			if (typeof document === 'object') {
-				if (typeof document.documentKey !== 'undefined') {
-					documentKey = 'hidden';
-				} else if (typeof document.webkitHidden !== 'undefined') {
-					documentKey = 'webkitHidden';
-				} else if (typeof document.mozHidden !== 'undefined') {
-					documentKey = 'mozHidden';
-				} else if (typeof document.msHidden !== 'undefined') {
-					documentKey = 'msHidden';
-				}
-			}
-
-			if (documentKey) {
-				return !document[documentKey];
-			} else {
-				return null;
-			}
+		isPageFocused: function() {
+			return document.hasFocus();
 		},
 		isActiveWindow: function(state, path) {
 			var current = state.currentActiveWindow;
@@ -547,8 +529,8 @@ var sc = {
 
 			return (activeWindow !== null && activeWindow.object === object);
 		},
-		isActiveAndVisibleWindow: function(state, path) {
-			return sc.utils.isPageVisible() && sc.utils.isActiveWindow(state, path);
+		isActiveAndFocusedWindow: function(state, path) {
+			return sc.utils.isPageFocused() && sc.utils.isActiveWindow(state, path);
 		},
 		setActiveWindow: function(state, path) {
 			callStateChangeFunction(state, 'SetActiveWindow', [path]);

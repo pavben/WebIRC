@@ -133,7 +133,7 @@ function handle333(user, serverIdx, server, origin, myNickname, channelName, set
 	server.withChannel(channelName, silentFail(function(channel) {
 		var topicDate = new Date(topicTime * 1000);
 
-		user.applyStateChange('Info', channel.toWindowPath(), 'Set ' + moment(topicDate).fromNow() + ' by ' + setByNick);
+		user.applyStateChange('Info', channel.toWindowPath(), 'Set by ' + setByNick + ' (' + moment(topicDate).fromNow() + ')');
 	}));
 }
 
