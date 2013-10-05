@@ -28,6 +28,7 @@ var serverCommandHandlers = {
 	'378': handleCommandRequireArgs(3, handle378), // RPL_MOTD
 	'401': handleCommandRequireArgs(2, handle401), // ERR_NOSUCHNICK
 	'422': handleCommandRequireArgs(2, genericHandler()),
+	'671': handleCommandRequireArgs(3, handle671), // RPL_WHOISSECURE
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'KICK': handleCommandRequireArgs(2, handleKick),
 	'MODE': handleCommandRequireArgs(2, handleMode),
@@ -198,6 +199,10 @@ function handle366(user, serverIdx, server, origin, myNickname, channelName) {
 
 function handle401(user, serverIdx, server, origin, myNickname, targetName) {
 	user.showError('No such nick/channel: ' + targetName);
+}
+
+function handle671(user, serverIdx, server, origin, myNickname, nick, text) {
+	server.showWhois(nick + ' ' + text);
 }
 
 function handlePing(user, serverIdx, server, origin, arg) {
