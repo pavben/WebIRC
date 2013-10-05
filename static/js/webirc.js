@@ -271,10 +271,22 @@ webircApp.directive('chatlog', function() {
 
 		var activityHandlers = {
 			'ActionMessage': function(activity) {
-				return basicText('activity_action', '* ' + originNickOrName(activity.origin) + ' ' + activity.text);
+				var cls = 'activity_action';
+
+				if (activity.mentionMe) {
+					cls = 'activity_mentionme';
+				}
+
+				return basicText(cls, '* ' + originNickOrName(activity.origin) + ' ' + activity.text);
 			},
 			'ChatMessage': function(activity) {
-				return basicText('activity', '<' + originNickOrName(activity.origin) + '> ' + activity.text);
+				var cls = 'activity';
+
+				if (activity.mentionMe) {
+					cls = 'activity_mentionme';
+				}
+
+				return basicText(cls, '<' + originNickOrName(activity.origin) + '> ' + activity.text);
 			},
 			'Error': function(activity) {
 				return basicText('activity_error', '* ' + activity.text);

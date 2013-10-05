@@ -229,6 +229,8 @@ var sc = {
 
 			var activityType = ActivityType.Event;
 
+			var mentionMe = false;
+
 			// if the activity is in a query, this always counts as an alert
 			if (targetWindow.type === 'query') {
 				activityType = ActivityType.Alert;
@@ -236,6 +238,8 @@ var sc = {
 
 			if (!originMe && utils.isNickInText(server.nickname, text)) {
 				activityType = ActivityType.Alert;
+
+				mentionMe = true;
 
 				if (!utils.isActiveAndFocusedWindow(this, windowPath)) {
 					if (targetWindow.type === 'channel') {
@@ -252,7 +256,8 @@ var sc = {
 
 			utils.addActivity(this, targetWindow.object, 'ChatMessage', {
 				origin: origin,
-				text: text
+				text: text,
+				mentionMe: mentionMe
 			}, activityType);
 		},
 		'ActionMessage': function(windowPath, origin, text, utils) {
@@ -261,6 +266,8 @@ var sc = {
 
 			var originMe = (origin.type === 'client' && origin.nick === server.nickname);
 			var originNickOrName = utils.originNickOrName(origin);
+
+			var mentionMe = false;
 
 			var activityType = ActivityType.Event;
 
@@ -271,6 +278,8 @@ var sc = {
 
 			if (!originMe && utils.isNickInText(server.nickname, text)) {
 				activityType = ActivityType.Alert;
+
+				mentionMe = true;
 
 				if (!utils.isActiveAndFocusedWindow(this, windowPath)) {
 					if (targetWindow.type === 'channel') {
@@ -287,7 +296,8 @@ var sc = {
 
 			utils.addActivity(this, targetWindow.object, 'ActionMessage', {
 				origin: origin,
-				text: text
+				text: text,
+				mentionMe: mentionMe
 			}, activityType);
 		},
 		'NickChange': function(serverIdx, oldNickname, newNickname, utils) {
@@ -515,7 +525,7 @@ var sc = {
 			}
 		},
 		isPageFocused: function() {
-			return document.hasFocus();
+			return (typeof document === 'object' && document.hasFocus());
 		},
 		isActiveWindow: function(state, path) {
 			var current = state.currentActiveWindow;
