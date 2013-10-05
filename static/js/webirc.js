@@ -271,7 +271,7 @@ webircApp.directive('chatlog', function() {
 
 		var activityHandlers = {
 			'ActionMessage': function(activity) {
-				var cls = 'activity_action';
+				var cls = 'activity';
 
 				if (activity.mentionMe) {
 					cls = 'activity_mentionme';

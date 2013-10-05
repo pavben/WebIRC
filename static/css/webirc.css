@@ -218,9 +218,6 @@ windowlistbutton:active {
 	padding:1px 0px 1px 0px;
 }
 
-.activity_action {
-	color: #E6DF6D;
-}
 .activity_error {
 	color: #F90071;
 }
@@ -231,7 +228,7 @@ windowlistbutton:active {
 	color: #66DAF1;
 }
 .activity_mentionme {
-	color: #66DAF1;
+	color: #E6DF6D;
 }
 .activity_mychat {
 	color: #FE9700;
