@@ -7,6 +7,7 @@ var serverCommandHandlers = {
 	'LOGOUT': getHandler(1, 0, handleLogout),
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
+	'NOTICE': getHandler(2, 2, handleNotice),
 	'SERVER': getHandler(2, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
@@ -105,6 +106,16 @@ function handleMsg(targetName, text) {
 			self.server.send('PRIVMSG ' + targetName + ' :' + text);
 		});
 	}));
+}
+
+function handleNotice(targetName, text) {
+	var self = this;
+
+	this.server.ifConnected(function() {
+		self.user.showInfo('Notice to ' + targetName + ': ' + text);
+
+		self.server.send('NOTICE ' + targetName + ' :' + text);
+	});
 }
 
 function handleServer(host, port) {
