@@ -283,13 +283,20 @@ webircApp.directive('chatlog', function() {
 				return basicText('activity_notice', '-' + originNickOrName(activity.origin) + ':' + activity.channelName + '- ' + activity.text);
 			},
 			'ChatMessage': function(activity) {
-				var cls = 'activity';
+				var className = 'activity';
 
 				if (activity.mentionMe) {
-					cls = 'activity_mentionme';
+					className = 'activity_mentionme';
 				}
 
-				return basicText(cls, '<' + originNickOrName(activity.origin) + '> ' + activity.text);
+				var wrapperDiv = angular.element('<div />').addClass(className);
+
+				wrapperDiv.append(angular.element('<span />').text('<'));
+				wrapperDiv.append(angular.element('<span title="' + moment(activity.time * 1000).calendar() + '" />').text(originNickOrName(activity.origin)));
+				wrapperDiv.append(angular.element('<span />').text('> '));
+				wrapperDiv.append(angular.element('<span />').text(activity.text));
+
+				return wrapperDiv;
 			},
 			'Error': function(activity) {
 				return basicText('activity_error', '* ' + activity.text);
@@ -360,7 +367,7 @@ webircApp.directive('chatlog', function() {
 		}
 
 		function basicText(className, text) {
-			return angular.element('<div/>').addClass(className).text(text);
+			return angular.element('<div />').addClass(className).text(text);
 		}
 	}
 });
