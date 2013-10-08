@@ -30,6 +30,8 @@ webircApp.factory('socketFactory', function ($rootScope) {
 	};
 });
 
+var g_requestSetActiveWindow;
+
 function initializeSocketConnection($rootScope, socketFactory) {
 	var socket = socketFactory.newSocket();
 	var connected = false;
@@ -110,7 +112,7 @@ function initializeSocketConnection($rootScope, socketFactory) {
 		}
 	}
 
-	$rootScope.requestSetActiveWindow = function(windowPath) {
+	g_requestSetActiveWindow = $rootScope.requestSetActiveWindow = function(windowPath) {
 		$rootScope.sendToGateway('SetActiveWindow', { windowPath: windowPath });
 	}
 

@@ -242,6 +242,7 @@ var sc = {
 			}
 
 			if (!originMe && utils.isNickInText(server.nickname, text)) {
+				// TODO: nick in text not necessary for pm notification
 				activityType = ActivityType.Alert;
 
 				mentionMe = true;
@@ -250,11 +251,11 @@ var sc = {
 					if (targetWindow.type === 'channel') {
 						var channel = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '<' + originNickOrName + '> ' + text);
+						utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '<' + originNickOrName + '> ' + text, windowPath);
 					} else if (targetWindow.type === 'query') {
 						var query = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '<' + originNickOrName + '> ' + text);
+						utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '<' + originNickOrName + '> ' + text, windowPath);
 					}
 				}
 			}
@@ -290,11 +291,11 @@ var sc = {
 					if (targetWindow.type === 'channel') {
 						var channel = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text);
+						utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text, windowPath);
 					} else if (targetWindow.type === 'query') {
 						var query = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '* ' + originNickOrName + ' ' + text);
+						utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '* ' + originNickOrName + ' ' + text, windowPath);
 					}
 				}
 			}
@@ -587,12 +588,16 @@ var sc = {
 		isNickInText: function(nick, text) {
 			return ~text.toLowerCase().split(/[^\w\d]+/).indexOf(nick.toLowerCase());
 		},
-		notify: function(icon, title, text) {
+		notify: function(icon, title, text, windowPath) {
 			if (typeof window === 'object' && window.webkitNotifications) {
 				if (window.webkitNotifications.checkPermission() === 0) {
 					var notification = window.webkitNotifications.createNotification(icon, title, text);
 
 					notification.onclick = function() {
+						if (typeof g_requestSetActiveWindow === 'function') {
+							g_requestSetActiveWindow(windowPath);
+						}
+
 						window.focus();
 					}
 
