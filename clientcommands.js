@@ -11,6 +11,8 @@ var serverCommandHandlers = {
 	'SERVER': getHandler(2, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
+	'W': getHandler(1, 1, handleWhois),
+	'WHOIS': getHandler(1, 1, handleWhois),
 };
 
 function handleClose() {
@@ -147,6 +149,14 @@ function handleSessions() {
 
 function handleTest(testId) {
 	test.runTest(this, testId);
+}
+
+function handleWhois(targetName) {
+	var self = this;
+
+	this.server.ifConnected(function() {
+		self.server.send('WHOIS ' + targetName);
+	});
 }
 
 function handleClientCommand(activeWindow, command, args, sessionId) {
