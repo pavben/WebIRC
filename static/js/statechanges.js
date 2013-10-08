@@ -229,34 +229,29 @@ var sc = {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 			var server = targetWindow.server;
 
-			var originMe = (origin.type === 'client' && origin.nick === server.nickname);
 			var originNickOrName = utils.originNickOrName(origin);
 
 			var activityType = ActivityType.Event;
 
 			var mentionMe = false;
 
-			// if the activity is in a query, this always counts as an alert
-			if (targetWindow.type === 'query') {
-				activityType = ActivityType.Alert;
-			}
-
-			if (!originMe && utils.isNickInText(server.nickname, text)) {
-				// TODO: nick in text not necessary for pm notification
+			if (utils.isNickInText(server.nickname, text)) {
 				activityType = ActivityType.Alert;
 
 				mentionMe = true;
+			} else if (targetWindow.type === 'query') {
+				activityType = ActivityType.Alert;
+			}
 
-				if (!utils.isActiveAndFocusedWindow(this, windowPath)) {
-					if (targetWindow.type === 'channel') {
-						var channel = targetWindow.object;
+			if (activityType === ActivityType.Alert && !utils.isActiveAndFocusedWindow(this, windowPath)) {
+				if (targetWindow.type === 'channel') {
+					var channel = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '<' + originNickOrName + '> ' + text, windowPath);
-					} else if (targetWindow.type === 'query') {
-						var query = targetWindow.object;
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '<' + originNickOrName + '> ' + text, windowPath);
+				} else if (targetWindow.type === 'query') {
+					var query = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '<' + originNickOrName + '> ' + text, windowPath);
-					}
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '<' + originNickOrName + '> ' + text, windowPath);
 				}
 			}
 
@@ -270,33 +265,29 @@ var sc = {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 			var server = targetWindow.server;
 
-			var originMe = (origin.type === 'client' && origin.nick === server.nickname);
 			var originNickOrName = utils.originNickOrName(origin);
-
-			var mentionMe = false;
 
 			var activityType = ActivityType.Event;
 
-			// if the activity is in a query, this always counts as an alert
-			if (targetWindow.type === 'query') {
-				activityType = ActivityType.Alert;
-			}
+			var mentionMe = false;
 
-			if (!originMe && utils.isNickInText(server.nickname, text)) {
+			if (utils.isNickInText(server.nickname, text)) {
 				activityType = ActivityType.Alert;
 
 				mentionMe = true;
+			} else if (targetWindow.type === 'query') {
+				activityType = ActivityType.Alert;
+			}
 
-				if (!utils.isActiveAndFocusedWindow(this, windowPath)) {
-					if (targetWindow.type === 'channel') {
-						var channel = targetWindow.object;
+			if (activityType === ActivityType.Alert && !utils.isActiveAndFocusedWindow(this, windowPath)) {
+				if (targetWindow.type === 'channel') {
+					var channel = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text, windowPath);
-					} else if (targetWindow.type === 'query') {
-						var query = targetWindow.object;
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text, windowPath);
+				} else if (targetWindow.type === 'query') {
+					var query = targetWindow.object;
 
-						utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '* ' + originNickOrName + ' ' + text, windowPath);
-					}
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '* ' + originNickOrName + ' ' + text, windowPath);
 				}
 			}
 
