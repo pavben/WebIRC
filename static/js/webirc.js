@@ -279,6 +279,9 @@ webircApp.directive('chatlog', function() {
 
 				return basicText(cls, '* ' + originNickOrName(activity.origin) + ' ' + activity.text);
 			},
+			'ChannelNotice': function(activity) {
+				return basicText('activity_notice', '-' + originNickOrName(activity.origin) + ':' + activity.channelName + '- ' + activity.text);
+			},
 			'ChatMessage': function(activity) {
 				var cls = 'activity';
 

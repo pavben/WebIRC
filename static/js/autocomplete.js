@@ -163,6 +163,9 @@ function initAutoComplete() {
 				case 'ActionMessage':
 					addNames(listOriginNickOrEmpty(activity.origin));
 					break;
+				case 'ChannelNotice':
+					addNames(listOriginNickOrEmpty(activity.origin));
+					break;
 				case 'ChatMessage':
 					addNames(listOriginNickOrEmpty(activity.origin));
 					break;

@@ -29,6 +29,11 @@ var sc = {
 
 			server.queries.push(query);
 		},
+		'ChannelNotice': function(windowPath, origin, channelName, text, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			utils.addActivity(this, targetWindow.object, 'ChannelNotice', { origin: origin, channelName: channelName, text: text }, ActivityType.Event);
+		},
 		'Connect': function(serverIdx, myNickname) {
 			var server = this.servers[serverIdx];
 
