@@ -24,6 +24,7 @@ Features:
 * Connect to IRC servers using SSL
 * Connect to multiple servers at the same time
 * Webkit notifications for when your name is mentioned
+* Chatbox history for repeating/modifying commands (up/down arrow keys)
 
 Commands:
 

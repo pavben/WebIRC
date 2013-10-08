@@ -406,15 +406,62 @@ webircApp.directive('userlist', function() {
 
 webircApp.directive('chatbox', function($rootScope) {
 	return function(scope, element) {
+		var history = [];
+		var currentHistoryId = null;
+
 		element.bind('keydown', function(e) {
+			function setCursorPosToEnd() {
+				var rawElement = element[0];
+
+				rawElement.selectionStart = rawElement.selectionEnd = element.val().length;
+			}
+
 			if (e.keyCode === 13) { // enter
 				var lines = element.val().replace(/\r\n/g, '\n').split('\n').filter(function(line) { return (line.length > 0); });
 
 				if (lines.length > 0) {
-					$rootScope.sendToGateway('ChatboxSend', {lines: lines, exec: !e.shiftKey});
+					lines.forEach(function(line) {
+						history.push(line);
+					});
+
+					$rootScope.sendToGateway('ChatboxSend', { lines: lines, exec: !e.shiftKey });
 				}
 
+				if (history.length > 40) {
+					history = history.slice(10);
+				}
+
+				currentHistoryId = null;
+
 				element.val('');
+
+				e.preventDefault();
+			} else if (e.keyCode === 38) { // up
+				if (currentHistoryId === null) {
+					currentHistoryId = history.length - 1;
+				} else if (currentHistoryId > 0) {
+					currentHistoryId--;
+				}
+
+				element.val(history[currentHistoryId]);
+
+				setCursorPosToEnd();
+
+				e.preventDefault();
+			} else if (e.keyCode === 40) { // down
+				if (currentHistoryId === null) {
+					// no effect
+				} else if (currentHistoryId < history.length - 1) {
+					currentHistoryId++;
+
+					element.val(history[currentHistoryId]);
+				} else {
+					currentHistoryId = null;
+
+					element.val('');
+				}
+
+				setCursorPosToEnd();
 
 				e.preventDefault();
 			}
