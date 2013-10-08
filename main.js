@@ -240,13 +240,15 @@ readConfig('config.json', check(
 
 function readConfig(configFilePath, cb) {
 	fs.readFile(configFilePath, check(cb, function(data) {
+		var err = null;
 		var config = null;
+
 		try {
 			config = JSON.parse(data);
-		} catch(err) {
-			cb(err);
+		} catch(e) {
+			err = e;
 		}
 
-		cb(null, config);
+		cb(err, config);
 	}));
 }
