@@ -1,12 +1,28 @@
 var fs = require('fs');
 var winston = require('winston');
 
+var loggerConfig = {
+	levels: {
+		data: 0,
+		debug: 1,
+		info: 2,
+		warn: 3,
+		error: 4
+	},
+	colors: {
+		data: 'grey',
+		debug: 'magenta',
+		info: 'green',
+		warn: 'yellow',
+		error: 'red'
+	}
+};
+
 var logger = null;
 
-function init(logLevel) {
-	if (!isValidLogLevel(logLevel)) {
-		logLevel = 'warn';
-	}
+function init(logLevelConsole, logLevelFile) {
+	logLevelConsole = validateLogLevel(logLevelConsole, 'debug');
+	logLevelFile = validateLogLevel(logLevelFile, 'data');
 
 	var logDir = 'logs';
 
@@ -21,11 +37,12 @@ function init(logLevel) {
 	logger = new winston.Logger({
 		transports: [
 			new winston.transports.Console({
-				level: logLevel
+				colorize: true,
+				level: logLevelConsole
 			}),
 			new winston.transports.File({
 				filename: logPrefix + 'main.log',
-				level: logLevel,
+				level: logLevelFile,
 				json: false
 			})
 		],
@@ -35,10 +52,32 @@ function init(logLevel) {
 				filename: logPrefix + 'exceptions.log',
 				json: false
 			})
-		]
+		],
+		levels: loggerConfig.levels,
+		colors: loggerConfig.colors
 	});
 
-	logger.info('Logger initialized with logLevel %s', logLevel)
+	logger.debug('Logger initialized with logLevelConsole %s and logLevelFile %s', logLevelConsole, logLevelFile);
+}
+
+function validateLogLevel(logLevel, defaultLogLevel) {
+	if (typeof logLevel === 'string' && logLevel in loggerConfig.levels) {
+		// valid
+		return logLevel;
+	} else {
+		// invalid or not present
+		return defaultLogLevel;
+	}
+}
+
+function data() {
+	if (logger)
+		logger.data.apply(this, arguments);
+}
+
+function debug() {
+	if (logger)
+		logger.debug.apply(this, arguments);
 }
 
 function info() {
@@ -56,11 +95,9 @@ function error() {
 		logger.error.apply(this, arguments);
 }
 
-function isValidLogLevel(logLevel) {
-	return (typeof logLevel === 'string' && ['error', 'warn', 'info'].indexOf(logLevel) >= 0);
-}
-
 module.exports.init = init;
+module.exports.data = data;
+module.exports.debug = debug;
 module.exports.info = info;
 module.exports.warn = warn;
 module.exports.error = error;

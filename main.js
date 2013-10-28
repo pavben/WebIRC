@@ -21,7 +21,7 @@ readConfig('config.json', check(
 	function(config) {
 		console.log('Read config', config);
 
-		logger.init(config.logLevel);
+		logger.init(config.logLevels.console, config.logLevels.file);
 
 		var sessionStore = new express.session.MemoryStore();
 

@@ -22,5 +22,8 @@
 		"certFile": "./cert.pem"
 	},
 	"sessionSecret": "notsosecret",
-	"logLevel": "info"
+	"logLevels": {
+		"console": "info",
+		"file": "data"
+	}
 }

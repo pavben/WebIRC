@@ -259,7 +259,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 		if (target instanceof ClientTarget) {
 			// it's a user mode
 			if (target.nick.toLowerCase() === server.nickname.toLowerCase()) {
-				logger.info('User mode change', modes);
+				logger.debug('User mode change', modes);
 			}
 		} else if (target instanceof ChannelTarget) {
 			// it's a channel mode
@@ -447,7 +447,7 @@ function reconnectServer(server) {
 	var netOrTls = server.ssl ? tls : net;
 
 	var serverSocket = netOrTls.connect(connectOptions, function() {
-		logger.info('Connected to server');
+		logger.info('Connected to server %s:%d', server.host, server.port);
 
 		server.socket = serverSocket;
 
@@ -490,7 +490,7 @@ function reconnectServer(server) {
 }
 
 function processLineFromServer(line, server) {
-	logger.info('Line: ' + line);
+	logger.data('Line: ' + line);
 
 	parseResult = parseLine(line);
 

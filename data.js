@@ -39,7 +39,7 @@ User.prototype = {
 
 		var args = Array.prototype.slice.call(arguments, 1);
 
-		logger.info('%s state change args', funcId, args);
+		logger.debug('%s state change args', funcId, args);
 
 		// first, send it to the clients
 		this.sendToWeb('ApplyStateChange', {
@@ -239,7 +239,7 @@ Server.prototype = {
 		});
 	},
 	send: function(data) {
-		logger.info('SEND: %s', data);
+		logger.data('SEND: %s', data);
 		if (this.socket !== null) {
 			this.socket.write(data + '\r\n');
 		} else {
