@@ -10,6 +10,7 @@ var connect = require('connect');
 var cookie = require('cookie');
 var io = require('socket.io');
 var irc = require('./irc.js');
+var logger = require('./logger.js');
 
 var sessionKey = 'sid';
 
@@ -19,6 +20,8 @@ readConfig('config.json', check(
 	},
 	function(config) {
 		console.log('Read config', config);
+
+		logger.init(config.logLevel);
 
 		var sessionStore = new express.session.MemoryStore();
 
@@ -85,7 +88,7 @@ readConfig('config.json', check(
 				});
 
 				sio.sockets.on('connection', function(socket) {
-					console.log('A socket with sessionId ' + socket.handshake.sessionId + ' connected.');
+					logger.info('A socket with sessionId %s connected.', socket.handshake.sessionId);
 
 					var sessionId = socket.handshake.sessionId;
 
@@ -130,7 +133,7 @@ readConfig('config.json', check(
 
 					socket.on('disconnect', function() {
 						// TODO LOW: support connection timeouts
-						console.log('WebSocket disconnected');
+						logger.info('WebSocket disconnected');
 
 						// remove the socket from activeWebSockets of the user
 						// nothing to remove if the socket was not yet logged in
@@ -196,7 +199,7 @@ readConfig('config.json', check(
 			socket.emit('CurrentState', userCopy);
 
 			socket.on('ChatboxSend', function(data) {
-				console.log(data);
+				logger.info('Chatbox send', data);
 
 				data.lines.forEach(function(line) {
 					irc.processChatboxLine(user, line, data.exec, sessionId);
@@ -209,7 +212,7 @@ readConfig('config.json', check(
 				if (targetWindow !== null) {
 					user.setActiveWindow(data.windowPath);
 				} else {
-					console.log('Invalid windowPath in SetActiveWindow from client');
+					logger.error('Invalid windowPath in SetActiveWindow from client', data);
 				}
 			});
 
@@ -219,7 +222,7 @@ readConfig('config.json', check(
 				if (targetWindow !== null) {
 					targetWindow.object.closeWindow();
 				} else {
-					console.log('Invalid windowPath in CloseWindow from client');
+					logger.error('Invalid windowPath in CloseWindow from client', data);
 				}
 			});
 		}

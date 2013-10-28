@@ -7,7 +7,8 @@
 		"cookie": "*",
 		"express": ">= 3.0.3",
 		"socket.io": ">= 0.9.11",
-		"moment": "*"
+		"moment": "*",
+		"winston": "*"
 	},
 	"engines": {
 		"node": ">= 0.8"

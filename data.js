@@ -1,5 +1,6 @@
 var assert = require('assert');
 // irc.js include moved to the bottom due to circular dependency
+var logger = require('./logger.js');
 var statechanges = require('./static/js/statechanges.js');
 
 function User(username, password) {
@@ -38,7 +39,7 @@ User.prototype = {
 
 		var args = Array.prototype.slice.call(arguments, 1);
 
-		console.log('%s state change args: %j', funcId, args);
+		logger.info('%s state change args', funcId, args);
 
 		// first, send it to the clients
 		this.sendToWeb('ApplyStateChange', {
@@ -127,7 +128,7 @@ Server.prototype = {
 
 		this.user.applyStateChange('Disconnect', this.getIndex());
 
-		console.log('Disconnected from server:', this.host + ':' + this.port);
+		logger.info('Disconnected from server: %s:%d', this.host, this.port);
 	},
 	joinedChannel: function(channelName) {
 		var server = this;
@@ -238,11 +239,11 @@ Server.prototype = {
 		});
 	},
 	send: function(data) {
-		console.log('SEND: ' + data);
+		logger.info('SEND: %s', data);
 		if (this.socket !== null) {
 			this.socket.write(data + '\r\n');
 		} else {
-			console.log('send called on a server with null socket');
+			logger.error('send called on a server with null socket');
 		}
 	},
 	startPings: function() {
@@ -326,7 +327,7 @@ Server.prototype = {
 			// and finally remove the server itself
 			this.user.applyStateChange('RemoveWindow', this.toWindowPath());
 		} else {
-			console.log('Cannot close the only server window.');
+			logger.error('Cannot close the only server window.');
 		}
 	}
 };

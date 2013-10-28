@@ -21,5 +21,6 @@
 		"keyFile": "./key.pem",
 		"certFile": "./cert.pem"
 	},
-	"sessionSecret": "notsosecret"
+	"sessionSecret": "notsosecret",
+	"logLevel": "info"
 }

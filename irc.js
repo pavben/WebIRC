@@ -1,4 +1,5 @@
 var clientcommands = require('./clientcommands.js');
+var logger = require('./logger.js');
 var mode = require('./mode.js');
 var moment = require('moment');
 var net = require('net');
@@ -57,7 +58,7 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 			return handler.apply(null, allArgs);
 		} else {
 			// invalid number of arguments
-			console.log('Error: Invalid number of arguments in command handler: ' + handler.toString());
+			logger.error('Error: Invalid number of arguments in command handler: %s (got %d)', handler.toString(), numArgs);
 			return false;
 		}
 	};
@@ -258,7 +259,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 		if (target instanceof ClientTarget) {
 			// it's a user mode
 			if (target.nick.toLowerCase() === server.nickname.toLowerCase()) {
-				console.log('User mode change: ' + modes);
+				logger.info('User mode change', modes);
 			}
 		} else if (target instanceof ChannelTarget) {
 			// it's a channel mode
@@ -288,7 +289,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 						// for now, we ignore all other modes
 					});
 				} else {
-					console.log('Unable to parse channel mode change!');
+					logger.error('Unable to parse channel mode change!');
 				}
 			}));
 		}
@@ -311,7 +312,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 
 				if (ctcpMessage !== null) {
 					//handleCtcp(serverIdx, server, origin, target, ctcpMessage);
-					console.log('CTCP reply handling not implemented');
+					logger.warn('CTCP reply handling not implemented');
 				} else {
 					// not CTCP reply, but a regular notice
 					if (target instanceof ChannelTarget) {
@@ -416,7 +417,7 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 				}
 			}
 		} else {
-			console.log('Received CTCP ' + ctcpMessage.command + ' from ' + origin.getNickOrName());
+			logger.info('Received CTCP %s from %s', ctcpMessage.command, origin.getNickOrName());
 		}
 	}
 }
@@ -446,7 +447,7 @@ function reconnectServer(server) {
 	var netOrTls = server.ssl ? tls : net;
 
 	var serverSocket = netOrTls.connect(connectOptions, function() {
-		console.log('Connected to server');
+		logger.info('Connected to server');
 
 		server.socket = serverSocket;
 
@@ -460,7 +461,7 @@ function reconnectServer(server) {
 
 	serverSocket.on('error', function(err) {
 		// TODO: show this to the user
-		console.log('Connection to server closed due to error:', err);
+		logger.warn('Connection to server closed due to error:', err);
 
 		server.disconnect(true);
 	});
@@ -489,7 +490,7 @@ function reconnectServer(server) {
 }
 
 function processLineFromServer(line, server) {
-	console.log('Line: ' + line);
+	logger.info('Line: ' + line);
 
 	parseResult = parseLine(line);
 
@@ -513,7 +514,7 @@ function processLineFromServer(line, server) {
 			server.user.applyStateChange('Text', server.toWindowPath(), parseResult.command + ' ' + parseResult.args.join(' '));
 		}
 	} else {
-		console.log('Invalid line from server: ' + line);
+		logger.error('Invalid line from server: ' + line);
 	}
 }
 
