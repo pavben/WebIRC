@@ -7,7 +7,7 @@ function runTest(master, testId) {
 				host: 'host'
 			});
 		} else {
-			master.showError('Must be used in a channel');
+			master.user.showError('Must be used in a channel');
 		}
 	} else if (testId === '2') {
 		if (master.activeWindow.type === 'channel') {
@@ -19,7 +19,7 @@ function runTest(master, testId) {
 				});
 			}
 		} else {
-			master.showError('Must be used in a channel');
+			master.user.showError('Must be used in a channel');
 		}
 	} else if (testId === '3') {
 		if (master.activeWindow.type === 'channel') {
@@ -39,7 +39,40 @@ function runTest(master, testId) {
 
 			master.user.applyStateChange('NickChange', master.activeWindow.windowPath.serverIdx, 'paulAWAY', 'paul');
 		} else {
-			master.showError('Must be used in a channel');
+			master.user.showError('Must be used in a channel');
+		}
+	} else if (testId === 'userdupes') {
+		if (master.activeWindow.type === 'channel') {
+			var channel = master.activeWindow.object;
+
+			var userlist = channel.userlist.slice(0);
+
+			userlist.sort(function(a, b) {
+				if (a.nick < b.nick) {
+					return -1;
+				} else if (a.nick > b.nick) {
+					return 1;
+				} else {
+					return 0;
+				}
+			});
+
+			var last = null;
+			var numDupes = 0;
+
+			userlist.forEach(function(entry) {
+				if (last != null && last == entry.nick) {
+					master.user.showInfo('Duplicate nick: ' + entry.nick);
+
+					numDupes++;
+				}
+
+				last = entry.nick;
+			});
+
+			master.user.showInfo('Dupes: ' + numDupes);
+		} else {
+			master.user.showError('Must be used in a channel');
 		}
 	}
 }

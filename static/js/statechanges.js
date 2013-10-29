@@ -2,9 +2,19 @@ var assert = function() {
 	// server-side assert only; do nothing on the client
 };
 
-// if Node.js
+// no logging on the client yet
+var logger = {
+	data: function() {},
+	debug: function() {},
+	info: function() {},
+	warn: function() {},
+	error: function() {}
+};
+
+// if Node.js (server side)
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 	assert = require('assert');
+	logger = require('./../../logger.js');
 }
 
 var ActivityType = {
@@ -681,10 +691,20 @@ var sc = {
 				if (userlistEntryIndex !== null) {
 					var userlistEntry = userlist[userlistEntryIndex];
 
+					var DEBUG_sizeBefore = userlist.length;
+
 					userlist.splice(userlistEntryIndex, 1);
+
+					logger.data('removeUser success for %s', nick);
+
+					if (userlist.length != DEBUG_sizeBefore - 1) {
+						logger.error('removeUser BUG -- userlist size did not decrease by 1 (before = %d, after = %d)', DEBUG_sizeBefore, userlist.length);
+					}
 
 					return userlistEntry;
 				} else {
+					logger.warn('removeUser failed for %s in userlist', nick, userlist);
+
 					return null;
 				}
 			},

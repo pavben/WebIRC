@@ -45,14 +45,14 @@ function init(logLevelConsole, logLevelFile) {
 				level: logLevelFile,
 				json: false
 			})
-		],
+		],/* this is annoying as it formats the stack traces poorly, so turned off for now
 		exceptionHandlers: [
 			new winston.transports.Console(),
 			new winston.transports.File({
 				filename: logPrefix + 'exceptions.log',
 				json: false
 			})
-		],
+		],*/
 		levels: loggerConfig.levels,
 		colors: loggerConfig.colors
 	});
