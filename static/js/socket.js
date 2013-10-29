@@ -24,6 +24,9 @@ webircApp.factory('socketFactory', function ($rootScope) {
 							}
 						});
 					})
+				},
+				disconnect: function() {
+					socket.disconnect();
 				}
 			};
 		}
@@ -93,6 +96,8 @@ function initializeSocketConnection($rootScope, socketFactory) {
 	});
 
 	function scheduleReconnect() {
+		socket.disconnect();
+
 		connected = false;
 
 		delete $rootScope.state;
