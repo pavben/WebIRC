@@ -362,13 +362,21 @@ var sc = {
 				modeArgs: modeArgs
 			}, ActivityType.None);
 		},
-		'UserlistModeUpdate': function(windowPath, userlistEntry, utils) {
+		'UserlistModeUpdate': function(windowPath, nick, isPlus, modeAttribute, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
 			if (targetWindow.type === 'channel') {
 				var channel = targetWindow.object;
 
-				if (utils.userlist.removeUser(channel.userlist, userlistEntry.nick)) {
+				var userlistEntry = utils.userlist.removeUser(channel.userlist, nick);
+
+				if (userlistEntry !== null) {
+					if (isPlus) {
+						userlistEntry[modeAttribute] = true;
+					} else {
+						delete userlistEntry[modeAttribute];
+					}
+
 					utils.userlist.addUser(channel.userlist, userlistEntry);
 				}
 			}

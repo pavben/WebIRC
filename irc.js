@@ -276,14 +276,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 						var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
 
 						if (userlistEntryAttribute !== null) {
-							channel.withUserlistEntry(parsedMode.arg, silentFail(function(userlistEntry) {
-								if (parsedMode.plus) {
-									userlistEntry[userlistEntryAttribute] = true;
-								} else {
-									delete userlistEntry[userlistEntryAttribute];
-								}
-								user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), userlistEntry);
-							}));
+							user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), parsedMode.arg, parsedMode.plus, userlistEntryAttribute);
 						}
 
 						// for now, we ignore all other modes

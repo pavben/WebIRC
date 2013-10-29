@@ -361,18 +361,10 @@ Channel.prototype = {
 		this.server.send('JOIN ' + this.name);
 	},
 	withUserlistEntry: function(nick, cb) {
-		var matchedUserlistEntry;
+		var matchIndex = statechanges.utils.findUserlistEntryByNick(nick, this.userlist);
 
-		this.userlist.some(function(userlistEntry) {
-			if (userlistEntry.nick.toLowerCase() === nick.toLowerCase()) {
-				matchedUserlistEntry = userlistEntry;
-
-				return true;
-			}
-		});
-
-		if (matchedUserlistEntry) {
-			cb(null, matchedUserlistEntry);
+		if (matchIndex !== null) {
+			cb(null, this.userlist[matchIndex]);
 		} else {
 			var err = new Error('No matching userlist entry');
 
