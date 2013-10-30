@@ -699,20 +699,10 @@ var sc = {
 				if (userlistEntryIndex !== null) {
 					var userlistEntry = userlist[userlistEntryIndex];
 
-					var DEBUG_sizeBefore = userlist.length;
-
 					userlist.splice(userlistEntryIndex, 1);
-
-					logger.data('removeUser success for %s', nick);
-
-					if (userlist.length != DEBUG_sizeBefore - 1) {
-						logger.error('removeUser BUG -- userlist size did not decrease by 1 (before = %d, after = %d)', DEBUG_sizeBefore, userlist.length);
-					}
 
 					return userlistEntry;
 				} else {
-					logger.warn('removeUser failed for %s in userlist', nick, userlist);
-
 					return null;
 				}
 			},
