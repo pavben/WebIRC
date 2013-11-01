@@ -8,28 +8,35 @@ var utils = require('./utils.js');
 
 var serverCommandHandlers = {
 	'001': handleCommandRequireArgs(1, handle001),
-	'002': handleCommandRequireArgs(2, genericHandler()),
-	'003': handleCommandRequireArgs(2, genericHandler()),
+	'002': handleCommandRequireArgs(2, showInfoLast),
+	'003': handleCommandRequireArgs(2, showInfoLast),
 	'004': handleCommandRequireArgs(5, handle004),
 	'005': handleCommandRequireArgs(2, handle005),
-	'251': handleCommandRequireArgs(2, genericHandler()),
-	'254': handleCommandRequireArgs(3, handle254),
-	'255': handleCommandRequireArgs(2, genericHandler()),
-	'265': handleCommandRequireArgs(2, genericHandler()),
-	'266': handleCommandRequireArgs(2, genericHandler()),
+	'250': handleCommandRequireArgs(2, showInfoLast),
+	'251': handleCommandRequireArgs(2, showInfoLast),
+	'252': handleCommandRequireArgs(3, showInfoLast2),
+	'253': handleCommandRequireArgs(3, showInfoLast2),
+	'254': handleCommandRequireArgs(3, showInfoLast2),
+	'255': handleCommandRequireArgs(2, showInfoLast),
+	'265': handleCommandRequireArgs(2, showInfoLast),
+	'266': handleCommandRequireArgs(2, showInfoLast),
 	'311': handleCommandRequireArgs(6, handle311), // RPL_WHOISUSER
 	'312': handleCommandRequireArgs(4, handle312), // RPL_WHOISSERVER
 	'317': handleCommandRequireArgs(4, handle317), // RPL_WHOISIDLE
-	'318': ignoreHandler, // RPL_ENDOFWHOIS
+	'318': emptyHandler, // RPL_ENDOFWHOIS
 	'319': handleCommandRequireArgs(3, handle319), // RPL_WHOISCHANNELS
+	'328': handleCommandRequireArgs(3, handle328), // RPL_CHANNEL_URL
 	'330': handleCommandRequireArgs(4, handle330), // RPL_WHOISACCOUNT
 	'332': handleCommandRequireArgs(3, handle332), // RPL_TOPIC
 	'333': handleCommandRequireArgs(4, handle333), // RPL_TOPICWHOTIME
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
 	'366': handleCommandRequireArgs(2, handle366), // RPL_ENDOFNAMES
+	'372': handleCommandRequireArgs(2, showInfoLast), // RPL_MOTD
+	'375': handleCommandRequireArgs(2, showInfoLast), // RPL_MOTDSTART
+	'376': handleCommandRequireArgs(2, showInfoLast), // RPL_ENDOFMOTD
 	'378': handleCommandRequireArgs(3, handle378), // RPL_MOTD
 	'401': handleCommandRequireArgs(2, handle401), // ERR_NOSUCHNICK
-	'422': handleCommandRequireArgs(2, genericHandler()),
+	'422': handleCommandRequireArgs(2, showInfoLast),
 	'671': handleCommandRequireArgs(3, handle671), // RPL_WHOISSECURE
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'KICK': handleCommandRequireArgs(2, handleKick),
@@ -64,15 +71,25 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 	};
 }
 
-function genericHandler() {
-	return function(user, serverIdx, server, origin) {
+function showInfoLast(user, serverIdx, server, origin) {
+	if (arguments.length >= 6) {
 		var text = arguments[arguments.length - 1];
 
 		server.showInfo(text);
+	} else {
+		logger.error('showInfoLast called with arguments.length = ' + arguments.length);
 	}
 }
 
-function ignoreHandler() {
+function showInfoLast2(user, serverIdx, server, origin) {
+	if (arguments.length >= 7) {
+		server.showInfo(Array.prototype.slice.call(arguments, -2).join(' '));
+	} else {
+		logger.error('showInfoLast2 called with arguments.length = ' + arguments.length);
+	}
+}
+
+function emptyHandler() {
 }
 
 function handle001(user, serverIdx, server, origin, myNickname, text) {
@@ -103,10 +120,6 @@ function handle005(user, serverIdx, server, origin) {
 	server.showInfo('Server settings: ' + keyValues.join(' '));
 }
 
-function handle254(user, serverIdx, server, origin, myNickname, numChannels, channelsFormed) {
-	server.showInfo(numChannels + ' ' + channelsFormed);
-}
-
 function handle311(user, serverIdx, server, origin, myNickname, nick, user, host, star, realName) {
 	server.showWhois(nick + ' is ' + user + '@' + host + ' (' + realName + ')');
 }
@@ -123,6 +136,12 @@ function handle317(user, serverIdx, server, origin, myNickname, nick, secondsIdl
 
 function handle319(user, serverIdx, server, origin, myNickname, nick, channels) {
 	server.showWhois(nick + ' is on ' + channels);
+}
+
+function handle328(user, serverIdx, server, origin, myNickname, channelName, channelUrl) {
+	server.withChannel(channelName, silentFail(function(channel) {
+		user.applyStateChange('Info', channel.toWindowPath(), 'URL: ' + channelUrl);
+	}));
 }
 
 function handle330(user, serverIdx, server, origin, myNickname, nick, authName, text) {
