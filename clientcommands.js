@@ -83,7 +83,8 @@ function handleMsg(targetName, text) {
 			var displayed = false;
 
 			if (target instanceof ClientTarget) {
-				if (!target.server) {
+				// /msg nick@server will not open the query window
+				if (target.server === null) {
 					var query = self.server.ensureQuery(target.toString());
 
 					self.user.applyStateChange('MyChatMessage', query.toWindowPath(), text);
@@ -180,8 +181,9 @@ function handleClientCommand(activeWindow, command, args, sessionId) {
 			// error: Not enough parameters
 		}
 	} else {
-		// TODO: are we connected?
-		activeWindow.server.send(command + ' ' + args);
+		activeWindow.server.ifConnected(function() {
+			activeWindow.server.send(command + ' ' + args);
+		});
 	}
 }
 
