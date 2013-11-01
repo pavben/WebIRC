@@ -15,8 +15,8 @@ var serverCommandHandlers = {
 	'251': handleCommandRequireArgs(2, genericHandler()),
 	'254': handleCommandRequireArgs(3, handle254),
 	'255': handleCommandRequireArgs(2, genericHandler()),
-	'265': handleCommandRequireArgs(4, genericHandler()),
-	'266': handleCommandRequireArgs(4, genericHandler()),
+	'265': handleCommandRequireArgs(2, genericHandler()),
+	'266': handleCommandRequireArgs(2, genericHandler()),
 	'311': handleCommandRequireArgs(6, handle311), // RPL_WHOISUSER
 	'312': handleCommandRequireArgs(4, handle312), // RPL_WHOISSERVER
 	'317': handleCommandRequireArgs(4, handle317), // RPL_WHOISIDLE
@@ -64,9 +64,8 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 	};
 }
 
-function genericHandler(skipArgs) {
-	return function() {
-		var server = arguments[2];
+function genericHandler() {
+	return function(user, serverIdx, server, origin) {
 		var text = arguments[arguments.length - 1];
 
 		server.showInfo(text);
