@@ -37,7 +37,7 @@
 			<div class="tablerow">
 				<div class="leftbarcell">
 					<div ng-repeat="server in state.servers">
-						<windowlistbutton label="server.host" window-path="{ serverIdx: $index }" window-object="server" class="serverbutton"></windowlistbutton>
+						<windowlistbutton label="server.label" window-path="{ serverIdx: $index }" window-object="server" class="serverbutton"></windowlistbutton>
 						<windowlistbutton ng-repeat="channel in server.channels" label="channel.name" window-path="{ serverIdx: $parent.$index, channelIdx: $index }" window-object="channel"></windowlistbutton>
 						<windowlistbutton ng-repeat="query in server.queries" label="query.name" window-path="{ serverIdx: $parent.$index, queryIdx: $index }" window-object="query"></windowlistbutton>
 					</div>

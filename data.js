@@ -88,6 +88,7 @@ User.prototype = {
 };
 
 function Server(serverSpec) {
+	this.label = serverSpec.label || serverSpec.host;
 	this.host = serverSpec.host;
 	this.port = serverSpec.port;
 	this.ssl = serverSpec.ssl || false;

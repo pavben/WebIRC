@@ -174,6 +174,15 @@ var sc = {
 		'RemoveWindow': function(windowPath, utils) {
 			utils.removeWindow(this, windowPath);
 		},
+		'RenameServer': function(windowPath, newLabel, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'server');
+
+			var server = targetWindow.object;
+
+			server.label = newLabel;
+		},
 		'SetTopic': function(windowPath, origin, newTopic, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 

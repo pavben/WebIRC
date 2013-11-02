@@ -115,9 +115,19 @@ function handle004(user, serverIdx, server, origin, myNickname, serverName, serv
 }
 
 function handle005(user, serverIdx, server, origin) {
-	var keyValues = Array.prototype.slice.call(arguments, 5, arguments.length - 1);
+	var keyValueStrings = Array.prototype.slice.call(arguments, 5, arguments.length - 1);
 
-	server.showInfo('Server settings: ' + keyValues.join(' '));
+	keyValueStrings.forEach(function(keyValueStr) {
+		var kv = utils.parseKeyEqValue(keyValueStr);
+
+		if (kv.key === 'NETWORK') {
+			if (kv.val) {
+				user.applyStateChange('RenameServer', server.toWindowPath(), kv.val);
+			}
+		}
+	});
+
+	server.showInfo('Server settings: ' + keyValueStrings.join(' '));
 }
 
 function handle311(user, serverIdx, server, origin, myNickname, nick, user, host, star, realName) {

@@ -83,9 +83,26 @@ function withParsedTarget(targetName, cb) {
 	}
 }
 
+function parseKeyEqValue(str) {
+	var eqPos = str.indexOf('=');
+
+	if (eqPos >= 0) {
+		return {
+			key: str.substring(0, eqPos),
+			val: str.substring(eqPos + 1)
+		}
+	} else {
+		return {
+			key: str,
+			val: null
+		}
+	}
+}
+
 exports.installGlobals = installGlobals;
 exports.parseCtcpMessage = parseCtcpMessage;
 exports.toCtcp = toCtcp;
 exports.parseOrigin = parseOrigin;
 exports.parseTarget = parseTarget;
 exports.withParsedTarget = withParsedTarget;
+exports.parseKeyEqValue = parseKeyEqValue;
