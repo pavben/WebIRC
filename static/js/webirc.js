@@ -156,6 +156,10 @@ webircApp.directive('windowlistbutton', function() {
 
 				maincellElement.text(buttonLabel);
 
+				$scope.$watch($attr.hoverLabel, function(newHoverLabel) {
+					$element[0].title = newHoverLabel;
+				}, true);
+
 				var windowPath = null;
 
 				// windowPath can change if the index of the window changes

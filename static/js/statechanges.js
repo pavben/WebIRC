@@ -81,6 +81,19 @@ var sc = {
 				server.queries.forEach(addDisconnectActivity);
 			}
 		},
+		'EditServer': function(windowPath, changes, utils) {
+			var targetWindow = utils.getWindowByPath(this, windowPath);
+
+			assert(targetWindow.type === 'server');
+
+			var server = targetWindow.object;
+
+			for (var key in changes) {
+				assert(key in server);
+
+				server[key] = changes[key];
+			}
+		},
 		'Error': function(windowPath, text, utils) {
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
@@ -174,7 +187,7 @@ var sc = {
 		'RemoveWindow': function(windowPath, utils) {
 			utils.removeWindow(this, windowPath);
 		},
-		'RenameServer': function(windowPath, newLabel, utils) {
+		'RenameServer': function(windowPath, newLabel, utils) { // TODO: use EditServer
 			var targetWindow = utils.getWindowByPath(this, windowPath);
 
 			assert(targetWindow.type === 'server');

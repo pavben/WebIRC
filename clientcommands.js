@@ -8,7 +8,7 @@ var serverCommandHandlers = {
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
 	'NOTICE': getHandler(2, 2, handleNotice),
-	'SERVER': getHandler(2, 0, handleServer),
+	'SERVER': getHandler(3, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
 	'W': getHandler(1, 1, handleWhois),
@@ -121,17 +121,21 @@ function handleNotice(targetName, text) {
 	});
 }
 
-function handleServer(host, port) {
-	switch (this.numArgs) {
-		case 2:
-			this.server.port = port;
-			// fall through
-		case 1:
-			this.server.host = host;
-			// fall through
-		case 0:
-			this.server.reconnect();
+function handleServer(host, port, ssl) {
+	this.server.disconnect();
+
+	if (this.numArgs >= 1) {
+		var serverChanges = {};
+
+		serverChanges.host = host;
+
+		serverChanges.port = port || 6667;
+		serverChanges.ssl = (ssl === 'ssl') || false;
+
+		this.user.applyStateChange('EditServer', this.server.toWindowPath(), serverChanges);
 	}
+
+	this.server.reconnect();
 }
 
 function handleSessions() {

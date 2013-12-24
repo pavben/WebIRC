@@ -123,13 +123,13 @@ Server.prototype = {
 			this.socket.destroy();
 
 			this.socket = null;
+
+			this.endPings();
+
+			this.user.applyStateChange('Disconnect', this.getIndex());
+
+			logger.info('Disconnected from server: %s:%d', this.host, this.port);
 		}
-
-		this.endPings();
-
-		this.user.applyStateChange('Disconnect', this.getIndex());
-
-		logger.info('Disconnected from server: %s:%d', this.host, this.port);
 	},
 	joinedChannel: function(channelName) {
 		var server = this;
