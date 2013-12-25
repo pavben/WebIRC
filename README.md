@@ -33,8 +33,9 @@ Then look at the console. Did it connect to your server? Visit `http://localhost
 * /msg <nick> <text> to start a private chat
 * /mode #channel <modes> to set channel modes
 * /hop to rejoin the current channel
+* /server [host] [port] to connect to a new server. Prefix the port with + for SSL.
 * /sessions to list currently logged-in sessions, or /logout [all]
-* All other commands are treated as raw and sent to the server directly. For example, you can do: `/privmsg #chan :text`
+* All unrecognized commands are treated as raw and sent to the server directly. For example, you can do: `/privmsg #chan :text`
 
 ## Not yet supported
 * Clickable links in messages
