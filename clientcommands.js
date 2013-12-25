@@ -8,7 +8,7 @@ var serverCommandHandlers = {
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
 	'NOTICE': getHandler(2, 2, handleNotice),
-	'SERVER': getHandler(3, 0, handleServer),
+	'SERVER': getHandler(2, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
 	'W': getHandler(1, 1, handleWhois),
@@ -121,16 +121,33 @@ function handleNotice(targetName, text) {
 	});
 }
 
-function handleServer(host, port, ssl) {
+function handleServer(host, port) {
 	this.server.disconnect();
 
-	if (this.numArgs >= 1) {
+	if (this.numArgs >= 1) { // if host provided
 		var serverChanges = {};
 
 		serverChanges.host = host;
+		serverChanges.port = 6667;
+		serverChanges.ssl = false;
 
-		serverChanges.port = port || 6667;
-		serverChanges.ssl = (ssl === 'ssl') || false;
+		function trySetPort(portStr) {
+			var portNum = parseInt(portStr);
+
+			if (!isNaN(portNum)) {
+				serverChanges.port = portNum;
+			}
+		}
+
+		if (this.numArgs >= 2) { // if port provided
+			if (port.substring(0, 1) === '+') {
+				trySetPort(port.substring(1));
+
+				serverChanges.ssl = true;
+			} else {
+				trySetPort(port);
+			}
+		}
 
 		this.user.applyStateChange('EditServer', this.server.toWindowPath(), serverChanges);
 	}
