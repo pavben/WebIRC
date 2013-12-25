@@ -605,7 +605,7 @@ function parseLine(line) {
 	};
 }
 
-function processChatboxLine(user, line, parseCommands, sessionId) {
+function processChatboxLine(user, activeWindowPath, line, parseCommands, sessionId) {
 	if (user.currentActiveWindow !== null) {
 		var command = null;
 		var rest = line;
@@ -619,7 +619,7 @@ function processChatboxLine(user, line, parseCommands, sessionId) {
 			}
 		}
 
-		var activeWindow = user.getWindowByPath(user.currentActiveWindow);
+		var activeWindow = user.getWindowByPath(activeWindowPath);
 
 		var server = activeWindow.server;
 

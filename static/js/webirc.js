@@ -30,7 +30,12 @@ webircApp.directive('focusKey', function($timeout) {
 			scope.$on('FocusKey', function(e, focusKey) {
 				if (focusKey === attrs.focusKey) {
 					$timeout(function() {
-						element[0].focus();
+						var el = element[0];
+
+						// only focus if the element is visible (used to focus the correct chatbox only)
+						if (el.offsetWidth > 0 || el.offsetHeight > 0) {
+							el.focus();
+						}
 					});
 				}
 			});
@@ -88,16 +93,18 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 			}
 
 			this.resetScroll = function() {
-				//delete chatlogDiv.lastScrollTopTarget;
 				delete chatlogDiv.lastScrollTop;
-				//delete chatlogDiv.scrollLock;
 			}
 		},
 		link: function(scope, element, attrs) {
 			var getResizeParams = function() {
 				var bodyOverflowY = 'hidden';
 
-				var maincellHeight = getTargetHeightForMaincell();
+				var maincellHeight = getTargetHeightForMaincell(scope.chatboxHeight);
+
+				if (!maincellHeight) {
+					maincellHeight = 0;
+				}
 
 				if (maincellHeight < 300) {
 					maincellHeight = 300;
@@ -110,7 +117,6 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 
 			scope.$watch(getResizeParams, function(newVal, oldVal) {
 				scope.maincellHeight = newVal.maincellHeight + 'px';
-				//scope.bodyOverflowY = newVal.bodyOverflowY;
 
 				scope.delayedScroll();
 			}, true);
@@ -416,9 +422,16 @@ webircApp.directive('userlist', function() {
 });
 
 webircApp.directive('chatbox', function($rootScope) {
-	return function(scope, element) {
+	return function(scope, element, attrs) {
 		var history = [];
 		var currentHistoryId = null;
+
+		var windowPath = null;
+
+		// windowPath can change if the index of the window changes
+		scope.$watch(attrs.windowPath, function(newWindowPath) {
+			windowPath = newWindowPath;
+		}, true);
 
 		element.bind('keydown', function(e) {
 			function setCursorPosToEnd() {
@@ -435,7 +448,11 @@ webircApp.directive('chatbox', function($rootScope) {
 						history.push(line);
 					});
 
-					$rootScope.sendToGateway('ChatboxSend', { lines: lines, exec: !e.shiftKey });
+					$rootScope.sendToGateway('ChatboxSend', {
+						lines: lines,
+						exec: !e.shiftKey,
+						windowPath: windowPath
+					});
 				}
 
 				if (history.length > 40) {
@@ -479,7 +496,9 @@ webircApp.directive('chatbox', function($rootScope) {
 		});
 
 		$rootScope.$watch('state.currentActiveWindow', function(value) {
-			$rootScope.$broadcast('FocusKey', 'Chatbox');
+			if (value) {
+				$rootScope.$broadcast('FocusKey', 'Chatbox');
+			}
 		});
 	};
 });
@@ -551,6 +570,9 @@ webircApp.directive('chatboxAutogrow', function($rootScope, $timeout) {
 
 			if (targetHeight != previousHeight) {
 				chatBox.css('height', targetHeight);
+
+				scope.chatboxHeight = targetHeight;
+
 				$rootScope.$apply();
 			}
 		};
@@ -567,11 +589,17 @@ function AppCtrl($rootScope, socketFactory) {
 	initializeSocketConnection($rootScope, socketFactory);
 }
 
-function getTargetHeightForMaincell() {
-	var chatboxWrapper = $('#chatboxwrapper');
+function getTargetHeightForMaincell(chatboxHeight) {
+	var chatboxWrapper = $('.chatboxwrapper');
+
+	if (typeof chatboxHeight !== 'number') {
+		return null;
+	}
 
 	return ($(window).height()
-		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
+		- stripPx(chatboxWrapper.css('padding-top'))
+		- chatboxHeight
+		- stripPx(chatboxWrapper.css('padding-bottom'))
 	);
 }
 

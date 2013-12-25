@@ -202,7 +202,7 @@ readConfig('config.json', check(
 				logger.info('Chatbox send', data);
 
 				data.lines.forEach(function(line) {
-					irc.processChatboxLine(user, line, data.exec, sessionId);
+					irc.processChatboxLine(user, data.windowPath, line, data.exec, sessionId);
 				});
 			});
 
