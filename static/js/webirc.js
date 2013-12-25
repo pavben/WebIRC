@@ -307,10 +307,17 @@ webircApp.directive('chatlog', function() {
 
 				var wrapperDiv = angular.element('<div />').addClass(className);
 
-				wrapperDiv.append(angular.element('<span />').text('<'));
-				wrapperDiv.append(angular.element('<span title="' + moment(activity.time * 1000).calendar() + '" />').text(originNickOrName(activity.origin)));
-				wrapperDiv.append(angular.element('<span />').text('> '));
-				wrapperDiv.append(angular.element('<span />').text(activity.text));
+				wrapperDiv[0].appendChild(document.createTextNode('<'));
+
+				var originSpan = document.createElement('span');
+
+				originSpan.title = moment(activity.time * 1000).calendar();
+
+				originSpan.appendChild(document.createTextNode(originNickOrName(activity.origin)));
+
+				wrapperDiv[0].appendChild(originSpan);
+
+				wrapperDiv[0].appendChild(document.createTextNode('> ' + activity.text));
 
 				return wrapperDiv;
 			},
