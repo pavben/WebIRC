@@ -122,7 +122,9 @@ function handle005(user, serverIdx, server, origin) {
 
 		if (kv.key === 'NETWORK') {
 			if (kv.val) {
-				user.applyStateChange('RenameServer', server.toWindowPath(), kv.val);
+				user.applyStateChange('EditServer', server.toWindowPath(), {
+					label: kv.val
+				});
 			}
 		}
 	});
