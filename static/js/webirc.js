@@ -248,13 +248,19 @@ webircApp.directive('chatlog', function() {
 				var lastLen = 0;
 
 				$scope.$watchCollection($attr.activityLog, function(activityLog) {
+					function convertLinksForDomTreeAng(root) {
+						convertLinksForDomTree(root[0]);
+
+						return root;
+					}
+
 					if (activityLog.length > lastLen) {
 						// get only the newly-added entries
 						var newEntries = activityLog.slice(lastLen);
 
 						// and append them
 						newEntries.forEach(function(activity) {
-							$element.append(elementFromActivity(activity));
+							$element.append(convertLinksForDomTreeAng(elementFromActivity(activity)));
 						});
 
 						resizeMaincellCtrl.delayedScroll();
@@ -264,7 +270,7 @@ webircApp.directive('chatlog', function() {
 						$element.children().remove();
 
 						activityLog.forEach(function(activity) {
-							$element.append(elementFromActivity(activity));
+							$element.append(convertLinksForDomTreeAng(elementFromActivity(activity)));
 						});
 
 						resizeMaincellCtrl.resetScroll();
