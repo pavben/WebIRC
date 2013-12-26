@@ -76,7 +76,7 @@ function textMessageToLinkChunks(textMessage) {
 	)?
 	*/
 	var urlRegex = /\b(https?:\/\/www\.|https?:\/\/|www\.)(([-\w\d]+\.)+([\w]{2,4})|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d{1,5})?(\/?(([-\w\d+&@#\/%=$?~_\|\.;:]*\([-\w\d+&@#\/%=$?~_\|\.;:]*\)([-\w\d+&@#\/%=$?~_\|]*([\.;:]+[-\w\d+&@#\/%=$?~_\|]+)*)?)|([-\w\d+&@#\/%=$?~_\|]*([\.;:]+[-\w\d+&@#\/%=$?~_\|]+)*))?)?/i;
-	var emailRegex = /\b[A-Z0-9._%-]+@[A-Z0-9-]+\.[A-Z]{2,4}(?!\.)\b/i;
+	var emailRegex = /\b[A-Z0-9._%-]+@[A-Z0-9-]+\.[A-Z]{2,4}(?![\.-])\b/i;
 
 	var first = true;
 	var tempString = textMessage;
