@@ -5,9 +5,10 @@ var LinkChunkType = {
 }
 
 function convertLinksForDomTree(root) {
-	for (var i = 0; i < root.childNodes.length; i++) {
-		var childNode = root.childNodes[i];
+	// make a copy of child nodes for iterating since we'll be changing it as we go
+	var childNodes = Array.prototype.slice.call(root.childNodes, 0);
 
+	childNodes.forEach(function(childNode) {
 		if (childNode.nodeType === 1) { // element that may have children to recurse onto
 			convertLinksForDomTree(childNode);
 		} else if (childNode.nodeType === 3) { // text
@@ -22,7 +23,7 @@ function convertLinksForDomTree(root) {
 				root.removeChild(childNode);
 			}
 		}
-	};
+	});
 }
 
 function linkChunkToElement(chunk) {
@@ -34,6 +35,7 @@ function linkChunkToElement(chunk) {
 
 			newA.href = (/^https?:\/\//i).test(chunk.text) ? chunk.text : 'http://' + chunk.text;
 			newA.target = '_blank';
+			newA.tabIndex = -1;
 
 			newA.appendChild(document.createTextNode(chunk.text));
 
@@ -43,6 +45,7 @@ function linkChunkToElement(chunk) {
 
 			newA.href = 'mailto:' + chunk.text;
 			newA.target = '_blank';
+			newA.tabIndex = -1;
 
 			newA.appendChild(document.createTextNode(chunk.text));
 
