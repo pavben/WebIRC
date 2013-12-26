@@ -32,7 +32,7 @@ function linkChunkToElement(chunk) {
 		case LinkChunkType.Url:
 			var newA = document.createElement('a');
 
-			newA.href = chunk.text;
+			newA.href = (/^https?:\/\//i).test(chunk.text) ? chunk.text : 'http://' + chunk.text;
 			newA.target = '_blank';
 
 			newA.appendChild(document.createTextNode(chunk.text));

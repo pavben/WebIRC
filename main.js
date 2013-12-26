@@ -207,12 +207,14 @@ readConfig('config.json', check(
 			});
 
 			socket.on('SetActiveWindow', function(data) {
-				var targetWindow = user.getWindowByPath(data.windowPath);
+				if (typeof data.windowPath === 'object') {
+					var targetWindow = user.getWindowByPath(data.windowPath);
 
-				if (targetWindow !== null) {
-					user.setActiveWindow(data.windowPath);
-				} else {
-					logger.error('Invalid windowPath in SetActiveWindow from client', data);
+					if (targetWindow !== null) {
+						user.setActiveWindow(data.windowPath);
+					} else {
+						logger.error('Invalid windowPath in SetActiveWindow from client', data);
+					}
 				}
 			});
 
