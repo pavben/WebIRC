@@ -1,7 +1,11 @@
+"use strict";
+
 var assert = require('assert');
 // irc.js include moved to the bottom due to circular dependency
 var logger = require('./logger.js');
 var statechanges = require('./static/js/statechanges.js');
+
+var nextEntityId = 0;
 
 function User(username, password) {
 	this.username = username;
@@ -12,22 +16,18 @@ function User(username, password) {
 	this.activeWebSockets = [];
 	this.loggedInSessions = [];
 
-	this.currentActiveWindow = null;
+	this.entities = {};
+	this.activeEntityId = null;
 }
 
 User.prototype = {
 	addServer: function(server) {
 		this.applyStateChange('AddServer', server);
 
-		// now apply the parameters that should not be sent
-		server.user = this;
-
-		var serverIdx = this.servers.length - 1; // will be the last
-
-		this.setActiveWindow({ serverIdx: serverIdx });
+		this.setActiveEntity(server.entityId);
 	},
-	setActiveWindow: function(newActiveWindowParams) {
-		this.applyStateChange('SetActiveWindow', newActiveWindowParams);
+	setActiveEntity: function(targetEntityId) {
+		this.applyStateChange('SetActiveEntity', targetEntityId);
 	},
 	sendToWeb: function(msgId, data) {
 		this.activeWebSockets.forEach(function(socket) {
@@ -52,8 +52,8 @@ User.prototype = {
 
 		return stateChangeFunctionReturn;
 	},
-	getWindowByPath: function(path) {
-		return statechanges.utils.getWindowByPath(this, path);
+	getEntityById: function(targetEntityId) {
+		return statechanges.utils.getEntityById(this, targetEntityId);
 	},
 	removeActiveWebSocket: function(socket) {
 		var idx = this.activeWebSockets.indexOf(socket);
@@ -76,18 +76,21 @@ User.prototype = {
 		}
 	},
 	showError: function(text) {
-		if (this.currentActiveWindow) {
-			this.applyStateChange('Error', this.currentActiveWindow, text);
+		if (this.activeEntityId) {
+			this.applyStateChange('Error', this.activeEntityId, text);
 		}
 	},
 	showInfo: function(text) {
-		if (this.currentActiveWindow) {
-			this.applyStateChange('Info', this.currentActiveWindow, text);
+		if (this.activeEntityId) {
+			this.applyStateChange('Info', this.activeEntityId, text);
 		}
 	}
 };
 
 function Server(serverSpec) {
+	this.entityId = nextEntityId++;
+	this.type = 'server';
+
 	this.label = serverSpec.label || serverSpec.host;
 	this.host = serverSpec.host;
 	this.port = serverSpec.port;
@@ -108,6 +111,7 @@ function Server(serverSpec) {
 
 	// these are set automatically by the 'add' functions
 	this.user = null; // the user this server belongs to
+	this.server = null; // will reference self
 }
 
 Server.prototype = {
@@ -126,7 +130,7 @@ Server.prototype = {
 
 			this.endPings();
 
-			this.user.applyStateChange('Disconnect', this.getIndex());
+			this.user.applyStateChange('Disconnect', this.entityId);
 
 			logger.info('Disconnected from server: %s:%d', this.host, this.port);
 		}
@@ -138,17 +142,14 @@ Server.prototype = {
 			function(err) {
 				var channel = new Channel(channelName, true);
 
-				server.user.applyStateChange('AddChannel', server.getIndex(), channel);
+				server.user.applyStateChange('AddChannel', server.entityId, channel);
 
-				// now apply the parameters that should not be sent
-				channel.server = server;
-
-				server.user.setActiveWindow(channel.toWindowPath());
+				server.user.setActiveEntity(channel.entityId);
 			},
 			function(channel) {
 				channel.rejoining = false;
 
-				server.user.applyStateChange('RejoinChannel', channel.toWindowPath());
+				server.user.applyStateChange('RejoinChannel', channel.entityId);
 			}
 		));
 	},
@@ -176,9 +177,9 @@ Server.prototype = {
 	removeChannel: function(channelName) {
 		var server = this;
 
-		server.channels.some(function(channel, channelIdx) {
+		server.channels.some(function(channel) {
 			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				server.user.applyStateChange('RemoveWindow', channel.toWindowPath());
+				server.user.applyStateChange('RemoveEntity', channel.entityId);
 
 				return true;
 			}
@@ -197,10 +198,7 @@ Server.prototype = {
 		if (!exists) {
 			var query = new Query(queryName);
 
-			this.user.applyStateChange('AddQuery', this.getIndex(), query);
-
-			// now apply the parameters that should not be sent
-			query.server = this;
+			this.user.applyStateChange('AddQuery', this.entityId, query);
 
 			queryRet = query;
 		}
@@ -233,7 +231,7 @@ Server.prototype = {
 
 		server.queries.some(function(query, queryIdx) {
 			if (query.name.toLowerCase() === targetName.toLowerCase()) {
-				server.user.applyStateChange('RemoveWindow', query.toWindowPath());
+				server.user.applyStateChange('RemoveEntity', query.entityId);
 
 				return true;
 			}
@@ -273,24 +271,26 @@ Server.prototype = {
 		}
 	},
 	showError: function(text, preferActive) {
-		var targetWindow = preferActive ? this.getActiveOrServerWindow() : this.toWindowPath();
+		var targetEntity = preferActive ? this.getActiveOrServerEntity() : this.entityId;
 
-		this.user.applyStateChange('Error', targetWindow, text);
+		this.user.applyStateChange('Error', targetEntity, text);
 	},
 	showInfo: function(text, preferActive) {
-		var targetWindow = preferActive ? this.getActiveOrServerWindow() : this.toWindowPath();
+		var targetEntity = preferActive ? this.getActiveOrServerEntity() : this.entityId;
 
-		this.user.applyStateChange('Info', targetWindow, text);
+		this.user.applyStateChange('Info', targetEntity, text);
 	},
 	showWhois: function(text) {
-		this.user.applyStateChange('Whois', this.getActiveOrServerWindow(), text);
+		this.user.applyStateChange('Whois', this.getActiveOrServerEntity(), text);
 	},
-	getActiveOrServerWindow: function() {
-		if (this.user.currentActiveWindow && this.user.currentActiveWindow.serverIdx == this.getIndex()) {
-			return this.user.currentActiveWindow;
+	getActiveOrServerEntity: function() {
+		if (this.user.activeEntityId !== null && this.user.getEntityById(this.user.activeEntityId).server === this) {
+			return this.user.activeEntityId;
 		} else {
-			return this.toWindowPath();
+			return this.entityId;
 		}
+
+		return this.entityId;
 	},
 	ifConnected: function(successCallback) {
 		if (this.connected) {
@@ -299,25 +299,17 @@ Server.prototype = {
 			this.showError('Not connected', true);
 		}
 	},
-	getIndex: function() {
-		return this.user.servers.indexOf(this);
-	},
-	toWindowPath: function() {
-		return {
-			serverIdx: this.getIndex()
-		};
-	},
-	closeWindow: function() {
+	removeEntity: function() {
 		// only allow closing the server window if it's not the only one
 		if (this.user.servers.length > 1) {
 			// close all the queries
 			for (var i = this.queries.length - 1; i >= 0; i--) {
-				this.queries[i].closeWindow();
+				this.queries[i].removeEntity();
 			}
 
 			// close all the channels
 			for (var i = this.channels.length - 1; i >= 0; i--) {
-				this.channels[i].closeWindow();
+				this.channels[i].removeEntity();
 			}
 
 			// disconnect if connected
@@ -326,7 +318,7 @@ Server.prototype = {
 			}
 
 			// and finally remove the server itself
-			this.user.applyStateChange('RemoveWindow', this.toWindowPath());
+			this.user.applyStateChange('RemoveEntity', this.entityId);
 		} else {
 			logger.error('Cannot close the only server window.');
 		}
@@ -334,6 +326,9 @@ Server.prototype = {
 };
 
 function Channel(name, inChannel) {
+	this.entityId = nextEntityId++;
+	this.type = 'channel';
+
 	this.name = name;
 	this.tempUserlist = []; // built while NAMES entries are coming in (353) and copied to userlist on 366
 	this.userlist = [];
@@ -351,7 +346,7 @@ function Channel(name, inChannel) {
 
 Channel.prototype = {
 	rejoin: function() {
-		this.server.user.applyStateChange('Info', this.toWindowPath(), 'Attempting to rejoin channel...');
+		this.server.user.applyStateChange('Info', this.entityId, 'Attempting to rejoin channel...');
 
 		if (this.inChannel) {
 			this.rejoining = true;
@@ -374,16 +369,7 @@ Channel.prototype = {
 			cb(err);
 		}
 	},
-	getIndex: function() {
-		return this.server.channels.indexOf(this);
-	},
-	toWindowPath: function() {
-		return {
-			serverIdx: this.server.user.servers.indexOf(this.server),
-			channelIdx: this.getIndex()
-		};
-	},
-	closeWindow: function() {
+	removeEntity: function() {
 		if (this.inChannel) {
 			this.rejoining = false;
 
@@ -395,6 +381,9 @@ Channel.prototype = {
 };
 
 function Query(name) {
+	this.entityId = nextEntityId++;
+	this.type = 'query';
+
 	this.name = name;
 	this.activityLog = [];
 	this.numEvents = 0;
@@ -405,16 +394,7 @@ function Query(name) {
 }
 
 Query.prototype = {
-	getIndex: function() {
-		return this.server.queries.indexOf(this);
-	},
-	toWindowPath: function() {
-		return {
-			serverIdx: this.server.user.servers.indexOf(this.server),
-			queryIdx: this.getIndex()
-		};
-	},
-	closeWindow: function() {
+	removeEntity: function() {
 		this.server.removeQuery(this.name);
 	}
 };

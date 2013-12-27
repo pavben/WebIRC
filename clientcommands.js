@@ -1,3 +1,5 @@
+"use strict";
+
 var utils = require('./utils.js');
 var test = require('./test.js');
 
@@ -16,15 +18,15 @@ var serverCommandHandlers = {
 };
 
 function handleClose() {
-	this.activeWindow.object.closeWindow();
+	this.activeEntity.closeWindow();
 }
 
 function handleHop() {
 	var self = this;
 
-	if (this.activeWindow.type === 'channel') {
+	if (this.activeEntity.type === 'channel') {
 		this.server.ifConnected(function() {
-			var channel = self.activeWindow.object;
+			var channel = self.activeEntity;
 
 			channel.rejoin();
 		});
@@ -60,11 +62,11 @@ function handleLogout(all) {
 function handleMe(text) {
 	var self = this;
 
-	if (this.activeWindow.type === 'channel' || this.activeWindow.type === 'query') {
+	if (this.activeEntity.type === 'channel' || this.activeEntity.type === 'query') {
 		this.server.ifConnected(function() {
-			var channelOrQuery = self.activeWindow.object;
+			var channelOrQuery = self.activeEntity;
 
-			self.user.applyStateChange('MyActionMessage', self.activeWindow.windowPath, text);
+			self.user.applyStateChange('MyActionMessage', self.activeEntity.entityId, text);
 
 			self.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
 		});
@@ -87,15 +89,15 @@ function handleMsg(targetName, text) {
 				if (target.server === null) {
 					var query = self.server.ensureQuery(target.toString());
 
-					self.user.applyStateChange('MyChatMessage', query.toWindowPath(), text);
+					self.user.applyStateChange('MyChatMessage', query.entityId, text);
 
-					self.user.setActiveWindow(query.toWindowPath());
+					self.user.setActiveEntity(query.entityId);
 
 					displayed = true;
 				}
 			} else if (target instanceof ChannelTarget) {
 				self.server.withChannel(target.name, silentFail(function(channel) {
-					self.user.applyStateChange('MyChatMessage', channel.toWindowPath(), text);
+					self.user.applyStateChange('MyChatMessage', channel.entityId, text);
 
 					displayed = true;
 				}));
@@ -122,6 +124,14 @@ function handleNotice(targetName, text) {
 }
 
 function handleServer(host, port) {
+	function trySetPort(portStr) {
+		var portNum = parseInt(portStr);
+
+		if (!isNaN(portNum)) {
+			serverChanges.port = portNum;
+		}
+	}
+
 	this.server.disconnect();
 
 	if (this.numArgs >= 1) { // if host provided
@@ -130,14 +140,6 @@ function handleServer(host, port) {
 		serverChanges.host = host;
 		serverChanges.port = 6667;
 		serverChanges.ssl = false;
-
-		function trySetPort(portStr) {
-			var portNum = parseInt(portStr);
-
-			if (!isNaN(portNum)) {
-				serverChanges.port = portNum;
-			}
-		}
 
 		if (this.numArgs >= 2) { // if port provided
 			if (port.substring(0, 1) === '+') {
@@ -149,7 +151,7 @@ function handleServer(host, port) {
 			}
 		}
 
-		this.user.applyStateChange('EditServer', this.server.toWindowPath(), serverChanges);
+		this.user.applyStateChange('EditServer', this.server.entityId, serverChanges);
 	}
 
 	this.server.reconnect();
@@ -181,7 +183,7 @@ function handleWhois(targetName) {
 	});
 }
 
-function handleClientCommand(activeWindow, command, args, sessionId) {
+function handleClientCommand(activeEntity, command, args, sessionId) {
 	if (command in serverCommandHandlers) {
 		var handlerData = serverCommandHandlers[command];
 
@@ -191,9 +193,9 @@ function handleClientCommand(activeWindow, command, args, sessionId) {
 			var handler = handlerData.handler;
 			var handlerThisObject = {
 				sessionId: sessionId,
-				user: activeWindow.server.user,
-				server: activeWindow.server,
-				activeWindow: activeWindow,
+				user: activeEntity.server.user,
+				server: activeEntity.server,
+				activeEntity: activeEntity,
 				numArgs: parsedArgs.length
 			};
 
@@ -202,8 +204,8 @@ function handleClientCommand(activeWindow, command, args, sessionId) {
 			// error: Not enough parameters
 		}
 	} else {
-		activeWindow.server.ifConnected(function() {
-			activeWindow.server.send(command + ' ' + args);
+		activeEntity.server.ifConnected(function() {
+			activeEntity.server.send(command + ' ' + args);
 		});
 	}
 }

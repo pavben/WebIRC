@@ -1,3 +1,5 @@
+"use strict";
+
 webircApp.factory('socketFactory', function ($rootScope) {
 	return {
 		newSocket: function() {
@@ -33,7 +35,7 @@ webircApp.factory('socketFactory', function ($rootScope) {
 	};
 });
 
-var g_requestSetActiveWindow;
+var g_requestSetActiveEntity;
 
 function initializeSocketConnection($rootScope, socketFactory) {
 	var socket = socketFactory.newSocket();
@@ -79,6 +81,44 @@ function initializeSocketConnection($rootScope, socketFactory) {
 	socket.on('CurrentState', function(currentState) {
 		console.log(currentState);
 
+		function rebuildParentReferences(state) {
+			state.servers.forEach(function(server) {
+				// server -> user
+				server.user = state;
+				// server -> server
+				server.server = server;
+
+				server.channels.forEach(function(channel) {
+					// channel -> server
+					channel.server = server;
+				});
+
+				server.queries.forEach(function(query) {
+					// query -> server
+					query.server = server;
+				});
+			});
+		}
+
+		function rebuildEntities(state) {
+			state.entities = {};
+
+			state.servers.forEach(function(server) {
+				state.entities[server.entityId] = server;
+
+				server.channels.forEach(function(channel) {
+					state.entities[channel.entityId] = channel;
+				});
+
+				server.queries.forEach(function(query) {
+					state.entities[query.entityId] = query;
+				});
+			});
+		}
+
+		rebuildParentReferences(currentState);
+		rebuildEntities(currentState);
+
 		$rootScope.state = currentState;
 		$rootScope.screen = 'main';
 	});
@@ -117,11 +157,11 @@ function initializeSocketConnection($rootScope, socketFactory) {
 		}
 	}
 
-	g_requestSetActiveWindow = $rootScope.requestSetActiveWindow = function(windowPath) {
-		$rootScope.sendToGateway('SetActiveWindow', { windowPath: windowPath });
+	g_requestSetActiveEntity = $rootScope.requestSetActiveEntity = function(targetEntityId) {
+		$rootScope.sendToGateway('SetActiveEntity', { targetEntityId: targetEntityId });
 	}
 
-	$rootScope.requestCloseWindow = function(windowPath) {
-		$rootScope.sendToGateway('CloseWindow', { windowPath: windowPath });
+	$rootScope.requestCloseWindow = function(targetEntityId) {
+		$rootScope.sendToGateway('CloseWindow', { targetEntityId: targetEntityId });
 	}
 }

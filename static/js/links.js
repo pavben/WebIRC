@@ -1,3 +1,5 @@
+"use strict";
+
 var LinkChunkType = {
 	Text : 1,
 	Url : 2,

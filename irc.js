@@ -1,3 +1,5 @@
+"use strict";
+
 var clientcommands = require('./clientcommands.js');
 var logger = require('./logger.js');
 var mode = require('./mode.js');
@@ -93,7 +95,7 @@ function emptyHandler() {
 }
 
 function handle001(user, serverIdx, server, origin, myNickname, text) {
-	user.applyStateChange('Connect', server.getIndex(), myNickname);
+	user.applyStateChange('Connect', server.entityId, myNickname);
 
 	server.channels.forEach(function(channel) {
 		channel.rejoin();
@@ -122,7 +124,7 @@ function handle005(user, serverIdx, server, origin) {
 
 		if (kv.key === 'NETWORK') {
 			if (kv.val) {
-				user.applyStateChange('EditServer', server.toWindowPath(), {
+				user.applyStateChange('EditServer', server.entityId, {
 					label: kv.val
 				});
 			}
@@ -132,8 +134,8 @@ function handle005(user, serverIdx, server, origin) {
 	server.showInfo('Server settings: ' + keyValueStrings.join(' '));
 }
 
-function handle311(user, serverIdx, server, origin, myNickname, nick, user, host, star, realName) {
-	server.showWhois(nick + ' is ' + user + '@' + host + ' (' + realName + ')');
+function handle311(user, serverIdx, server, origin, myNickname, nick, username, host, star, realName) {
+	server.showWhois(nick + ' is ' + username + '@' + host + ' (' + realName + ')');
 }
 
 function handle312(user, serverIdx, server, origin, myNickname, nick, serverName, serverDesc) {
@@ -152,7 +154,7 @@ function handle319(user, serverIdx, server, origin, myNickname, nick, channels) 
 
 function handle328(user, serverIdx, server, origin, myNickname, channelName, channelUrl) {
 	server.withChannel(channelName, silentFail(function(channel) {
-		user.applyStateChange('Info', channel.toWindowPath(), 'URL: ' + channelUrl);
+		user.applyStateChange('Info', channel.entityId, 'URL: ' + channelUrl);
 	}));
 }
 
@@ -162,7 +164,7 @@ function handle330(user, serverIdx, server, origin, myNickname, nick, authName, 
 
 function handle332(user, serverIdx, server, origin, myNickname, channelName, topicText) {
 	server.withChannel(channelName, silentFail(function(channel) {
-		user.applyStateChange('Info', channel.toWindowPath(), 'Topic is: ' + topicText);
+		user.applyStateChange('Info', channel.entityId, 'Topic is: ' + topicText);
 	}));
 }
 
@@ -170,7 +172,7 @@ function handle333(user, serverIdx, server, origin, myNickname, channelName, set
 	server.withChannel(channelName, silentFail(function(channel) {
 		var topicDate = new Date(topicTime * 1000);
 
-		user.applyStateChange('Info', channel.toWindowPath(), 'Set by ' + setByNick + ' (' + moment(topicDate).fromNow() + ')');
+		user.applyStateChange('Info', channel.entityId, 'Set by ' + setByNick + ' (' + moment(topicDate).fromNow() + ')');
 	}));
 }
 
@@ -187,7 +189,7 @@ function handle353(user, serverIdx, server, origin, myNickname, channelType, cha
 			}
 		});
 
-		user.applyStateChange('NamesUpdateAdd', channel.toWindowPath(), userlistEntries);
+		user.applyStateChange('NamesUpdateAdd', channel.entityId, userlistEntries);
 	}));
 }
 
@@ -229,7 +231,7 @@ function parseUserlistEntry(nickWithFlags) {
 
 function handle366(user, serverIdx, server, origin, myNickname, channelName) {
 	server.withChannel(channelName, silentFail(function(channel) {
-		user.applyStateChange('NamesUpdate', channel.toWindowPath());
+		user.applyStateChange('NamesUpdate', channel.entityId);
 	}));
 }
 
@@ -264,7 +266,7 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 				newUserlistEntry.user = origin.user;
 				newUserlistEntry.host = origin.host;
 
-				user.applyStateChange('Join', channel.toWindowPath(), newUserlistEntry);
+				user.applyStateChange('Join', channel.entityId, newUserlistEntry);
 			}));
 		}
 	}
@@ -275,7 +277,7 @@ function handleKick(user, serverIdx, server, origin, channelName, targetName, ki
 		utils.withParsedTarget(targetName, silentFail(function(target) {
 			if (target instanceof ClientTarget) {
 				server.withChannel(channelName, silentFail(function(channel) {
-					user.applyStateChange('Kick', channel.toWindowPath(), origin, target.nick, kickMessage);
+					user.applyStateChange('Kick', channel.entityId, origin, target.nick, kickMessage);
 				}));
 			}
 		}));
@@ -298,7 +300,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 
 				var parsedModes = mode.parseChannelModes(modes, modeArgs);
 
-				user.applyStateChange('ModeChange', channel.toWindowPath(), origin, modes, modeArgs);
+				user.applyStateChange('ModeChange', channel.entityId, origin, modes, modeArgs);
 
 				if (parsedModes !== null) {
 					parsedModes.forEach(function(parsedMode) {
@@ -306,7 +308,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 						var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
 
 						if (userlistEntryAttribute !== null) {
-							user.applyStateChange('UserlistModeUpdate', channel.toWindowPath(), parsedMode.arg, parsedMode.plus, userlistEntryAttribute);
+							user.applyStateChange('UserlistModeUpdate', channel.entityId, parsedMode.arg, parsedMode.plus, userlistEntryAttribute);
 						}
 
 						// for now, we ignore all other modes
@@ -340,19 +342,19 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 					// not CTCP reply, but a regular notice
 					if (target instanceof ChannelTarget) {
 						server.withChannel(target.name, silentFail(function(channel) {
-							user.applyStateChange('ChannelNotice', channel.toWindowPath(), origin, channel.name, text);
+							user.applyStateChange('ChannelNotice', channel.entityId, origin, channel.name, text);
 						}));
 					} else if (target instanceof ClientTarget) {
 						if (server.nickname === target.nick) {
 							// we are the recipient
-							user.applyStateChange('Notice', server.getActiveOrServerWindow(), origin, text);
+							user.applyStateChange('Notice', server.getActiveOrServerEntity(), origin, text);
 						}
 					}
 				}
 			}));
 		} else {
 			// a notice before the 001, so we ignore the target and assume it's for us
-			user.applyStateChange('Notice', server.toWindowPath(), origin, text);
+			user.applyStateChange('Notice', server.entityId, origin, text);
 		}
 	}
 }
@@ -378,7 +380,7 @@ function handlePart(user, serverIdx, server, origin, channelName) {
 				who.user = origin.user;
 				who.host = origin.host;
 
-				user.applyStateChange('Part', channel.toWindowPath(), who);
+				user.applyStateChange('Part', channel.entityId, who);
 			}));
 		}
 	}
@@ -397,14 +399,14 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 				// not CTCP, but a regular message
 				if (target instanceof ChannelTarget) {
 					server.withChannel(target.name, silentFail(function(channel) {
-						user.applyStateChange('ChatMessage', channel.toWindowPath(), origin, text);
+						user.applyStateChange('ChatMessage', channel.entityId, origin, text);
 					}));
 				} else if (target instanceof ClientTarget) {
 					if (server.nickname === target.nick) {
 						// we are the recipient
 						var query = server.ensureQuery(origin.getNickOrName());
 
-						user.applyStateChange('ChatMessage', query.toWindowPath(), origin, text);
+						user.applyStateChange('ChatMessage', query.entityId, origin, text);
 					}
 				}
 			}
@@ -420,7 +422,7 @@ function handleQuit(user, serverIdx, server, origin, quitMessage) {
 
 function handleTopic(user, serverIdx, server, origin, channelName, newTopic) {
 	server.withChannel(channelName, silentFail(function(channel) {
-		user.applyStateChange('SetTopic', channel.toWindowPath(), origin, newTopic);
+		user.applyStateChange('SetTopic', channel.entityId, origin, newTopic);
 	}));
 }
 
@@ -429,14 +431,14 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
 			if (target instanceof ChannelTarget) {
 				server.withChannel(target.name, silentFail(function(channel) {
-					server.user.applyStateChange('ActionMessage', channel.toWindowPath(), origin, ctcpMessage.args);
+					server.user.applyStateChange('ActionMessage', channel.entityId, origin, ctcpMessage.args);
 				}));
 			} else if (target instanceof ClientTarget) {
 				if (server.nickname === target.nick) {
 					// we are the recipient
 					var query = server.ensureQuery(origin.getNickOrName());
 
-					server.user.applyStateChange('ActionMessage', query.toWindowPath(), origin, ctcpMessage.args);
+					server.user.applyStateChange('ActionMessage', query.entityId, origin, ctcpMessage.args);
 				}
 			}
 		} else {
@@ -515,7 +517,7 @@ function reconnectServer(server) {
 function processLineFromServer(line, server) {
 	logger.data('Line: ' + line);
 
-	parseResult = parseLine(line);
+	var parseResult = parseLine(line);
 
 	if (parseResult !== null) {
 		if (parseResult.command in serverCommandHandlers) {
@@ -531,10 +533,10 @@ function processLineFromServer(line, server) {
 					].concat(parseResult.args)
 				);
 			} else {
-				server.user.applyStateChange('Error', server.toWindowPath(), 'Server protocol violation: Received ' + parseResult.command + ' before registration.');
+				server.user.applyStateChange('Error', server.entityId, 'Server protocol violation: Received ' + parseResult.command + ' before registration.');
 			}
 		} else {
-			server.user.applyStateChange('Text', server.toWindowPath(), parseResult.command + ' ' + parseResult.args.join(' '));
+			server.user.applyStateChange('Text', server.entityId, parseResult.command + ' ' + parseResult.args.join(' '));
 		}
 	} else {
 		logger.error('Invalid line from server: ' + line);
@@ -605,7 +607,7 @@ function parseLine(line) {
 	};
 }
 
-function processChatboxLine(user, activeWindowPath, line, parseCommands, sessionId) {
+function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId) {
 	if (user.currentActiveWindow !== null) {
 		var command = null;
 		var rest = line;
@@ -619,27 +621,27 @@ function processChatboxLine(user, activeWindowPath, line, parseCommands, session
 			}
 		}
 
-		var activeWindow = user.getWindowByPath(activeWindowPath);
+		var activeEntity = user.getEntityById(activeEntityId);
 
-		var server = activeWindow.server;
+		var server = activeEntity.server;
 
-		if (activeWindow !== null) {
+		if (activeEntity !== null) {
 			if (command !== null) {
-				clientcommands.handleClientCommand(activeWindow, command, rest, sessionId);
+				clientcommands.handleClientCommand(activeEntity, command, rest, sessionId);
 			} else {
-				if (activeWindow.type === 'channel') {
+				if (activeEntity.type === 'channel') {
 					server.ifConnected(function() {
-						var channel = activeWindow.object;
+						var channel = activeEntity;
 
-						user.applyStateChange('MyChatMessage', channel.toWindowPath(), rest);
+						user.applyStateChange('MyChatMessage', channel.entityId, rest);
 
 						server.send('PRIVMSG ' + channel.name + ' :' + rest);
 					});
-				} else if (activeWindow.type === 'query') {
+				} else if (activeEntity.type === 'query') {
 					server.ifConnected(function() {
-						var query = activeWindow.object;
+						var query = activeEntity;
 
-						user.applyStateChange('MyChatMessage', query.toWindowPath(), rest);
+						user.applyStateChange('MyChatMessage', query.entityId, rest);
 
 						server.send('PRIVMSG ' + query.name + ' :' + rest);
 					});

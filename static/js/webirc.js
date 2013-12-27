@@ -1,3 +1,5 @@
+"use strict";
+
 var webircApp = angular.module('webircApp', []);
 
 webircApp.directive('loginbox', function($rootScope) {
@@ -30,12 +32,7 @@ webircApp.directive('focusKey', function($timeout) {
 			scope.$on('FocusKey', function(e, focusKey) {
 				if (focusKey === attrs.focusKey) {
 					$timeout(function() {
-						var el = element[0];
-
-						// only focus if the element is visible (used to focus the correct chatbox only)
-						if (el.offsetWidth > 0 || el.offsetHeight > 0) {
-							el.focus();
-						}
+						element[0].focus();
 					});
 				}
 			});
@@ -115,20 +112,20 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 				return {maincellHeight: maincellHeight, bodyOverflowY: bodyOverflowY};
 			}
 
-			scope.$watch(getResizeParams, function(newVal, oldVal) {
+			scope.$watch(getResizeParams, function(newVal) {
 				scope.maincellHeight = newVal.maincellHeight + 'px';
 
 				scope.delayedScroll();
 			}, true);
 
-			if (attrs.resizeMaincell) {
-				scope.$watch(attrs.resizeMaincell, function(newVal, oldVal) {
-					if (newVal) {
-						// if this window is becoming active, scroll to the bottom
-						scope.delayedScroll(true);
-					}
-				}, true);
-			}
+			var entity = scope.$eval(attrs.resizeMaincell);
+
+			$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
+				if (newActiveEntityId === entity.entityId) {
+					// if this window is becoming active, scroll to the bottom
+					scope.delayedScroll(true);
+				}
+			}, true);
 
 			angular.element(window).bind('resize orientationchange', function() {
 				// we need to rerun getResizeParams on resize
@@ -138,13 +135,14 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 	}
 });
 
-webircApp.directive('windowlistbutton', function() {
+webircApp.directive('windowlistbutton', function($rootScope) {
 	return {
 		restrict: 'E',
 		compile: function(element, attr) {
 			return function($scope, $element, $attr) {
 				var alertCount = 0;
 				var eventCount = 0;
+				var entityId = null;
 				var isCurrent = false;
 
 				// the elements
@@ -166,41 +164,40 @@ webircApp.directive('windowlistbutton', function() {
 					$element[0].title = newHoverLabel;
 				}, true);
 
-				var windowPath = null;
+				$scope.$watch($attr.entity + '.entityId', function(newEntityId) {
+					entityId = newEntityId;
 
-				// windowPath can change if the index of the window changes
-				$scope.$watch($attr.windowPath, function(newWindowPath) {
-					windowPath = newWindowPath;
-				}, true);
+					updateView();
+				});
 
 				maincellElement.on('mousedown', function() {
-					$scope.requestSetActiveWindow(windowPath);
+					$scope.requestSetActiveEntity(entityId);
 				});
 
 				rightcellElement.on('mousedown', function() {
 					if (isCurrent) {
 						// if current, the right cell contains the close button
-						$scope.requestCloseWindow(windowPath);
+						$scope.requestCloseWindow(entityId);
 					} else {
 						// otherwise treat it the same as clicking on the label
-						$scope.requestSetActiveWindow(windowPath);
+						$scope.requestSetActiveEntity(entityId);
 					}
 				});
 
-				$scope.$watch($attr.windowObject + '.numEvents', function(newEventCount) {
+				$scope.$watch($attr.entity + '.numEvents', function(newEventCount) {
 					eventCount = newEventCount;
 
 					updateView();
 				});
 
-				$scope.$watch($attr.windowObject + '.numAlerts', function(newAlertCount) {
+				$scope.$watch($attr.entity + '.numAlerts', function(newAlertCount) {
 					alertCount = newAlertCount;
 
 					updateView();
 				});
 
-				$scope.$watch($attr.windowObject + '.activeWindow', function(activeWindow) {
-					isCurrent = !!activeWindow;
+				$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
+					isCurrent = (entityId === newActiveEntityId);
 
 					updateView();
 				});
@@ -310,9 +307,7 @@ webircApp.directive('chatlog', function() {
 				wrapperDiv[0].appendChild(document.createTextNode('<'));
 
 				var originSpan = document.createElement('span');
-
 				originSpan.title = moment(activity.time * 1000).calendar();
-
 				originSpan.appendChild(document.createTextNode(originNickOrName(activity.origin)));
 
 				wrapperDiv[0].appendChild(originSpan);
@@ -434,17 +429,16 @@ webircApp.directive('userlist', function() {
 	};
 });
 
-webircApp.directive('chatbox', function($rootScope) {
+webircApp.directive('chatbox', function($rootScope, $timeout) {
 	return function(scope, element, attrs) {
 		var history = [];
 		var currentHistoryId = null;
 
-		var windowPath = null;
+		var entity = null;
 
-		// windowPath can change if the index of the window changes
-		scope.$watch(attrs.windowPath, function(newWindowPath) {
-			windowPath = newWindowPath;
-		}, true);
+		scope.$watch(attrs.entity, function(newEntity) {
+			entity = newEntity;
+		});
 
 		element.bind('keydown', function(e) {
 			function setCursorPosToEnd() {
@@ -464,7 +458,7 @@ webircApp.directive('chatbox', function($rootScope) {
 					$rootScope.sendToGateway('ChatboxSend', {
 						lines: lines,
 						exec: !e.shiftKey,
-						windowPath: windowPath
+						entityId: entity.entityId
 					});
 				}
 
@@ -508,11 +502,23 @@ webircApp.directive('chatbox', function($rootScope) {
 			}
 		});
 
+		$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
+			if (entity.entityId === newActiveEntityId) {
+				// if our entity is becoming active, focus the chatbox
+
+				$timeout(function() {
+					element[0].focus();
+				});
+			}
+		});
+
+/* TODO: EXPERIMENTAL
 		$rootScope.$watch('state.currentActiveWindow', function(value) {
 			if (value) {
 				$rootScope.$broadcast('FocusKey', 'Chatbox');
 			}
 		});
+*/
 	};
 });
 
@@ -524,9 +530,9 @@ webircApp.directive('chatboxAutocomplete', function($rootScope) {
 
 		element.bind('keydown', function(e) {
 			if (e.keyCode === 9) { // tab
-				var activeWindow = sc.utils.getWindowByPath($rootScope.state, $rootScope.state.currentActiveWindow);
+				var activeEntity = sc.utils.getEntityById($rootScope.state, $rootScope.state.activeEntityId);
 
-				var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeWindow);
+				var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeEntity);
 
 				if (autoCompleteResult) {
 					element.val(autoCompleteResult.chatboxValue);

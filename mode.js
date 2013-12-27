@@ -1,3 +1,5 @@
+"use strict";
+
 var ModeType = {
 	NONE: 0,
 	PLUS_ONLY: 1,

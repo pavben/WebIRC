@@ -1,3 +1,5 @@
+"use strict";
+
 var assert = function() {
 	// server-side assert only; do nothing on the client
 };
@@ -25,44 +27,144 @@ var ActivityType = {
 
 var sc = {
 	func: {
-		'AddChannel': function(serverIdx, channel, utils) {
-			var server = this.servers[serverIdx];
+		'ActionMessage': function(targetEntityId, origin, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
+			var server = targetEntity.server;
+
+			var originNickOrName = utils.originNickOrName(origin);
+
+			var activityType = ActivityType.Event;
+
+			var mentionMe = false;
+
+			if (utils.isNickInText(server.nickname, text)) {
+				activityType = ActivityType.Alert;
+
+				mentionMe = true;
+			} else if (targetEntity.type === 'query') {
+				activityType = ActivityType.Alert;
+			}
+
+			if (activityType === ActivityType.Alert && !utils.isActiveAndFocusedEntity(this, targetEntity.entityId)) {
+				if (targetEntity.type === 'channel') {
+					var channel = targetEntity;
+
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text, targetEntity.entityId);
+				} else if (targetEntity.type === 'query') {
+					var query = targetEntity;
+
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '* ' + originNickOrName + ' ' + text, targetEntity.entityId);
+				}
+			}
+
+			utils.addActivity(this, targetEntity, 'ActionMessage', {
+				origin: origin,
+				text: text,
+				mentionMe: mentionMe
+			}, activityType);
+		},
+		'AddChannel': function(serverEntityId, channel, utils) {
+			var server = utils.getEntityById(this, serverEntityId);
+			assert(server.type === 'server');
+
+			// set parent
+			channel.server = server;
+
+			channel.serverEntityId = server.entityId;
 
 			server.channels.push(channel);
+
+			utils.addEntity(this, channel);
 
 			utils.addActivity(this, channel, 'Info', {
 				text: 'Joined channel ' + channel.name
 			}, ActivityType.None);
 		},
-		'AddQuery': function(serverIdx, query) {
-			var server = this.servers[serverIdx];
+		'AddQuery': function(serverEntityId, query, utils) {
+			var server = utils.getEntityById(this, serverEntityId);
+			assert(server.type === 'server');
+
+			// set parent
+			query.server = server;
+
+			query.serverEntityId = server.entityId; // TODO: needed?
 
 			server.queries.push(query);
-		},
-		'ChannelNotice': function(windowPath, origin, channelName, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
 
-			utils.addActivity(this, targetWindow.object, 'ChannelNotice', { origin: origin, channelName: channelName, text: text }, ActivityType.Event);
+			utils.addEntity(this, query);
 		},
-		'Connect': function(serverIdx, myNickname) {
-			var server = this.servers[serverIdx];
+		'AddServer': function(server, utils) {
+			// set parent
+			server.user = this;
+			server.server = server;
+
+			this.servers.push(server);
+
+			utils.addEntity(this, server);
+		},
+		'ChannelNotice': function(channelEntityId, origin, channelName, text, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
+
+			utils.addActivity(this, channel, 'ChannelNotice', { origin: origin, channelName: channelName, text: text }, ActivityType.Event);
+		},
+		'ChatMessage': function(targetEntityId, origin, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
+			var server = targetEntity.server;
+
+			var originNickOrName = utils.originNickOrName(origin);
+
+			var activityType = ActivityType.Event;
+
+			var mentionMe = false;
+
+			if (utils.isNickInText(server.nickname, text)) {
+				activityType = ActivityType.Alert;
+
+				mentionMe = true;
+			} else if (targetEntity.type === 'query') {
+				activityType = ActivityType.Alert;
+			}
+
+			if (activityType === ActivityType.Alert && !utils.isActiveAndFocusedEntity(this, targetEntity.entityId)) {
+				if (targetEntity.type === 'channel') {
+					var channel = targetEntity;
+
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '<' + originNickOrName + '> ' + text, targetEntity.entityId);
+				} else if (targetEntity.type === 'query') {
+					var query = targetEntity;
+
+					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '<' + originNickOrName + '> ' + text, targetEntity.entityId);
+				}
+			}
+
+			utils.addActivity(this, targetEntity, 'ChatMessage', {
+				origin: origin,
+				text: text,
+				mentionMe: mentionMe
+			}, activityType);
+		},
+		'Connect': function(serverEntityId, myNickname, utils) {
+			var server = utils.getEntityById(this, serverEntityId);
+			assert(server.type === 'server');
 
 			server.connected = true;
 
 			server.nickname = myNickname;
 		},
-		'Disconnect': function(serverIdx, utils) {
+		'Disconnect': function(serverEntityId, utils) {
+			function addDisconnectActivity(target) {
+				utils.addActivity(user, target, 'Info', {
+					text: 'Disconnected'
+				}, ActivityType.None);
+			}
+
 			var user = this;
-			var server = this.servers[serverIdx];
+			var server = utils.getEntityById(this, serverEntityId);
+			assert(server.type === 'server');
 
 			// if we disconnect before getting a 001 (such as due to a throttle), we avoid spamming "Disconnected"
 			if (server.connected) {
-				function addDisconnectActivity(target) {
-					utils.addActivity(user, target, 'Info', {
-						text: 'Disconnected'
-					}, ActivityType.None);
-				}
-
 				// server
 				server.connected = false;
 
@@ -81,12 +183,9 @@ var sc = {
 				server.queries.forEach(addDisconnectActivity);
 			}
 		},
-		'EditServer': function(windowPath, changes, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'server');
-
-			var server = targetWindow.object;
+		'EditServer': function(serverEntityId, changes, utils) {
+			var server = utils.getEntityById(this, serverEntityId);
+			assert(server.type === 'server');
 
 			for (var key in changes) {
 				assert(key in server);
@@ -94,34 +193,29 @@ var sc = {
 				server[key] = changes[key];
 			}
 		},
-		'Error': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'Error': function(targetEntityId, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
 
-			utils.addActivity(this, targetWindow.object, 'Error', { text: text }, ActivityType.None);
+			utils.addActivity(this, targetEntity, 'Error', { text: text }, ActivityType.None);
 		},
-		'Info': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'Info': function(targetEntityId, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
 
-			utils.addActivity(this, targetWindow.object, 'Info', { text: text }, ActivityType.None);
+			utils.addActivity(this, targetEntity, 'Info', { text: text }, ActivityType.None);
 		},
-		'Join': function(windowPath, newUserlistEntry, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'channel');
-
-			var channel = targetWindow.object;
+		'Join': function(channelEntityId, newUserlistEntry, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
 
 			utils.userlist.addUser(channel.userlist, newUserlistEntry);
 
 			utils.addActivity(this, channel, 'Join', { who: newUserlistEntry }, ActivityType.None);
 		},
-		'Kick': function(windowPath, origin, targetNick, kickMessage, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'Kick': function(channelEntityId, origin, targetNick, kickMessage, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
 
-			assert(targetWindow.type === 'channel');
-
-			var server = targetWindow.server;
-			var channel = targetWindow.object;
+			var server = channel.server;
 
 			if (targetNick === server.nickname) {
 				// we are being kicked
@@ -142,187 +236,51 @@ var sc = {
 				}, ActivityType.Event);
 			}
 		},
-		'MyActionMessage': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-			var server = targetWindow.server;
+		'ModeChange': function(targetEntityId, origin, modes, modeArgs, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
 
-			utils.addActivity(this, targetWindow.object, 'MyActionMessage', {
-				nick: server.nickname,
-				text: text
-			}, ActivityType.None);
-		},
-		'MyChatMessage': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-			var server = targetWindow.server;
-
-			utils.addActivity(this, targetWindow.object, 'MyChatMessage', {
-				nick: server.nickname,
-				text: text
-			}, ActivityType.None);
-		},
-		'Part': function(windowPath, who, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'channel');
-
-			var channel = targetWindow.object;
-
-			utils.userlist.removeUser(channel.userlist, who.nick);
-
-			utils.addActivity(this, channel, 'Part', { who: who }, ActivityType.None);
-		},
-		'RejoinChannel': function(windowPath, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'channel');
-
-			var channel = targetWindow.object;
-
-			channel.inChannel = true;
-
-			utils.addActivity(this, channel, 'Info', {
-				text: 'Rejoined channel ' + channel.name
-			}, ActivityType.None);
-		},
-		'RemoveWindow': function(windowPath, utils) {
-			utils.removeWindow(this, windowPath);
-		},
-		'SetTopic': function(windowPath, origin, newTopic, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			utils.addActivity(this, targetWindow.object, 'SetTopic', {
+			utils.addActivity(this, targetEntity, 'ModeChange', {
 				origin: origin,
-				newTopic: newTopic
-			}, ActivityType.Event);
+				modes: modes,
+				modeArgs: modeArgs
+			}, ActivityType.None);
 		},
-		'Text': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'MyActionMessage': function(targetEntityId, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
+			var server = targetEntity.server;
 
-			utils.addActivity(this, targetWindow.object, 'Text', { text: text }, ActivityType.None);
+			utils.addActivity(this, targetEntity, 'MyActionMessage', {
+				nick: server.nickname,
+				text: text
+			}, ActivityType.None);
 		},
-		'Whois': function(windowPath, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'MyChatMessage': function(targetEntityId, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
+			var server = targetEntity.server;
 
-			utils.addActivity(this, targetWindow.object, 'Whois', { text: text }, ActivityType.None);
+			utils.addActivity(this, targetEntity, 'MyChatMessage', {
+				nick: server.nickname,
+				text: text
+			}, ActivityType.None);
 		},
-		// SORTED ABOVE THIS LINE
-		'NamesUpdateAdd': function(windowPath, userlistEntries, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'channel');
-
-			var channel = targetWindow.object;
-
-			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
-		},
-		'NamesUpdate': function(windowPath, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-
-			assert(targetWindow.type === 'channel');
-
-			var channel = targetWindow.object;
+		'NamesUpdate': function(channelEntityId, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
 
 			channel.userlist = utils.userlist.sortUsers(channel.tempUserlist);
 			channel.tempUserlist = [];
 		},
-		'AddServer': function(server) {
-			this.servers.push(server);
+		'NamesUpdateAdd': function(channelEntityId, userlistEntries, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
+
+			channel.tempUserlist = channel.tempUserlist.concat(userlistEntries);
 		},
-		'SetActiveWindow': function(newActiveWindowPath, utils) {
-			// if there is already an active window, remove the 'activeWindow' flag from it
-			if (this.currentActiveWindow !== null) {
-				var currentActiveWindow = utils.getWindowByPath(this, this.currentActiveWindow);
+		'NickChange': function(serverEntityId, oldNickname, newNickname, utils) {
+			var server = utils.getEntityById(this, serverEntityId);
+			assert(server.type === 'server');
 
-				delete currentActiveWindow.object.activeWindow;
-			}
-
-			if (newActiveWindowPath !== null) {
-				var newActiveWindow = utils.getWindowByPath(this, newActiveWindowPath);
-
-				newActiveWindow.object.activeWindow = true;
-
-				// reset the events and alerts
-				newActiveWindow.object.numEvents = 0;
-				newActiveWindow.object.numAlerts = 0;
-			}
-
-			this.currentActiveWindow = newActiveWindowPath;
-		},
-		'ChatMessage': function(windowPath, origin, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-			var server = targetWindow.server;
-
-			var originNickOrName = utils.originNickOrName(origin);
-
-			var activityType = ActivityType.Event;
-
-			var mentionMe = false;
-
-			if (utils.isNickInText(server.nickname, text)) {
-				activityType = ActivityType.Alert;
-
-				mentionMe = true;
-			} else if (targetWindow.type === 'query') {
-				activityType = ActivityType.Alert;
-			}
-
-			if (activityType === ActivityType.Alert && !utils.isActiveAndFocusedWindow(this, windowPath)) {
-				if (targetWindow.type === 'channel') {
-					var channel = targetWindow.object;
-
-					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '<' + originNickOrName + '> ' + text, windowPath);
-				} else if (targetWindow.type === 'query') {
-					var query = targetWindow.object;
-
-					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '<' + originNickOrName + '> ' + text, windowPath);
-				}
-			}
-
-			utils.addActivity(this, targetWindow.object, 'ChatMessage', {
-				origin: origin,
-				text: text,
-				mentionMe: mentionMe
-			}, activityType);
-		},
-		'ActionMessage': function(windowPath, origin, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
-			var server = targetWindow.server;
-
-			var originNickOrName = utils.originNickOrName(origin);
-
-			var activityType = ActivityType.Event;
-
-			var mentionMe = false;
-
-			if (utils.isNickInText(server.nickname, text)) {
-				activityType = ActivityType.Alert;
-
-				mentionMe = true;
-			} else if (targetWindow.type === 'query') {
-				activityType = ActivityType.Alert;
-			}
-
-			if (activityType === ActivityType.Alert && !utils.isActiveAndFocusedWindow(this, windowPath)) {
-				if (targetWindow.type === 'channel') {
-					var channel = targetWindow.object;
-
-					utils.notify('img/notif-generic.png', originNickOrName + ' @ ' + channel.name, '* ' + originNickOrName + ' ' + text, windowPath);
-				} else if (targetWindow.type === 'query') {
-					var query = targetWindow.object;
-
-					utils.notify('img/notif-generic.png', originNickOrName + ' @ private message', '* ' + originNickOrName + ' ' + text, windowPath);
-				}
-			}
-
-			utils.addActivity(this, targetWindow.object, 'ActionMessage', {
-				origin: origin,
-				text: text,
-				mentionMe: mentionMe
-			}, activityType);
-		},
-		'NickChange': function(serverIdx, oldNickname, newNickname, utils) {
 			var user = this;
-			var server = this.servers[serverIdx];
 
 			// if the nickname change origin matches ours
 			if (server.nickname === oldNickname) {
@@ -346,14 +304,24 @@ var sc = {
 				}
 			);
 		},
-		'Notice': function(windowPath, origin, text, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'Notice': function(targetEntityId, origin, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
 
-			utils.addActivity(this, targetWindow.object, 'Notice', { origin: origin, text: text }, ActivityType.Event);
+			utils.addActivity(this, targetEntity, 'Notice', { origin: origin, text: text }, ActivityType.Event);
 		},
-		'Quit': function(serverIdx, who, quitMessage, utils) {
+		'Part': function(channelEntityId, who, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
+
+			utils.userlist.removeUser(channel.userlist, who.nick);
+
+			utils.addActivity(this, channel, 'Part', { who: who }, ActivityType.None);
+		},
+		'Quit': function(serverEntityId, who, quitMessage, utils) {
+			var server = utils.getEntityById(this, serverEntityId);
+			assert(server.type === 'server');
+
 			var user = this;
-			var server = this.servers[serverIdx];
 
 			utils.forEveryChannelWithNick(server, who.nick,
 				function(channel) {
@@ -366,53 +334,82 @@ var sc = {
 				}
 			);
 		},
-		'ModeChange': function(windowPath, origin, modes, modeArgs, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'RejoinChannel': function(channelEntityId, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
 
-			utils.addActivity(this, targetWindow.object, 'ModeChange', {
-				origin: origin,
-				modes: modes,
-				modeArgs: modeArgs
+			channel.inChannel = true;
+
+			utils.addActivity(this, channel, 'Info', {
+				text: 'Rejoined channel ' + channel.name
 			}, ActivityType.None);
 		},
-		'UserlistModeUpdate': function(windowPath, nick, isPlus, modeAttribute, utils) {
-			var targetWindow = utils.getWindowByPath(this, windowPath);
+		'RemoveEntity': function(targetEntityId, utils) {
+			utils.removeEntity(this, targetEntityId);
+		},
+		'SetActiveEntity': function(targetEntityId, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
 
-			if (targetWindow.type === 'channel') {
-				var channel = targetWindow.object;
+			// reset the events and alerts
+			targetEntity.numEvents = 0;
+			targetEntity.numAlerts = 0;
 
-				var userlistEntry = utils.userlist.removeUser(channel.userlist, nick);
+			this.activeEntityId = targetEntity.entityId;
+		},
+		'SetTopic': function(channelEntityId, origin, newTopic, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
 
-				if (userlistEntry !== null) {
-					if (isPlus) {
-						userlistEntry[modeAttribute] = true;
-					} else {
-						delete userlistEntry[modeAttribute];
-					}
+			utils.addActivity(this, channel, 'SetTopic', {
+				origin: origin,
+				newTopic: newTopic
+			}, ActivityType.Event);
+		},
+		'Text': function(targetEntityId, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
 
-					utils.userlist.addUser(channel.userlist, userlistEntry);
+			utils.addActivity(this, targetEntity, 'Text', { text: text }, ActivityType.None);
+		},
+		'UserlistModeUpdate': function(channelEntityId, nick, isPlus, modeAttribute, utils) {
+			var channel = utils.getEntityById(this, channelEntityId);
+			assert(channel.type === 'channel');
+
+			var userlistEntry = utils.userlist.removeUser(channel.userlist, nick);
+
+			if (userlistEntry !== null) {
+				if (isPlus) {
+					userlistEntry[modeAttribute] = true;
+				} else {
+					delete userlistEntry[modeAttribute];
 				}
+
+				utils.userlist.addUser(channel.userlist, userlistEntry);
 			}
 		},
+		'Whois': function(targetEntityId, text, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
+
+			utils.addActivity(this, targetEntity, 'Whois', { text: text }, ActivityType.None);
+		}
 	},
 	utils: {
-		addActivity: function(user, object, type, data, activityType) {
+		addActivity: function(user, entity, type, data, activityType) {
 			data.type = type;
 			data.time = sc.utils.currentTime();
 
-			assert(Array.isArray(object.activityLog), "addActivity called on an object without a valid activityLog");
+			assert(Array.isArray(entity.activityLog), "addActivity called on an entity without a valid activityLog");
 
-			object.activityLog.push(data);
+			entity.activityLog.push(data);
 
-			if (object.activityLog.length > 400) {
-				object.activityLog.splice(0, 100);
+			if (entity.activityLog.length > 400) {
+				entity.activityLog.splice(0, 100);
 			}
 
-			if (activityType !== ActivityType.None && !sc.utils.isActiveWindowObject(user, object)) {
+			if (activityType !== ActivityType.None && !sc.utils.isActiveEntity(user, entity.entityId)) {
 				if (activityType === ActivityType.Event) {
-					object.numEvents++;
+					entity.numEvents++;
 				} else if (activityType === ActivityType.Alert) {
-					object.numAlerts++;
+					entity.numAlerts++;
 				}
 			}
 		},
@@ -420,9 +417,7 @@ var sc = {
 			return Math.floor(new Date().getTime() / 1000);
 		},
 		forEveryChannelWithNick: function(server, nickname, successCallback) {
-			server.channels.forEach(function(channel, channelIdx) {
-				var channel = server.channels[channelIdx];
-
+			server.channels.forEach(function(channel) {
 				if (sc.utils.isNicknameInUserlist(nickname, channel.userlist)) {
 					successCallback(channel);
 				}
@@ -433,175 +428,105 @@ var sc = {
 				return (nickname === userlistEntry.nick);
 			});
 		},
-		removeWindow: function(state, removePath) {
-			assert('serverIdx' in removePath, 'serverIdx required in onCloseWindow');
+		isPageFocused: function() {
+			return (typeof document === 'object' && document.hasFocus());
+		},
+		isActiveEntity: function(state, entityId) {
+			return (entityId === state.activeEntityId);
+		},
+		isActiveAndFocusedEntity: function(state, entityId) {
+			return sc.utils.isPageFocused() && sc.utils.isActiveEntity(state, entityId);
+		},
+		setActiveEntity: function(state, targetEntityId) {
+			callStateChangeFunction(state, 'SetActiveEntity', [targetEntityId]);
+		},
+		addEntity: function(state, entity) {
+			assert(!(entity.entityId in state.entities)); // must not already exist
 
-			var activePath = state.currentActiveWindow;
-
-			assert(activePath !== null, 'Must have an active window when calling removeWindow')
-
-			if (removePath.serverIdx <= activePath.serverIdx) {
-				if ('channelIdx' in removePath && 'channelIdx' in activePath) {
-					removeWindowResetActive(removePath.channelIdx <= activePath.channelIdx);
-				} else if ('queryIdx' in removePath && 'queryIdx' in activePath) {
-					removeWindowResetActive(removePath.queryIdx <= activePath.queryIdx);
-				} else {
-					removeWindowResetActive(!('channelIdx' in removePath || 'queryIdx' in removePath));
-				}
+			state.entities[entity.entityId] = entity;
+		},
+		getEntityById: function(state, entityId) {
+			if (entityId in state.entities) {
+				return state.entities[entityId];
 			} else {
-				removeWindowResetActive(false);
+				return null;
 			}
+		},
+		removeEntity: function(state, targetEntityId) {
+			var targetEntity = sc.utils.getEntityById(state, targetEntityId);
 
-			function removeWindowResetActive(resetActive) {
-				var windowToRemove = sc.utils.getWindowByPath(state, removePath);
+			var server = targetEntity.server;
 
-				if (resetActive) {
-					// set no active window
-					sc.utils.setActiveWindow(state, null);
-				}
+			switch (targetEntity.type) {
+				case 'server':
+					var serverIdx = state.servers.indexOf(targetEntity);
 
-				// remove the window from the list
-				switch (windowToRemove.type) {
-					case 'server':
-						state.servers.splice(removePath.serverIdx, 1);
-						break;
-					case 'channel':
-						windowToRemove.server.channels.splice(removePath.channelIdx, 1);
-						break;
-					case 'query':
-						windowToRemove.server.queries.splice(removePath.queryIdx, 1);
-						break;
-					default:
-						assert(false, 'Unknown window type');
-				}
-
-				if (resetActive) {
-					// activate the next appropriate window
-					// keep in mind that activePath was the old path of the active window and may no longer be valid
-
-					var serverIdx = removePath.serverIdx;
-					var server = windowToRemove.server;
-
-					if ('channelIdx' in activePath) {
-						var channelIdx = activePath.channelIdx;
-
-						if (channelIdx > 0) {
-							sc.utils.setActiveWindow(state, {
-								serverIdx: serverIdx,
-								channelIdx: channelIdx - 1
-							});
-						} else {
-							sc.utils.setActiveWindow(state, {
-								serverIdx: serverIdx
-							});
-						}
-					} else if ('queryIdx' in activePath) {
-						var queryIdx = activePath.queryIdx;
-
-						if (queryIdx > 0) {
-							sc.utils.setActiveWindow(state, {
-								serverIdx: serverIdx,
-								queryIdx: queryIdx - 1
-							});
-						} else {
-							if (server.channels.length > 0) {
-								sc.utils.setActiveWindow(state, {
-									serverIdx: serverIdx, channelIdx: server.channels.length - 1
-								});
-							} else {
-								sc.utils.setActiveWindow(state, {
-									serverIdx: serverIdx
-								});
-							}
-						}
-					} else {
-						// closing the server window
+					if (targetEntity.entityId === state.activeEntityId) {
 						if (serverIdx > 0) {
-							// the server window being closed is not the first
+							// the server entity being closed is not the first
 							var previousServerIdx = serverIdx - 1;
 							var previousServer = state.servers[previousServerIdx];
 
 							// if there are queries/channels, set the last one as active
 							if (previousServer.queries.length > 0) {
-								sc.utils.setActiveWindow(state, {
-									serverIdx: previousServerIdx,
-									queryIdx: previousServer.queries.length - 1
-								});
+								sc.utils.setActiveEntity(state, previousServer.queries[previousServer.queries.length - 1].entityId);
 							} else if (previousServer.channels.length > 0) {
-								sc.utils.setActiveWindow(state, {
-									serverIdx: previousServerIdx,
-									channelIdx: previousServer.channels.length - 1
-								});
+								sc.utils.setActiveEntity(state, previousServer.channels[previousServer.channels.length - 1].entityId);
 							} else {
-								sc.utils.setActiveWindow(state, {
-									serverIdx: previousServerIdx
-								});
+								sc.utils.setActiveEntity(state, previousServer.entityId);
 							}
 						} else {
-							// the server window being closed is the very first
+							// the server entity being closed is the very first
 
-							// there must be at least one other server window remaining
-							assert(state.servers.length >= 1);
+							// there must be at least one other server entity remaining
+							assert(state.servers.length >= 2);
 
-							// here we maintain the same index, because we're making the NEXT server active, and its index was just reduced to serverIdx
-							sc.utils.setActiveWindow(state, {
-								serverIdx: serverIdx
-							});
+							sc.utils.setActiveEntity(state, state.servers[1].entityId);
 						}
 					}
-				}
+
+					state.servers.splice(serverIdx, 1);
+					break;
+				case 'channel':
+					var channelIdx = server.channels.indexOf(targetEntity);
+
+					if (targetEntity.entityId === state.activeEntityId) {
+
+						if (channelIdx > 0) {
+							sc.utils.setActiveEntity(state, server.channels[channelIdx - 1].entityId);
+						} else {
+							sc.utils.setActiveEntity(state, server.entityId);
+						}
+					}
+
+					targetEntity.server.channels.splice(channelIdx, 1);
+					break;
+				case 'query':
+					var queryIdx = server.queries.indexOf(targetEntity);
+
+					if (targetEntity.entityId === state.activeEntityId) {
+
+						if (queryIdx > 0) {
+							sc.utils.setActiveEntity(state, server.queries[queryIdx - 1].entityId);
+						} else {
+							if (server.channels.length > 0) {
+								sc.utils.setActiveEntity(state, server.channels[server.channels.length - 1].entityId);
+							} else {
+								sc.utils.setActiveEntity(state, server.entityId);
+							}
+						}
+					}
+
+					targetEntity.server.queries.splice(queryIdx, 1);
+					break;
+				default:
+					assert(false, 'Unknown window type');
 			}
-		},
-		isPageFocused: function() {
-			return (typeof document === 'object' && document.hasFocus());
-		},
-		isActiveWindow: function(state, path) {
-			var current = state.currentActiveWindow;
 
-			return (current.serverIdx === path.serverIdx
-				&& current.channelIdx === path.channelIdx
-				&& current.queryIdx === path.queryIdx);
-		},
-		isActiveWindowObject: function(state, object) {
-			var activeWindow = sc.utils.getWindowByPath(state, state.currentActiveWindow);
+			// remove the entity from
+			assert(targetEntityId in state.entities);
 
-			return (activeWindow !== null && activeWindow.object === object);
-		},
-		isActiveAndFocusedWindow: function(state, path) {
-			return sc.utils.isPageFocused() && sc.utils.isActiveWindow(state, path);
-		},
-		setActiveWindow: function(state, path) {
-			callStateChangeFunction(state, 'SetActiveWindow', [path]);
-		},
-		getWindowByPath: function(state, path) {
-			if ('serverIdx' in path) {
-				if (path.serverIdx < 0 || path.serverIdx >= state.servers.length)
-					return null;
-
-				var server = state.servers[path.serverIdx];
-
-				if ('channelIdx' in path) {
-					if (path.channelIdx < 0 || path.channelIdx >= server.channels.length)
-						return null;
-
-					var channel = server.channels[path.channelIdx];
-
-					return {object: channel, server: server, type: 'channel', windowPath: path};
-				} else if ('queryIdx' in path) {
-					if (path.queryIdx < 0 || path.queryIdx >= server.queries.length)
-						return null;
-
-					var query = server.queries[path.queryIdx];
-
-					return {object: query, server: server, type: 'query', windowPath: path};
-				} else {
-					// just the server
-					return {object: server, server: server, type: 'server', windowPath: path};
-				}
-			} else {
-				console.log('serverIdx required in getWindowByPath');
-				return null;
-			}
+			delete state.entities[targetEntityId];
 		},
 		setNotInChannel: function(channel) {
 			channel.userlist = [];
@@ -610,14 +535,14 @@ var sc = {
 		isNickInText: function(nick, text) {
 			return ~text.toLowerCase().split(/[^\w\d]+/).indexOf(nick.toLowerCase());
 		},
-		notify: function(icon, title, text, windowPath) {
+		notify: function(icon, title, text, entityId) {
 			if (typeof window === 'object' && window.webkitNotifications) {
 				if (window.webkitNotifications.checkPermission() === 0) {
 					var notification = window.webkitNotifications.createNotification(icon, title, text);
 
 					notification.onclick = function() {
-						if (typeof g_requestSetActiveWindow === 'function') {
-							g_requestSetActiveWindow(windowPath);
+						if (typeof g_requestSetActiveEntity === 'function') {
+							g_requestSetActiveEntity(entityId);
 						}
 
 						window.focus();

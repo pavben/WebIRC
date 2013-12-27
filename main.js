@@ -1,3 +1,5 @@
+"use strict";
+
 require('./data.js').install();
 require('./utils.js').installGlobals();
 
@@ -165,13 +167,15 @@ readConfig('config.json', check(
 				'activeWebSockets',
 				'loggedInSessions',
 				'password',
-				'servers'
+				'servers',
+				'entities'
 			]);
 
 			userCopy.servers = user.servers.map(function(server) {
 				var serverCopy = cloneExceptFields(server, [
 					'socket',
 					'user',
+					'server',
 					'channels',
 					'queries',
 					'timeoutPings'
@@ -201,30 +205,34 @@ readConfig('config.json', check(
 			socket.on('ChatboxSend', function(data) {
 				logger.info('Chatbox send', data);
 
+				// TODO: validate the presence of expected input
+
 				data.lines.forEach(function(line) {
-					irc.processChatboxLine(user, data.windowPath, line, data.exec, sessionId);
+					irc.processChatboxLine(user, data.entityId, line, data.exec, sessionId);
 				});
 			});
 
-			socket.on('SetActiveWindow', function(data) {
-				if (typeof data.windowPath === 'object') {
-					var targetWindow = user.getWindowByPath(data.windowPath);
+			socket.on('SetActiveEntity', function(data) {
+				if ('targetEntityId' in data) {
+					var targetEntity = user.getEntityById(data.targetEntityId);
 
-					if (targetWindow !== null) {
-						user.setActiveWindow(data.windowPath);
+					if (targetEntity !== null) {
+						user.setActiveEntity(targetEntity.entityId);
 					} else {
-						logger.error('Invalid windowPath in SetActiveWindow from client', data);
+						logger.error('Invalid targetEntityId in SetActiveEntity from client', data);
 					}
 				}
 			});
 
 			socket.on('CloseWindow', function(data) {
-				var targetWindow = user.getWindowByPath(data.windowPath);
+				if ('targetEntityId' in data) {
+					var targetEntity = user.getEntityById(data.targetEntityId);
 
-				if (targetWindow !== null) {
-					targetWindow.object.closeWindow();
-				} else {
-					logger.error('Invalid windowPath in CloseWindow from client', data);
+					if (targetEntity !== null) {
+						targetEntity.removeEntity();
+					} else {
+						logger.error('Invalid targetEntityId in CloseWindow from client', data);
+					}
 				}
 			});
 		}

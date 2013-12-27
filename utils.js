@@ -1,3 +1,5 @@
+"use strict";
+
 function installGlobals() {
 	var globalFunctions = {
 		check: function(errorHandler, okHandler) {

@@ -1,8 +1,10 @@
+"use strict";
+
 function initAutoComplete() {
 	var activeAutoComplete = null;
 
 	return {
-		next: function(chatboxValue, cursorPos, activeWindow) {
+		next: function(chatboxValue, cursorPos, activeEntity) {
 			if (activeAutoComplete === null) {
 				// if no active autocomplete, let's create one
 
@@ -10,15 +12,15 @@ function initAutoComplete() {
 				var prefixResult = getAutoCompletePrefix(chatboxValue, cursorPos);
 
 				if (prefixResult !== null) {
-					var server = activeWindow.server;
+					var server = activeEntity.server;
 					var autoCompleteSuggestions = null;
 
-					if (activeWindow.type === 'channel') {
-						var channel = activeWindow.object;
+					if (activeEntity.type === 'channel') {
+						var channel = activeEntity;
 
 						autoCompleteSuggestions = getAutoCompleteSuggestionsForChannel(server, channel);
-					} else if (activeWindow.type === 'server' || activeWindow.type === 'query') {
-						autoCompleteSuggestions = getGeneralAutoCompleteSuggestions(server, activeWindow.object.activityLog);
+					} else if (activeEntity.type === 'server' || activeEntity.type === 'query') {
+						autoCompleteSuggestions = getGeneralAutoCompleteSuggestions(server, activeEntity.activityLog);
 					}
 
 					if (autoCompleteSuggestions && autoCompleteSuggestions.length > 0) {

@@ -38,23 +38,23 @@
 			<div class="tablerow">
 				<div class="leftbarcell">
 					<div ng-repeat="server in state.servers">
-						<windowlistbutton label="server.label" hover-label="server.host + ':' + server.port + (server.ssl ? ' SSL' : '')" window-path="{ serverIdx: $index }" window-object="server" class="serverbutton"></windowlistbutton>
-						<windowlistbutton ng-repeat="channel in server.channels" label="channel.name" window-path="{ serverIdx: $parent.$index, channelIdx: $index }" window-object="channel"></windowlistbutton>
-						<windowlistbutton ng-repeat="query in server.queries" label="query.name" window-path="{ serverIdx: $parent.$index, queryIdx: $index }" window-object="query"></windowlistbutton>
+						<windowlistbutton label="server.label" hover-label="server.host + ':' + server.port + (server.ssl ? ' SSL' : '')" entity="server" class="serverbutton"></windowlistbutton>
+						<windowlistbutton ng-repeat="channel in server.channels" label="channel.name" entity="channel"></windowlistbutton>
+						<windowlistbutton ng-repeat="query in server.queries" label="query.name" entity="query"></windowlistbutton>
 					</div>
 				</div>
 				<div class="rightcell">
 					<div ng-repeat="server in state.servers">
-						<div ng-show="server.activeWindow">
-							<chatlog activity-log="server.activityLog" class="chatlog" resize-maincell="server.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
+						<div ng-show="state.activeEntityId == server.entityId">
+							<chatlog activity-log="server.activityLog" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></chatlog>
 							<div class="chatboxwrapper">
-								<textarea chatbox chatbox-autocomplete chatbox-autogrow window-path="{ serverIdx: $index }" class="chatbox" focus-key="Chatbox"></textarea>
+								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="server" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>
 						</div>
-						<div ng-repeat="channel in server.channels" ng-show="channel.activeWindow" class="fixedtable">
+						<div ng-repeat="channel in server.channels" ng-show="state.activeEntityId == channel.entityId" class="fixedtable">
 							<div class="tablerow">
 								<div class="tablecell">
-									<chatlog activity-log="channel.activityLog" class="chatlog" resize-maincell="channel.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
+									<chatlog activity-log="channel.activityLog" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></chatlog>
 								</div>
 								<div class="userlistcell">
 									<div userlist class="userlist" ng-style="{height: maincellHeight}">
@@ -65,15 +65,15 @@
 							<div class="tablerow">
 								<div class="tablecell">
 									<div class="chatboxwrapper">
-										<textarea chatbox chatbox-autocomplete chatbox-autogrow window-path="{ serverIdx: $parent.$index, channelIdx: $index }" class="chatbox" focus-key="Chatbox"></textarea>
+										<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="channel" class="chatbox" focus-key="Chatbox"></textarea>
 									</div>
 								</div>
 							</div>
 						</div>
-						<div ng-repeat="query in server.queries" ng-show="query.activeWindow">
-							<chatlog activity-log="query.activityLog" class="chatlog" resize-maincell="query.activeWindow" ng-style="{height: maincellHeight}"></chatlog>
+						<div ng-repeat="query in server.queries" ng-show="state.activeEntityId == query.entityId">
+							<chatlog activity-log="query.activityLog" class="chatlog" resize-maincell="query" ng-style="{height: maincellHeight}"></chatlog>
 							<div class="chatboxwrapper">
-								<textarea chatbox chatbox-autocomplete chatbox-autogrow window-path="{ serverIdx: $parent.$index, queryIdx: $index }" class="chatbox" focus-key="Chatbox"></textarea>
+								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="query" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>
 						</div>
 					</div>
