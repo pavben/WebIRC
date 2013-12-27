@@ -511,14 +511,6 @@ webircApp.directive('chatbox', function($rootScope, $timeout) {
 				});
 			}
 		});
-
-/* TODO: EXPERIMENTAL
-		$rootScope.$watch('state.currentActiveWindow', function(value) {
-			if (value) {
-				$rootScope.$broadcast('FocusKey', 'Chatbox');
-			}
-		});
-*/
 	};
 });
 

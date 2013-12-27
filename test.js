@@ -1,6 +1,5 @@
 "use strict";
 
-// TODO: port to new entity system
 function runTest(master, testId) {
 	if (testId === '1') {
 		if (master.activeEntity.type === 'channel') {
@@ -46,7 +45,7 @@ function runTest(master, testId) {
 		}
 	} else if (testId === 'userdupes') {
 		if (master.activeEntity.type === 'channel') {
-			var channel = master.activeEntity.object;
+			var channel = master.activeEntity;
 
 			var userlist = channel.userlist.slice(0);
 
