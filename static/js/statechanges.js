@@ -70,8 +70,6 @@ var sc = {
 			// set parent
 			channel.server = server;
 
-			channel.serverEntityId = server.entityId;
-
 			server.channels.push(channel);
 
 			utils.addEntity(this, channel);
@@ -86,8 +84,6 @@ var sc = {
 
 			// set parent
 			query.server = server;
-
-			query.serverEntityId = server.entityId; // TODO: needed?
 
 			server.queries.push(query);
 
@@ -523,7 +519,7 @@ var sc = {
 					assert(false, 'Unknown window type');
 			}
 
-			// remove the entity from
+			// remove the entity from the lookup object
 			assert(targetEntityId in state.entities);
 
 			delete state.entities[targetEntityId];

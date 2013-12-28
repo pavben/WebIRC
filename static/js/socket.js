@@ -164,4 +164,8 @@ function initializeSocketConnection($rootScope, socketFactory) {
 	$rootScope.requestCloseWindow = function(targetEntityId) {
 		$rootScope.sendToGateway('CloseWindow', { targetEntityId: targetEntityId });
 	}
+
+	$rootScope.isActiveEntity = function(entityId) {
+		return ($rootScope.state.activeEntityId === entityId);
+	}
 }
