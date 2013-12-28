@@ -161,7 +161,9 @@ webircApp.directive('windowlistbutton', function($rootScope) {
 				maincellElement.text(buttonLabel);
 
 				$scope.$watch($attr.hoverLabel, function(newHoverLabel) {
-					$element[0].title = newHoverLabel;
+					if (typeof newHoverLabel === 'string') {
+						$element[0].title = newHoverLabel;
+					}
 				}, true);
 
 				$scope.$watch($attr.entity + '.entityId', function(newEntityId) {
