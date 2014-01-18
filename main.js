@@ -4,15 +4,16 @@ require('./data.js').install();
 require('./utils.js').installGlobals();
 
 var assert = require('assert');
-var express = require('express');
-var fs = require('fs');
-var http = require('http');
-var https = require('https');
 var connect = require('connect');
 var cookie = require('cookie');
+var express = require('express');
+var http = require('http');
+var https = require('https');
 var io = require('socket.io');
 var irc = require('./irc.js');
 var logger = require('./logger.js');
+var users = require('./users.js');
+var utils = require('./utils.js');
 
 var sessionKey = 'sid';
 
@@ -96,7 +97,7 @@ readConfig('config.json', check(
 
 					var user = null;
 
-					users.some(function(currentUser) {
+					allUsers.some(function(currentUser) {
 						// if sessionId is already in user.loggedInSessions
 						if (currentUser.loggedInSessions.indexOf(socket.handshake.sessionId) !== -1) {
 							user = currentUser;
@@ -114,7 +115,7 @@ readConfig('config.json', check(
 					socket.on('Login', function(data) {
 						// only process Login if the user for this socket is null
 						if (user === null) {
-							users.some(function(currentUser) {
+							allUsers.some(function(currentUser) {
 								if (currentUser.username === data.username && currentUser.password === data.password) {
 									user = currentUser;
 
@@ -151,54 +152,7 @@ readConfig('config.json', check(
 			// TODO: combine activeWebSockets with loggedInSessions
 			user.activeWebSockets.push(socket);
 
-			function cloneExceptFields(src, exceptFields) {
-				var ret = {};
-
-				Object.keys(src).filter(function(k) {
-					return !~exceptFields.indexOf(k);
-				}).forEach(function(k) {
-					ret[k] = src[k];
-				});
-
-				return ret;
-			}
-
-			var userCopy = cloneExceptFields(user, [
-				'activeWebSockets',
-				'loggedInSessions',
-				'password',
-				'servers',
-				'entities'
-			]);
-
-			userCopy.servers = user.servers.map(function(server) {
-				var serverCopy = cloneExceptFields(server, [
-					'socket',
-					'user',
-					'server',
-					'channels',
-					'queries',
-					'timeoutPings'
-				]);
-
-				serverCopy.channels = server.channels.map(function(channel) {
-					var channelCopy = cloneExceptFields(channel, [
-						'server'
-					]);
-
-					return channelCopy;
-				});
-
-				serverCopy.queries = server.queries.map(function(query) {
-					var queryCopy = cloneExceptFields(query, [
-						'server'
-					]);
-
-					return queryCopy;
-				});
-
-				return serverCopy;
-			});
+			var userCopy = users.copyStateForClient(user);
 
 			socket.emit('CurrentState', userCopy);
 
@@ -237,31 +191,21 @@ readConfig('config.json', check(
 			});
 		}
 
-		config.users.forEach(function(user) {
-			var newUser = new User(user.username, user.password);
+		users.readAllUsers(check(
+			function(err) {
+				logger.error('Error reading user data:', err);
+			},
+			function(users) {
+				logger.data(users);
 
-			user.servers.forEach(function(serverSpec) {
-				newUser.addServer(new Server(serverSpec));
-			});
+				allUsers = users;
 
-			users.push(newUser);
-		})
-
-		irc.run();
+				irc.run();
+			}
+		));
 	}
 ));
 
 function readConfig(configFilePath, cb) {
-	fs.readFile(configFilePath, check(cb, function(data) {
-		var err = null;
-		var config = null;
-
-		try {
-			config = JSON.parse(data);
-		} catch(e) {
-			err = e;
-		}
-
-		cb(err, config);
-	}));
+	utils.readJsonFile(configFilePath, cb);
 }

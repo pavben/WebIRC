@@ -6,6 +6,7 @@ var mode = require('./mode.js');
 var moment = require('moment');
 var net = require('net');
 var tls = require('tls');
+var users = require('./users.js');
 var utils = require('./utils.js');
 
 var serverCommandHandlers = {
@@ -448,9 +449,26 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 }
 
 exports.run = function() {
-	users.forEach(function(user) {
+	allUsers.forEach(function(user) {
 		user.servers.forEach(function(server) {
+			// TODO: connect only to the servers that weren't disconnected by the user
 			server.reconnect();
+		});
+	});
+
+	process.once('SIGINT', function() {
+		logger.info('Received SIGINT -- saving users and exiting');
+
+		users.writeAllUsers(allUsers, function(err) {
+			if (err) {
+				logger.error('Unable to save user data', err);
+
+				process.exit(1);
+			} else {
+				logger.info('User data save completed');
+
+				process.exit(0);
+			}
 		});
 	});
 }

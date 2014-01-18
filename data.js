@@ -4,12 +4,16 @@ var assert = require('assert');
 // irc.js include moved to the bottom due to circular dependency
 var logger = require('./logger.js');
 var statechanges = require('./static/js/statechanges.js');
+var utils = require('./utils.js');
 
-var nextEntityId = 0;
+function User(spec) {
+	utils.ensureRequiredFields(spec, [
+		'username',
+		'password'
+	]);
 
-function User(username, password) {
-	this.username = username;
-	this.password = password;
+	this.username = spec.username;
+	this.password = spec.password;
 
 	this.servers = [];
 
@@ -17,14 +21,13 @@ function User(username, password) {
 	this.loggedInSessions = [];
 
 	this.entities = {};
-	this.activeEntityId = null;
+	this.activeEntityId = spec.activeEntityId || null;
+	this.nextEntityId = spec.nextEntityId || 0;
 }
 
 User.prototype = {
 	addServer: function(server) {
 		this.applyStateChange('AddServer', server);
-
-		this.setActiveEntity(server.entityId);
 	},
 	setActiveEntity: function(targetEntityId) {
 		this.applyStateChange('SetActiveEntity', targetEntityId);
@@ -54,6 +57,9 @@ User.prototype = {
 	},
 	getEntityById: function(targetEntityId) {
 		return statechanges.utils.getEntityById(this, targetEntityId);
+	},
+	getNextEntityId: function() {
+		return this.nextEntityId++;
 	},
 	removeActiveWebSocket: function(socket) {
 		var idx = this.activeWebSockets.indexOf(socket);
@@ -87,26 +93,35 @@ User.prototype = {
 	}
 };
 
-function Server(serverSpec) {
-	this.entityId = nextEntityId++;
+function Server(spec, getNextEntityId) {
+	utils.ensureRequiredFields(spec, [
+		'host',
+		'port',
+		'desiredNickname',
+		'username',
+		'realName',
+		'desiredChannels'
+	]);
+
+	this.entityId = spec.entityId || getNextEntityId();
 	this.type = 'server';
 
-	this.label = serverSpec.label || serverSpec.host;
-	this.host = serverSpec.host;
-	this.port = serverSpec.port;
-	this.ssl = serverSpec.ssl || false;
-	this.password = serverSpec.password || null;
+	this.label = spec.label || spec.host;
+	this.host = spec.host;
+	this.port = spec.port;
+	this.ssl = spec.ssl || false;
+	this.password = spec.password || null;
 	this.nickname = null;
-	this.desiredNickname = serverSpec.desiredNickname;
-	this.username = serverSpec.username;
-	this.realName = serverSpec.realName;
+	this.desiredNickname = spec.desiredNickname;
+	this.username = spec.username;
+	this.realName = spec.realName;
 	this.channels = [];
-	this.desiredChannels = serverSpec.desiredChannels;
+	this.desiredChannels = spec.desiredChannels;
 	this.queries = [];
 	this.socket = null;
-	this.activityLog = [];
-	this.numEvents = 0;
-	this.numAlerts = 0;
+	this.activityLog = spec.activityLog || [];
+	this.numEvents = spec.numEvents || 0;
+	this.numAlerts = spec.numAlerts || 0;
 	this.connected = false;
 
 	// these are set automatically by the 'add' functions
@@ -135,14 +150,24 @@ Server.prototype = {
 			logger.info('Disconnected from server: %s:%d', this.host, this.port);
 		}
 	},
+	addChannel: function(channel) {
+		this.user.applyStateChange('AddChannel', this.entityId, channel);
+	},
 	joinedChannel: function(channelName) {
 		var server = this;
 
 		server.withChannel(channelName, check(
 			function(err) {
-				var channel = new Channel(channelName, true);
+				var channel = new Channel({
+					name: channelName,
+					inChannel: true
+				}, server.user.getNextEntityId.bind(server.user));
 
-				server.user.applyStateChange('AddChannel', server.entityId, channel);
+				server.addChannel(channel);
+
+				server.user.applyStateChange('Info', channel.entityId, {
+					text: 'Joined channel ' + channel.name
+				});
 
 				server.user.setActiveEntity(channel.entityId);
 			},
@@ -185,6 +210,9 @@ Server.prototype = {
 			}
 		});
 	},
+	addQuery: function(query) {
+		this.user.applyStateChange('AddQuery', this.entityId, query);
+	},
 	ensureQuery: function(queryName) {
 		var queryRet;
 
@@ -196,35 +224,16 @@ Server.prototype = {
 		});
 
 		if (!exists) {
-			var query = new Query(queryName);
+			var query = new Query({
+				name: queryName
+			}, this.user.getNextEntityId.bind(this.user));
 
-			this.user.applyStateChange('AddQuery', this.entityId, query);
+			this.addQuery(query);
 
 			queryRet = query;
 		}
 
 		return queryRet;
-	},
-	withQuery: function(queryName, cb) { // might be unused, but here for completeness
-		var matchedQuery;
-
-		this.queries.some(function(query) {
-			if (query.name.toLowerCase() === queryName.toLowerCase()) {
-				matchedQuery = query;
-
-				return true;
-			}
-		});
-
-		if (matchedQuery) {
-			cb(null, matchedQuery);
-		} else {
-			var err = new Error('No matching query');
-
-			err.code = 'ENOENT';
-
-			cb(err);
-		}
 	},
 	removeQuery: function(targetName) {
 		var server = this;
@@ -325,17 +334,21 @@ Server.prototype = {
 	}
 };
 
-function Channel(name, inChannel) {
-	this.entityId = nextEntityId++;
+function Channel(spec, getNextEntityId) {
+	utils.ensureRequiredFields(spec, [
+		'name'
+	]);
+
+	this.entityId = spec.entityId || getNextEntityId();
 	this.type = 'channel';
 
-	this.name = name;
+	this.name = spec.name;
 	this.tempUserlist = []; // built while NAMES entries are coming in (353) and copied to userlist on 366
 	this.userlist = [];
-	this.activityLog = [];
-	this.numEvents = 0;
-	this.numAlerts = 0;
-	this.inChannel = inChannel;
+	this.activityLog = spec.activityLog || [];
+	this.numEvents = spec.numEvents || 0;
+	this.numAlerts = spec.numAlerts || 0;
+	this.inChannel = spec.inChannel || false;
 
 	// server-only attributes
 	this.rejoining = false;
@@ -380,14 +393,18 @@ Channel.prototype = {
 	}
 };
 
-function Query(name) {
-	this.entityId = nextEntityId++;
+function Query(spec, getNextEntityId) {
+	utils.ensureRequiredFields(spec, [
+		'name'
+	]);
+
+	this.entityId = spec.entityId || getNextEntityId();
 	this.type = 'query';
 
-	this.name = name;
-	this.activityLog = [];
-	this.numEvents = 0;
-	this.numAlerts = 0;
+	this.name = spec.name;
+	this.activityLog = spec.activityLog || [];
+	this.numEvents = spec.numEvents || 0;
+	this.numAlerts = spec.numAlerts || 0;
 
 	// these are set automatically by the 'add' functions
 	this.server = null;
@@ -434,6 +451,7 @@ ServerOrigin.prototype = {
 function ChannelTarget(name) {
 	this.name = name;
 }
+
 ChannelTarget.prototype = {
 	toString: function() {
 		return this.name;
@@ -444,6 +462,7 @@ function ClientTarget(nick, server) {
 	this.nick = nick;
 	this.server = server || null;
 }
+
 ClientTarget.prototype = {
 	toString: function() {
 		var ret = this.nick;
@@ -456,7 +475,7 @@ ClientTarget.prototype = {
 	}
 }
 
-var users = [];
+var allUsers = [];
 
 exports.install = function() {
 	global.User = User;
@@ -468,7 +487,7 @@ exports.install = function() {
 	global.ServerOrigin = ServerOrigin;
 	global.ChannelTarget = ChannelTarget;
 	global.ClientTarget = ClientTarget;
-	global.users = users;
+	global.allUsers = allUsers;
 }
 
 // down here due to circular dependency

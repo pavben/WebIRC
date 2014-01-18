@@ -73,10 +73,6 @@ var sc = {
 			server.channels.push(channel);
 
 			utils.addEntity(this, channel);
-
-			utils.addActivity(this, channel, 'Info', {
-				text: 'Joined channel ' + channel.name
-			}, ActivityType.None);
 		},
 		'AddQuery': function(serverEntityId, query, utils) {
 			var server = utils.getEntityById(this, serverEntityId);

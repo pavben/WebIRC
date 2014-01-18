@@ -1,5 +1,7 @@
 "use strict";
 
+var fs = require('fs');
+
 function installGlobals() {
 	var globalFunctions = {
 		check: function(errorHandler, okHandler) {
@@ -101,6 +103,29 @@ function parseKeyEqValue(str) {
 	}
 }
 
+function readJsonFile(filePath, cb) {
+	fs.readFile(filePath, check(cb, function(data) {
+		var err = null;
+		var config = null;
+
+		try {
+			config = JSON.parse(data);
+		} catch(e) {
+			err = e;
+		}
+
+		cb(err, config);
+	}));
+}
+
+function ensureRequiredFields(obj, fields) {
+	fields.forEach(function(field) {
+		if (!(field in obj)) {
+			throw new Error('Missing required field: ' + field)
+		}
+	});
+}
+
 exports.installGlobals = installGlobals;
 exports.parseCtcpMessage = parseCtcpMessage;
 exports.toCtcp = toCtcp;
@@ -108,3 +133,5 @@ exports.parseOrigin = parseOrigin;
 exports.parseTarget = parseTarget;
 exports.withParsedTarget = withParsedTarget;
 exports.parseKeyEqValue = parseKeyEqValue;
+exports.readJsonFile = readJsonFile;
+exports.ensureRequiredFields = ensureRequiredFields;
