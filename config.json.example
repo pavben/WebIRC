@@ -1,23 +1,9 @@
 {
-	"users": [{
-		"username": "u",
-		"password": "p",
-		"servers": [{
-			"host": "webirc.server",
-			"port": 6667,
-			"ssl": false,
-			"password": null,
-			"desiredNickname": "webirc",
-			"username": "webirc",
-			"realName": "webirc",
-			"desiredChannels": ["#webirc"]
-		}]
-	}],
 	"http": {
 		"port": 28080
 	},
 	"https": {
-		"port": 28443,
+		"port": null,
 		"keyFile": "./key.pem",
 		"certFile": "./cert.pem"
 	},

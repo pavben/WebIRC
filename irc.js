@@ -448,31 +448,6 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 	}
 }
 
-exports.run = function() {
-	allUsers.forEach(function(user) {
-		user.servers.forEach(function(server) {
-			// TODO: connect only to the servers that weren't disconnected by the user
-			server.reconnect();
-		});
-	});
-
-	process.once('SIGINT', function() {
-		logger.info('Received SIGINT -- saving users and exiting');
-
-		users.writeAllUsers(allUsers, function(err) {
-			if (err) {
-				logger.error('Unable to save user data', err);
-
-				process.exit(1);
-			} else {
-				logger.info('User data save completed');
-
-				process.exit(0);
-			}
-		});
-	});
-}
-
 function reconnectServer(server) {
 	if (server.socket !== null) {
 		server.disconnect();

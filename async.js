@@ -1,6 +1,5 @@
 "use strict";
 
-// TODO: look into handling exceptions
 function map(list, f, cb) {
 	var nextIndex = 0;
 	var results = [];

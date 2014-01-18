@@ -475,8 +475,6 @@ ClientTarget.prototype = {
 	}
 }
 
-var allUsers = [];
-
 exports.install = function() {
 	global.User = User;
 	global.Server = Server;
@@ -487,7 +485,6 @@ exports.install = function() {
 	global.ServerOrigin = ServerOrigin;
 	global.ChannelTarget = ChannelTarget;
 	global.ClientTarget = ClientTarget;
-	global.allUsers = allUsers;
 }
 
 // down here due to circular dependency

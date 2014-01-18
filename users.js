@@ -8,9 +8,11 @@ var utils = require('./utils.js');
 var USERS_PATH = path.join(__dirname, 'users');
 var USERS_TEMP_PATH = path.join(__dirname, 'users.tmp');
 
+var users = [];
+
 // TODO: change all of the Sync function calls in this file to async
 
-function writeAllUsers(users, cb) {
+function writeAllUsers(cb) {
 	function getTempFilePathForUser(user) {
 		return path.resolve(USERS_TEMP_PATH, user.username + '.json');
 	}
@@ -41,7 +43,29 @@ function readAllUsers(cb) {
 
 				cb(null, user);
 			}));
-		}, cb);
+		}, check(cb, function(readUsers) {
+			users = readUsers;
+
+			cb();
+		}));
+	}));
+}
+
+function initialize(cb) {
+	readAllUsers(check(cb, function() {
+		users.forEach(function(user) {
+			if (user.servers.length > 0) {
+				user.servers.forEach(function(server) {
+					// TODO: connect only to the servers that weren't disconnected by the user
+					server.reconnect();
+				});
+			} else {
+				// TODO: create the first server window
+				assert(false, 'For now, each user must have at least one server');
+			}
+		});
+
+		cb();
 	}));
 }
 
@@ -134,9 +158,6 @@ function parseUserSpec(spec) {
 
 			newUser.addServer(newServer);
 
-			// TODO: let's see if we can handle a null active window properly
-			//newUser.setActiveEntity(newServer.entityId);
-
 			if (Array.isArray(serverSpec.channels)) {
 				serverSpec.channels.forEach(function(channelSpec) {
 					var newChannel = new Channel(channelSpec, newUser.getNextEntityId);
@@ -158,8 +179,52 @@ function parseUserSpec(spec) {
 	return newUser;
 }
 
-module.exports.writeAllUsers = writeAllUsers;
-module.exports.readAllUsers = readAllUsers;
+function saveAndShutdown() {
+	writeAllUsers(function(err) {
+		if (err) {
+			logger.error('Unable to save user data', err);
+
+			process.exit(1);
+		} else {
+			logger.info('User data save completed');
+
+			process.exit(0);
+		}
+	});
+}
+
+function getUserBySessionId(sessionId) {
+	var user = null;
+
+	users.some(function(currentUser) {
+		// if sessionId is already in user.loggedInSessions
+		if (currentUser.loggedInSessions.indexOf(sessionId) !== -1) {
+			user = currentUser;
+			return true;
+		}
+	});
+
+	return user;
+}
+
+function getUserByCredentials(username, password) {
+	var user = null;
+
+	users.some(function(currentUser) {
+		if (currentUser.username === username && currentUser.password === password) {
+			user = currentUser;
+
+			return true;
+		}
+	});
+
+	return user;
+}
+
+module.exports.initialize = initialize;
 module.exports.copyWithoutPointers = copyWithoutPointers;
 module.exports.copyStateForClient = copyStateForClient;
 module.exports.copyStateForSave = copyStateForSave;
+module.exports.saveAndShutdown = saveAndShutdown;
+module.exports.getUserBySessionId = getUserBySessionId;
+module.exports.getUserByCredentials = getUserByCredentials;
