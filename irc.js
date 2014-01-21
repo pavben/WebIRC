@@ -67,7 +67,7 @@ var preregAllowedCommands = [
 ];
 
 function handleCommandRequireArgs(requiredNumArgs, handler) {
-	// note: allArgs includes user, serverIdx, server, and origin -- these are not counted in numArgs as numArgs represends the number of args after the command
+	// note: allArgs includes user, server, and origin -- these are not counted in numArgs as numArgs represends the number of args after the command
 	return function(numArgs, allArgs) {
 		if (numArgs >= requiredNumArgs) {
 			return handler.apply(null, allArgs);
@@ -79,8 +79,8 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 	};
 }
 
-function showInfoLast(user, serverIdx, server, origin) {
-	if (arguments.length >= 6) {
+function showInfoLast(user, server, origin) {
+	if (arguments.length >= 5) {
 		var text = arguments[arguments.length - 1];
 
 		server.showInfo(text);
@@ -89,8 +89,8 @@ function showInfoLast(user, serverIdx, server, origin) {
 	}
 }
 
-function showInfoLast2(user, serverIdx, server, origin) {
-	if (arguments.length >= 7) {
+function showInfoLast2(user, server, origin) {
+	if (arguments.length >= 6) {
 		server.showInfo(Array.prototype.slice.call(arguments, -2).join(' '));
 	} else {
 		logger.error('showInfoLast2 called with arguments.length = ' + arguments.length);
@@ -100,7 +100,7 @@ function showInfoLast2(user, serverIdx, server, origin) {
 function emptyHandler() {
 }
 
-function handle001(user, serverIdx, server, origin, myNickname, text) {
+function handle001(user, server, origin, myNickname, text) {
 	user.applyStateChange('EditServer', server.entityId, {
 		currentNickname: myNickname
 	});
@@ -114,14 +114,14 @@ function handle001(user, serverIdx, server, origin, myNickname, text) {
 	server.showInfo(text);
 }
 
-function handle004(user, serverIdx, server, origin, myNickname, serverName, serverVersion, userModes, channelModes) {
+function handle004(user, server, origin, myNickname, serverName, serverVersion, userModes, channelModes) {
 	server.showInfo('Server ' + serverName + ' running ' + serverVersion);
 	server.showInfo('Supported user modes: ' + userModes);
 	server.showInfo('Supported channel modes: ' + channelModes);
 }
 
-function handle005(user, serverIdx, server, origin) {
-	var keyValueStrings = Array.prototype.slice.call(arguments, 5, arguments.length - 1);
+function handle005(user, server, origin) {
+	var keyValueStrings = Array.prototype.slice.call(arguments, 4, arguments.length - 1);
 
 	keyValueStrings.forEach(function(keyValueStr) {
 		var kv = utils.parseKeyEqValue(keyValueStr);
@@ -138,41 +138,41 @@ function handle005(user, serverIdx, server, origin) {
 	server.showInfo('Server settings: ' + keyValueStrings.join(' '));
 }
 
-function handle311(user, serverIdx, server, origin, myNickname, nick, username, host, star, realName) {
+function handle311(user, server, origin, myNickname, nick, username, host, star, realName) {
 	server.showWhois(nick + ' is ' + username + '@' + host + ' (' + realName + ')');
 }
 
-function handle312(user, serverIdx, server, origin, myNickname, nick, serverName, serverDesc) {
+function handle312(user, server, origin, myNickname, nick, serverName, serverDesc) {
 	server.showWhois(nick + ' is connected to ' + serverName + ' (' + serverDesc + ')');
 }
 
-function handle317(user, serverIdx, server, origin, myNickname, nick, secondsIdle, signonTime) {
+function handle317(user, server, origin, myNickname, nick, secondsIdle, signonTime) {
 	var signonDate = new Date(signonTime * 1000);
 
 	server.showWhois(nick + ' has been idle for ' + moment().add('seconds', secondsIdle).fromNow(true) + ' (signed on ' + moment(signonDate).fromNow() + ')');
 }
 
-function handle319(user, serverIdx, server, origin, myNickname, nick, channels) {
+function handle319(user, server, origin, myNickname, nick, channels) {
 	server.showWhois(nick + ' is on ' + channels);
 }
 
-function handle328(user, serverIdx, server, origin, myNickname, channelName, channelUrl) {
+function handle328(user, server, origin, myNickname, channelName, channelUrl) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		user.applyStateChange('Info', channel.entityId, 'URL: ' + channelUrl);
 	}));
 }
 
-function handle330(user, serverIdx, server, origin, myNickname, nick, authName, text) {
+function handle330(user, server, origin, myNickname, nick, authName, text) {
 	server.showWhois(nick + ' ' + text + ' ' + authName);
 }
 
-function handle332(user, serverIdx, server, origin, myNickname, channelName, topicText) {
+function handle332(user, server, origin, myNickname, channelName, topicText) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		user.applyStateChange('Info', channel.entityId, 'Topic is: ' + topicText);
 	}));
 }
 
-function handle333(user, serverIdx, server, origin, myNickname, channelName, setByNick, topicTime) {
+function handle333(user, server, origin, myNickname, channelName, setByNick, topicTime) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		var topicDate = new Date(topicTime * 1000);
 
@@ -180,7 +180,7 @@ function handle333(user, serverIdx, server, origin, myNickname, channelName, set
 	}));
 }
 
-function handle353(user, serverIdx, server, origin, myNickname, channelType, channelName, namesList) {
+function handle353(user, server, origin, myNickname, channelType, channelName, namesList) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		// build a list of UserlistEntry
 		var userlistEntries = [];
@@ -197,7 +197,7 @@ function handle353(user, serverIdx, server, origin, myNickname, channelType, cha
 	}));
 }
 
-function handle378(user, serverIdx, server, origin, myNickname, nick, text) {
+function handle378(user, server, origin, myNickname, nick, text) {
 	server.showWhois(nick + ' ' + text);
 }
 
@@ -233,26 +233,30 @@ function parseUserlistEntry(nickWithFlags) {
 	return null;
 }
 
-function handle366(user, serverIdx, server, origin, myNickname, channelName) {
+function handle366(user, server, origin, myNickname, channelName) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		user.applyStateChange('NamesUpdate', channel.entityId);
 	}));
 }
 
-function handle401(user, serverIdx, server, origin, myNickname, targetName) {
+function handle401(user, server, origin, myNickname, targetName) {
 	user.showError('No such nick/channel: ' + targetName);
 }
 
-function handle432(user, serverIdx, server, origin, myNickname, targetName) {
-	user.showError('Invalid nickname: ' + targetName);
+function handle432(user, server, origin, myNickname, targetName) {
+	server.showError('Invalid nickname: ' + targetName, false);
 
-	tryAnotherNickname(server, targetName);
+	if (!server.isRegistered()) {
+		tryAnotherNickname(server, targetName);
+	}
 }
 
-function handle433(user, serverIdx, server, origin, myNickname, targetName) {
-	user.showError('Nickname already in use: ' + targetName);
+function handle433(user, server, origin, myNickname, targetName) {
+	server.showError('Nickname already in use: ' + targetName, false);
 
-	tryAnotherNickname(server, targetName);
+	if (!server.isRegistered()) {
+		tryAnotherNickname(server, targetName);
+	}
 }
 
 function tryAnotherNickname(server, lastNickname) {
@@ -265,23 +269,23 @@ function tryAnotherNickname(server, lastNickname) {
 	}
 }
 
-function handle671(user, serverIdx, server, origin, myNickname, nick, text) {
+function handle671(user, server, origin, myNickname, nick, text) {
 	server.showWhois(nick + ' ' + text);
 }
 
-function handlePing(user, serverIdx, server, origin, arg) {
+function handlePing(user, server, origin, arg) {
 	server.send('PONG :' + arg);
 }
 
-function handlePong(user, serverIdx, server, origin, arg) {
+function handlePong(user, server, origin, arg) {
 	// ignore for now
 }
 
-function handleError(user, serverIdx, server, origin, text) {
+function handleError(user, server, origin, text) {
 	server.showError(text, false);
 }
 
-function handleJoin(user, serverIdx, server, origin, channelName) {
+function handleJoin(user, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the joiner matches ours
 		if (utils.equalsIgnoreCase(server.currentNickname, origin.nick)) {
@@ -302,7 +306,7 @@ function handleJoin(user, serverIdx, server, origin, channelName) {
 	}
 }
 
-function handleKick(user, serverIdx, server, origin, channelName, targetName, kickMessage) {
+function handleKick(user, server, origin, channelName, targetName, kickMessage) {
 	if (origin !== null) {
 		utils.withParsedTarget(targetName, silentFail(function(target) {
 			if (target instanceof ClientTarget) {
@@ -314,7 +318,7 @@ function handleKick(user, serverIdx, server, origin, channelName, targetName, ki
 	}
 }
 
-function handleMode(user, serverIdx, server, origin, targetName, modes) {
+function handleMode(user, server, origin, targetName, modes) {
 	var handleModeArguments = arguments;
 
 	utils.withParsedTarget(targetName, silentFail(function(target) {
@@ -326,7 +330,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 		} else if (target instanceof ChannelTarget) {
 			// it's a channel mode
 			server.withChannel(target.name, silentFail(function(channel) {
-				var modeArgs = Array.prototype.slice.call(handleModeArguments, 6);
+				var modeArgs = Array.prototype.slice.call(handleModeArguments, 5);
 
 				var parsedModes = mode.parseChannelModes(modes, modeArgs);
 
@@ -351,13 +355,13 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 	}));
 }
 
-function handleNick(user, serverIdx, server, origin, newNickname) {
+function handleNick(user, server, origin, newNickname) {
 	if (origin !== null && origin instanceof ClientOrigin) {
-		user.applyStateChange('NickChange', serverIdx, origin.nick, newNickname);
+		user.applyStateChange('NickChange', server.entityId, origin.nick, newNickname);
 	}
 }
 
-function handleNotice(user, serverIdx, server, origin, targetName, text) {
+function handleNotice(user, server, origin, targetName, text) {
 	if (origin !== null) {
 		if (server.isRegistered()) {
 			utils.withParsedTarget(targetName, silentFail(function(target) {
@@ -366,7 +370,6 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 				var ctcpMessage = utils.parseCtcpMessage(text);
 
 				if (ctcpMessage !== null) {
-					//handleCtcp(serverIdx, server, origin, target, ctcpMessage);
 					logger.warn('CTCP reply handling not implemented');
 				} else {
 					// not CTCP reply, but a regular notice
@@ -389,7 +392,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 	}
 }
 
-function handlePart(user, serverIdx, server, origin, channelName) {
+function handlePart(user, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the leaver matches ours
 		if (utils.equalsIgnoreCase(server.currentNickname, origin.nick)) {
@@ -416,7 +419,7 @@ function handlePart(user, serverIdx, server, origin, channelName) {
 	}
 }
 
-function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
+function handlePrivmsg(user, server, origin, targetName, text) {
 	if (origin !== null) {
 		utils.withParsedTarget(targetName, silentFail(function(target) {
 			// here we have a valid target
@@ -424,7 +427,7 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 			var ctcpMessage = utils.parseCtcpMessage(text);
 
 			if (ctcpMessage !== null) {
-				handleCtcp(serverIdx, server, origin, target, ctcpMessage);
+				handleCtcp(server, origin, target, ctcpMessage);
 			} else {
 				// not CTCP, but a regular message
 				if (target instanceof ChannelTarget) {
@@ -444,19 +447,19 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 	}
 }
 
-function handleQuit(user, serverIdx, server, origin, quitMessage) {
+function handleQuit(user, server, origin, quitMessage) {
 	if (origin !== null && origin instanceof ClientOrigin) {
-		user.applyStateChange('Quit', serverIdx, origin, quitMessage);
+		user.applyStateChange('Quit', server.entityId, origin, quitMessage);
 	}
 }
 
-function handleTopic(user, serverIdx, server, origin, channelName, newTopic) {
+function handleTopic(user, server, origin, channelName, newTopic) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		user.applyStateChange('SetTopic', channel.entityId, origin, newTopic);
 	}));
 }
 
-function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
+function handleCtcp(server, origin, target, ctcpMessage) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		if (ctcpMessage.command === 'ACTION' && ctcpMessage.args !== null) {
 			if (target instanceof ChannelTarget) {
@@ -555,7 +558,6 @@ function processLineFromServer(line, server) {
 					parseResult.args.length,
 					[
 						server.user,
-						server.user.servers.indexOf(server), // serverIdx
 						server,
 						(parseResult.origin !== null ? utils.parseOrigin(parseResult.origin) : null)
 					].concat(parseResult.args)

@@ -240,7 +240,7 @@ Server.prototype = {
 	removeQuery: function(targetName) {
 		var server = this;
 
-		server.queries.some(function(query, queryIdx) {
+		server.queries.some(function(query) {
 			if (query.name.toLowerCase() === targetName.toLowerCase()) {
 				server.user.applyStateChange('RemoveEntity', query.entityId);
 
