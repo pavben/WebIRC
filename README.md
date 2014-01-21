@@ -34,7 +34,7 @@ Try logging in from your iPad at the same time and see how it runs smoothly with
 * /msg <nick> <text> to start a private chat
 * /mode #channel <modes> to set channel modes
 * /hop to rejoin the current channel
-* /server [host] [port] to connect to a new server. Prefix the port with + for SSL.
+* /server [host] [port] [password] to connect to a new server in the current server window. Prefix the port with + for SSL.
 * /sessions to list currently logged-in sessions, or /logout [all]
 * All unrecognized commands are treated as raw and sent to the server directly. For example, you can do: `/privmsg #chan :text`
 

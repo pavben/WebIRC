@@ -10,7 +10,7 @@ var serverCommandHandlers = {
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
 	'NOTICE': getHandler(2, 2, handleNotice),
-	'SERVER': getHandler(2, 0, handleServer),
+	'SERVER': getHandler(3, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
 	'W': getHandler(1, 1, handleWhois),
@@ -123,7 +123,7 @@ function handleNotice(targetName, text) {
 	});
 }
 
-function handleServer(host, port) {
+function handleServer(host, port, password) {
 	function trySetPort(portStr) {
 		var portNum = parseInt(portStr);
 
@@ -132,6 +132,7 @@ function handleServer(host, port) {
 		}
 	}
 
+	// disconnect first since it's unclean to be changing host/port while connected
 	this.server.disconnect();
 
 	if (this.numArgs >= 1) { // if host provided
@@ -140,6 +141,7 @@ function handleServer(host, port) {
 		serverChanges.host = host;
 		serverChanges.port = 6667;
 		serverChanges.ssl = false;
+		serverChanges.password = null;
 
 		if (this.numArgs >= 2) { // if port provided
 			if (port.substring(0, 1) === '+') {
@@ -148,6 +150,10 @@ function handleServer(host, port) {
 				serverChanges.ssl = true;
 			} else {
 				trySetPort(port);
+			}
+
+			if (this.numArgs >= 3) { // if password provided
+				serverChanges.password = password;
 			}
 		}
 
