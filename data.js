@@ -15,6 +15,10 @@ function User(spec) {
 	this.username = spec.username;
 	this.password = spec.password;
 
+	if (spec.defaultIdentity) {
+		this.defaultIdentity = new ServerIdentity(spec.defaultIdentity);
+	}
+
 	this.servers = [];
 
 	this.activeWebSockets = [];
@@ -97,10 +101,7 @@ function Server(spec, getNextEntityId) {
 	utils.ensureRequiredFields(spec, [
 		'host',
 		'port',
-		'desiredNickname',
-		'username',
-		'realName',
-		'desiredChannels'
+		'desiredChannels' // TODO: remove
 	]);
 
 	this.entityId = spec.entityId || getNextEntityId();
@@ -111,10 +112,8 @@ function Server(spec, getNextEntityId) {
 	this.port = spec.port;
 	this.ssl = spec.ssl || false;
 	this.password = spec.password || null;
-	this.nickname = null;
-	this.desiredNickname = spec.desiredNickname;
-	this.username = spec.username;
-	this.realName = spec.realName;
+	this.currentNickname = null;
+	this.identity = (spec.identity ? new ServerIdentity(spec.identity) : null);
 	this.channels = [];
 	this.desiredChannels = spec.desiredChannels;
 	this.queries = [];
@@ -149,6 +148,9 @@ Server.prototype = {
 
 			logger.info('Disconnected from server: %s:%d', this.host, this.port);
 		}
+	},
+	getActiveIdentity: function() {
+		return this.identity || this.user.defaultIdentity;
 	},
 	addChannel: function(channel) {
 		this.user.applyStateChange('AddChannel', this.entityId, channel);
@@ -413,6 +415,35 @@ function Query(spec, getNextEntityId) {
 Query.prototype = {
 	removeEntity: function() {
 		this.server.removeQuery(this.name);
+	}
+};
+
+function ServerIdentity(spec) {
+	utils.ensureRequiredFields(spec, [
+		'nicknames',
+		'username',
+		'realName'
+	]);
+
+	assert(Array.isArray(spec.nicknames));
+	assert(spec.nicknames.length > 0);
+
+	this.nicknames = spec.nicknames;
+	this.username = spec.username;
+	this.realName = spec.realName;
+}
+
+ServerIdentity.prototype = {
+	nextNickname: function(lastNickname) {
+		// if lastNickname is undefined or not in the list, indexOf will return -1, then +1 will make nextIndex 0
+		var nextIndex = (this.nicknames.indexOf(lastNickname) + 1) % this.nicknames.length;
+
+		if (typeof lastNickname === 'string' && nextIndex === 0) {
+			// either the given nickname was not found or it's a rollover
+			return null;
+		} else {
+			return this.nicknames[nextIndex];
+		}
 	}
 };
 

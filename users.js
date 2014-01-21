@@ -2,6 +2,7 @@
 
 var async = require('./async');
 var fs = require('fs-extra');
+var logger = require('./logger.js');
 var path = require('path');
 var utils = require('./utils.js');
 
@@ -136,7 +137,7 @@ function copyStateForSave(user) {
 
 	userCopy.servers.forEach(function(server) {
 		delete server.connected;
-		delete server.nickname;
+		delete server.currentNickname;
 
 		server.channels.forEach(function(channel) {
 			delete channel.userlist;

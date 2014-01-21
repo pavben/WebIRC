@@ -37,7 +37,7 @@ var sc = {
 
 			var mentionMe = false;
 
-			if (utils.isNickInText(server.nickname, text)) {
+			if (utils.isNickInText(server.currentNickname, text)) {
 				activityType = ActivityType.Alert;
 
 				mentionMe = true;
@@ -110,7 +110,7 @@ var sc = {
 
 			var mentionMe = false;
 
-			if (utils.isNickInText(server.nickname, text)) {
+			if (utils.isNickInText(server.currentNickname, text)) {
 				activityType = ActivityType.Alert;
 
 				mentionMe = true;
@@ -142,7 +142,7 @@ var sc = {
 
 			server.connected = true;
 
-			server.nickname = myNickname;
+			server.currentNickname = myNickname;
 		},
 		'Disconnect': function(serverEntityId, utils) {
 			function addDisconnectActivity(target) {
@@ -160,7 +160,7 @@ var sc = {
 				// server
 				server.connected = false;
 
-				server.nickname = null;
+				server.currentNickname = null;
 
 				addDisconnectActivity(server);
 
@@ -209,7 +209,7 @@ var sc = {
 
 			var server = channel.server;
 
-			if (targetNick === server.nickname) {
+			if (targetNick === server.currentNickname) {
 				// we are being kicked
 				utils.addActivity(this, channel, 'KickMe', {
 					origin: origin,
@@ -242,7 +242,7 @@ var sc = {
 			var server = targetEntity.server;
 
 			utils.addActivity(this, targetEntity, 'MyActionMessage', {
-				nick: server.nickname,
+				nick: server.currentNickname,
 				text: text
 			}, ActivityType.None);
 		},
@@ -251,7 +251,7 @@ var sc = {
 			var server = targetEntity.server;
 
 			utils.addActivity(this, targetEntity, 'MyChatMessage', {
-				nick: server.nickname,
+				nick: server.currentNickname,
 				text: text
 			}, ActivityType.None);
 		},
@@ -275,8 +275,8 @@ var sc = {
 			var user = this;
 
 			// if the nickname change origin matches ours
-			if (server.nickname === oldNickname) {
-				server.nickname = newNickname;
+			if (server.currentNickname === oldNickname) {
+				server.currentNickname = newNickname;
 			}
 
 			utils.forEveryChannelWithNick(server, oldNickname,
