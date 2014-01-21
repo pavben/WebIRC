@@ -136,14 +136,6 @@ var sc = {
 				mentionMe: mentionMe
 			}, activityType);
 		},
-		'Connect': function(serverEntityId, myNickname, utils) {
-			var server = utils.getEntityById(this, serverEntityId);
-			assert(server.type === 'server');
-
-			server.connected = true;
-
-			server.currentNickname = myNickname;
-		},
 		'Disconnect': function(serverEntityId, utils) {
 			function addDisconnectActivity(target) {
 				utils.addActivity(user, target, 'Info', {
@@ -155,15 +147,7 @@ var sc = {
 			var server = utils.getEntityById(this, serverEntityId);
 			assert(server.type === 'server');
 
-			// if we disconnect before getting a 001 (such as due to a throttle), we avoid spamming "Disconnected"
-			if (server.connected) {
-				// server
-				server.connected = false;
-
-				server.currentNickname = null;
-
-				addDisconnectActivity(server);
-
+			if (utils.isRegisteredOnServer(server)) {
 				// channels
 				server.channels.forEach(function(channel) {
 					utils.setNotInChannel(channel);
@@ -173,6 +157,16 @@ var sc = {
 
 				// queries
 				server.queries.forEach(addDisconnectActivity);
+
+				// set the server as not registered
+				server.currentNickname = null;
+			}
+
+			if (server.connected) {
+				// server
+				server.connected = false;
+
+				addDisconnectActivity(server);
 			}
 		},
 		'EditServer': function(serverEntityId, changes, utils) {
@@ -209,7 +203,7 @@ var sc = {
 
 			var server = channel.server;
 
-			if (targetNick === server.currentNickname) {
+			if (utils.equalsIgnoreCase(server.currentNickname, targetNick)) {
 				// we are being kicked
 				utils.addActivity(this, channel, 'KickMe', {
 					origin: origin,
@@ -275,7 +269,7 @@ var sc = {
 			var user = this;
 
 			// if the nickname change origin matches ours
-			if (server.currentNickname === oldNickname) {
+			if (utils.equalsIgnoreCase(server.currentNickname, oldNickname)) {
 				server.currentNickname = newNickname;
 			}
 
@@ -523,6 +517,12 @@ var sc = {
 		setNotInChannel: function(channel) {
 			channel.userlist = [];
 			channel.inChannel = false;
+		},
+		isRegisteredOnServer: function(server) {
+			return server.currentNickname !== null;
+		},
+		equalsIgnoreCase: function(a, b) {
+			return (a.toLowerCase() === b.toLowerCase());
 		},
 		isNickInText: function(nick, text) {
 			return ~text.toLowerCase().split(/[^\w\d]+/).indexOf(nick.toLowerCase());

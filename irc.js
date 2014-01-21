@@ -43,6 +43,7 @@ var serverCommandHandlers = {
 	'432': handleCommandRequireArgs(2, handle432), // ERR_ERRONEUSNICKNAME
 	'433': handleCommandRequireArgs(2, handle433), // ERR_NICKNAMEINUSE
 	'671': handleCommandRequireArgs(3, handle671), // RPL_WHOISSECURE
+	'ERROR': handleCommandRequireArgs(1, handleError),
 	'JOIN': handleCommandRequireArgs(1, handleJoin),
 	'KICK': handleCommandRequireArgs(2, handleKick),
 	'MODE': handleCommandRequireArgs(2, handleMode),
@@ -100,14 +101,12 @@ function emptyHandler() {
 }
 
 function handle001(user, serverIdx, server, origin, myNickname, text) {
-	user.applyStateChange('Connect', server.entityId, myNickname);
+	user.applyStateChange('EditServer', server.entityId, {
+		currentNickname: myNickname
+	});
 
 	server.channels.forEach(function(channel) {
 		channel.rejoin();
-	});
-
-	server.desiredChannels.forEach(function(channel) {
-		server.send('JOIN ' + channel);
 	});
 
 	server.startPings();
@@ -278,10 +277,14 @@ function handlePong(user, serverIdx, server, origin, arg) {
 	// ignore for now
 }
 
+function handleError(user, serverIdx, server, origin, text) {
+	server.showError(text, false);
+}
+
 function handleJoin(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the joiner matches ours
-		if (server.currentNickname === origin.nick) {
+		if (utils.equalsIgnoreCase(server.currentNickname, origin.nick)) {
 			// the server is confirming that we've joined the channel
 			server.joinedChannel(channelName);
 		} else {
@@ -317,7 +320,7 @@ function handleMode(user, serverIdx, server, origin, targetName, modes) {
 	utils.withParsedTarget(targetName, silentFail(function(target) {
 		if (target instanceof ClientTarget) {
 			// it's a user mode
-			if (target.nick.toLowerCase() === server.currentNickname.toLowerCase()) {
+			if (utils.equalsIgnoreCase(server.currentNickname, target.nick)) {
 				logger.debug('User mode change', modes);
 			}
 		} else if (target instanceof ChannelTarget) {
@@ -356,7 +359,7 @@ function handleNick(user, serverIdx, server, origin, newNickname) {
 
 function handleNotice(user, serverIdx, server, origin, targetName, text) {
 	if (origin !== null) {
-		if (server.currentNickname !== null) {
+		if (server.isRegistered()) {
 			utils.withParsedTarget(targetName, silentFail(function(target) {
 				// here we have a valid target
 
@@ -372,7 +375,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 							user.applyStateChange('ChannelNotice', channel.entityId, origin, channel.name, text);
 						}));
 					} else if (target instanceof ClientTarget) {
-						if (server.currentNickname === target.nick) {
+						if (utils.equalsIgnoreCase(server.currentNickname, target.nick)) {
 							// we are the recipient
 							user.applyStateChange('Notice', server.getActiveOrServerEntity(), origin, text);
 						}
@@ -389,7 +392,7 @@ function handleNotice(user, serverIdx, server, origin, targetName, text) {
 function handlePart(user, serverIdx, server, origin, channelName) {
 	if (origin !== null && origin instanceof ClientOrigin) {
 		// if the nickname of the leaver matches ours
-		if (server.currentNickname === origin.nick) {
+		if (utils.equalsIgnoreCase(server.currentNickname, origin.nick)) {
 			// the server is confirming that we've left the channel
 			server.withChannel(channelName, silentFail(function(channel) {
 				if (channel.rejoining) {
@@ -429,7 +432,7 @@ function handlePrivmsg(user, serverIdx, server, origin, targetName, text) {
 						user.applyStateChange('ChatMessage', channel.entityId, origin, text);
 					}));
 				} else if (target instanceof ClientTarget) {
-					if (server.currentNickname === target.nick) {
+					if (utils.equalsIgnoreCase(server.currentNickname, target.nick)) {
 						// we are the recipient
 						var query = server.ensureQuery(origin.getNickOrName());
 
@@ -461,7 +464,7 @@ function handleCtcp(serverIdx, server, origin, target, ctcpMessage) {
 					server.user.applyStateChange('ActionMessage', channel.entityId, origin, ctcpMessage.args);
 				}));
 			} else if (target instanceof ClientTarget) {
-				if (server.currentNickname === target.nick) {
+				if (utils.equalsIgnoreCase(server.currentNickname, target.nick)) {
 					// we are the recipient
 					var query = server.ensureQuery(origin.getNickOrName());
 
@@ -494,6 +497,10 @@ function reconnectServer(server) {
 		logger.info('Connected to server %s:%d', server.host, server.port);
 
 		server.socket = serverSocket;
+
+		server.user.applyStateChange('EditServer', server.entityId, {
+			connected: true
+		});
 
 		if (server.password) {
 			server.send('PASS ' + server.password);
@@ -543,7 +550,7 @@ function processLineFromServer(line, server) {
 	if (parseResult !== null) {
 		if (parseResult.command in serverCommandHandlers) {
 			// either already registered (001) or it's a command that's allowed to be received before registration
-			if (server.currentNickname !== null || ~preregAllowedCommands.indexOf(parseResult.command)) {
+			if (server.isRegistered() || ~preregAllowedCommands.indexOf(parseResult.command)) {
 				serverCommandHandlers[parseResult.command](
 					parseResult.args.length,
 					[
@@ -651,7 +658,7 @@ function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId
 				clientcommands.handleClientCommand(activeEntity, command, rest, sessionId);
 			} else {
 				if (activeEntity.type === 'channel') {
-					server.ifConnected(function() {
+					server.ifRegistered(function() {
 						var channel = activeEntity;
 
 						user.applyStateChange('MyChatMessage', channel.entityId, rest);
@@ -659,7 +666,7 @@ function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId
 						server.send('PRIVMSG ' + channel.name + ' :' + rest);
 					});
 				} else if (activeEntity.type === 'query') {
-					server.ifConnected(function() {
+					server.ifRegistered(function() {
 						var query = activeEntity;
 
 						user.applyStateChange('MyChatMessage', query.entityId, rest);

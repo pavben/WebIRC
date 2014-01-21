@@ -303,10 +303,15 @@ Server.prototype = {
 
 		return this.entityId;
 	},
-	ifConnected: function(successCallback) {
-		if (this.connected) {
+	isRegistered: function() {
+		return statechanges.utils.isRegisteredOnServer(this);
+	},
+	ifRegistered: function(successCallback) {
+		if (this.isRegistered()) {
 			successCallback();
 		} else {
+			// we call it registered since "connected" means established TCP connection only
+			// users will want to see "connected"
 			this.showError('Not connected', true);
 		}
 	},
@@ -324,9 +329,7 @@ Server.prototype = {
 			}
 
 			// disconnect if connected
-			if (this.connected) {
-				this.disconnect();
-			}
+			this.disconnect();
 
 			// and finally remove the server itself
 			this.user.applyStateChange('RemoveEntity', this.entityId);

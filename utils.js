@@ -1,6 +1,7 @@
 "use strict";
 
 var fs = require('fs');
+var statechanges = require('./static/js/statechanges.js');
 
 function installGlobals() {
 	var globalFunctions = {
@@ -135,3 +136,4 @@ exports.withParsedTarget = withParsedTarget;
 exports.parseKeyEqValue = parseKeyEqValue;
 exports.readJsonFile = readJsonFile;
 exports.ensureRequiredFields = ensureRequiredFields;
+exports.equalsIgnoreCase = statechanges.utils.equalsIgnoreCase;

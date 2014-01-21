@@ -25,7 +25,7 @@ function handleHop() {
 	var self = this;
 
 	if (this.activeEntity.type === 'channel') {
-		this.server.ifConnected(function() {
+		this.server.ifRegistered(function() {
 			var channel = self.activeEntity;
 
 			channel.rejoin();
@@ -63,7 +63,7 @@ function handleMe(text) {
 	var self = this;
 
 	if (this.activeEntity.type === 'channel' || this.activeEntity.type === 'query') {
-		this.server.ifConnected(function() {
+		this.server.ifRegistered(function() {
 			var channelOrQuery = self.activeEntity;
 
 			self.user.applyStateChange('MyActionMessage', self.activeEntity.entityId, text);
@@ -81,7 +81,7 @@ function handleMsg(targetName, text) {
 	utils.withParsedTarget(targetName, check(function(err) {
 		self.user.showError('Invalid target');
 	}, function(target) {
-		self.server.ifConnected(function() {
+		self.server.ifRegistered(function() {
 			var displayed = false;
 
 			if (target instanceof ClientTarget) {
@@ -116,7 +116,7 @@ function handleMsg(targetName, text) {
 function handleNotice(targetName, text) {
 	var self = this;
 
-	this.server.ifConnected(function() {
+	this.server.ifRegistered(function() {
 		self.user.showInfo('Notice to ' + targetName + ': ' + text);
 
 		self.server.send('NOTICE ' + targetName + ' :' + text);
@@ -178,7 +178,7 @@ function handleTest(testId) {
 function handleWhois(targetName) {
 	var self = this;
 
-	this.server.ifConnected(function() {
+	this.server.ifRegistered(function() {
 		self.server.send('WHOIS ' + targetName);
 	});
 }
@@ -204,7 +204,7 @@ function handleClientCommand(activeEntity, command, args, sessionId) {
 			// error: Not enough parameters
 		}
 	} else {
-		activeEntity.server.ifConnected(function() {
+		activeEntity.server.ifRegistered(function() {
 			activeEntity.server.send(command + ' ' + args);
 		});
 	}
