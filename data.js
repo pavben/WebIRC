@@ -167,9 +167,7 @@ Server.prototype = {
 
 				server.addChannel(channel);
 
-				server.user.applyStateChange('Info', channel.entityId, {
-					text: 'Joined channel ' + channel.name
-				});
+				server.user.applyStateChange('Info', channel.entityId, 'Joined channel ' + channel.name);
 
 				server.user.setActiveEntity(channel.entityId);
 			},
