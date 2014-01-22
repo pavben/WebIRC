@@ -398,10 +398,11 @@ function handlePart(user, server, origin, channelName) {
 		if (utils.equalsIgnoreCase(server.currentNickname, origin.nick)) {
 			// the server is confirming that we've left the channel
 			server.withChannel(channelName, silentFail(function(channel) {
-				if (channel.rejoining) {
-					channel.rejoining = false;
-				} else {
-					server.removeChannel(channelName);
+				utils.setNotInChannel(channel);
+
+				// if rejoining is set, keep the window open as we've already sent a JOIN for this channel
+				if (!channel.rejoining) {
+					channel.removeEntity();
 				}
 			}));
 		} else {

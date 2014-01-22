@@ -201,17 +201,6 @@ Server.prototype = {
 			cb(err);
 		}
 	},
-	removeChannel: function(channelName) {
-		var server = this;
-
-		server.channels.some(function(channel) {
-			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				server.user.applyStateChange('RemoveEntity', channel.entityId);
-
-				return true;
-			}
-		});
-	},
 	addQuery: function(query) {
 		this.user.applyStateChange('AddQuery', this.entityId, query);
 	},
@@ -236,17 +225,6 @@ Server.prototype = {
 		}
 
 		return queryRet;
-	},
-	removeQuery: function(targetName) {
-		var server = this;
-
-		server.queries.some(function(query) {
-			if (query.name.toLowerCase() === targetName.toLowerCase()) {
-				server.user.applyStateChange('RemoveEntity', query.entityId);
-
-				return true;
-			}
-		});
 	},
 	send: function(data) {
 		logger.data('SEND: %s', data);
@@ -318,6 +296,9 @@ Server.prototype = {
 	removeEntity: function() {
 		// only allow closing the server window if it's not the only one
 		if (this.user.servers.length > 1) {
+			// disconnect if connected
+			this.disconnect();
+
 			// close all the queries
 			for (var i = this.queries.length - 1; i >= 0; i--) {
 				this.queries[i].removeEntity();
@@ -327,9 +308,6 @@ Server.prototype = {
 			for (var i = this.channels.length - 1; i >= 0; i--) {
 				this.channels[i].removeEntity();
 			}
-
-			// disconnect if connected
-			this.disconnect();
 
 			// and finally remove the server itself
 			this.user.applyStateChange('RemoveEntity', this.entityId);
@@ -389,12 +367,10 @@ Channel.prototype = {
 	},
 	removeEntity: function() {
 		if (this.inChannel) {
-			this.rejoining = false;
-
 			this.server.send('PART ' + this.name);
-		} else {
-			this.server.removeChannel(this.name);
 		}
+
+		this.server.user.applyStateChange('RemoveEntity', this.entityId);
 	}
 };
 
@@ -417,7 +393,7 @@ function Query(spec, getNextEntityId) {
 
 Query.prototype = {
 	removeEntity: function() {
-		this.server.removeQuery(this.name);
+		this.server.user.applyStateChange('RemoveEntity', this.entityId);
 	}
 };
 

@@ -136,4 +136,7 @@ exports.withParsedTarget = withParsedTarget;
 exports.parseKeyEqValue = parseKeyEqValue;
 exports.readJsonFile = readJsonFile;
 exports.ensureRequiredFields = ensureRequiredFields;
+
+// from statechanges
 exports.equalsIgnoreCase = statechanges.utils.equalsIgnoreCase;
+exports.setNotInChannel = statechanges.utils.setNotInChannel;
