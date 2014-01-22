@@ -61,8 +61,7 @@ function initialize(cb) {
 					server.reconnect();
 				});
 			} else {
-				// TODO: create the first server window
-				assert(false, 'For now, each user must have at least one server');
+				// TODO: decide what to do here
 			}
 		});
 

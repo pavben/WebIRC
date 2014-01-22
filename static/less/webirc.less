@@ -1,0 +1,45 @@
+.activity {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	padding: 1px 0px 1px 0px;
+
+	&_error:extend(.activity) {
+		color: #F90071;
+	}
+	&_info:extend(.activity) {
+		color: #A6E807;
+	}
+	&_kick:extend(.activity) {
+		color: #66DAF1;
+	}
+	&_mentionme:extend(.activity) {
+		color: #E6DF6D;
+	}
+	&_mychat:extend(.activity) {
+		color: #FE9700;
+	}
+	&_notice:extend(.activity) {
+		color: #AD75F4;
+	}
+	&_whois:extend(.activity) {
+		color: #66DAF1;
+	}
+}
+
+.userlist_color {
+	&_owner {
+		color: #F90071;
+	}
+	&_admin {
+		color: #66DAF1;
+	}
+	&_op {
+		color: #A6E807;
+	}
+	&_halfop {
+		color: #AD75F4;
+	}
+	&_voice {
+		color: #FE9700;
+	}
+}
