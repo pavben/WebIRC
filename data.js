@@ -100,8 +100,7 @@ User.prototype = {
 function Server(spec, getNextEntityId) {
 	utils.ensureRequiredFields(spec, [
 		'host',
-		'port',
-		'desiredChannels' // TODO: remove
+		'port'
 	]);
 
 	this.entityId = spec.entityId || getNextEntityId();
@@ -115,7 +114,6 @@ function Server(spec, getNextEntityId) {
 	this.currentNickname = null;
 	this.identity = (spec.identity ? new ServerIdentity(spec.identity) : null);
 	this.channels = [];
-	this.desiredChannels = spec.desiredChannels;
 	this.queries = [];
 	this.socket = null;
 	this.activityLog = spec.activityLog || [];

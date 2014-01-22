@@ -1,5 +1,7 @@
 npm-debug.log
-
+config.json
+draft/*
+users/*
 node_modules
 logs
 *.pem
