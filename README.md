@@ -11,8 +11,9 @@ This is a new concept for an always-on web-based IRC client. WebIRC runs as a da
 2. Run `npm install`
 3. Copy config.json.example to config.json and edit it to set the server details.
 4. If you want HTTPS (highly recommended for any real use), run `./makecert.sh` and then set `"port": 28443` in config.json under `"https"`. You should also set the non-HTTPS port to null at this point to enforce HTTPS.
-5. Run `node main.js`. If you are running WebIRC for the first time, it will prompt you to create the first user in the console before starting.
-6. Visit `http://localhost:28080` (or whatever port you've set in config.json) to access the client.
+5. Copy `user.json.example` to `users/me.json` (and create the users directory). Edit the file to set your user details. For now, you need to add at least one server for WebIRC to be useful.
+6. Run `node main.js`.
+7. Visit `http://localhost:28080` (or whatever port you've set in config.json) to access the client.
 
 Try logging in from your iPad at the same time and see how it runs smoothly with multiple simultaneous sessions (that's part of the goal for this project).
 

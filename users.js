@@ -135,14 +135,20 @@ function copyStateForSave(user) {
 	delete userCopy.loggedInSessions;
 
 	userCopy.servers.forEach(function(server) {
+		delete server.type;
 		delete server.connected;
 		delete server.currentNickname;
 
 		server.channels.forEach(function(channel) {
+			delete channel.type;
 			delete channel.userlist;
 			delete channel.tempUserlist;
 			delete channel.inChannel;
 			delete channel.rejoining;
+		});
+
+		server.queries.forEach(function(query) {
+			delete query.type;
 		});
 	});
 

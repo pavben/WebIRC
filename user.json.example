@@ -1,0 +1,21 @@
+{
+    "username": "u",
+    "password": "p",
+    "defaultIdentity": {
+        "nicknames": [
+            "mynick",
+            "mynick2",
+            "mynick3"
+        ],
+        "username": "webirc",
+        "realName": "webirc"
+    },
+    "servers": [
+        {
+            "host": "irc.freenode.net",
+            "port": 6667,
+            "ssl": false,
+            "password": null
+        }
+    ]
+}
