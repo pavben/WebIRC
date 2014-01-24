@@ -7,6 +7,7 @@ var assert = require('assert');
 var connect = require('connect');
 var cookie = require('cookie');
 var express = require('express');
+var fs = require('fs-extra');
 var http = require('http');
 var https = require('https');
 var socketio = require('socket.io');
