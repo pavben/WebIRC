@@ -18,7 +18,7 @@ var serverCommandHandlers = {
 };
 
 function handleClose() {
-	this.activeEntity.closeWindow();
+	this.activeEntity.removeEntity();
 }
 
 function handleHop() {
