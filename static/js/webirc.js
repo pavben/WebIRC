@@ -349,7 +349,7 @@ webircApp.directive('chatlog', function() {
 				return basicText('activity_info', '* ' + originNickOrName(activity.origin) + ' sets mode: ' + activity.modes + ' ' + activity.modeArgs.join(' '));
 			},
 			'MyActionMessage': function(activity) {
-				return basicText('activity_action', '* ' + activity.nick + ' ' + activity.text);
+				return basicText('activity_mychat', '* ' + activity.nick + ' ' + activity.text);
 			},
 			'MyChatMessage': function(activity) {
 				return basicText('activity_mychat', '<' + activity.nick + '> ' + activity.text);
