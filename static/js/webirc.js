@@ -284,17 +284,25 @@ webircApp.directive('chatlog', function() {
 	};
 
 	function elementFromActivity(activity) {
+		var el = elementFromActivityNoTime(activity);
+
+		el[0].title = moment(activity.time * 1000).calendar();
+
+		return el;
+	}
+
+	function elementFromActivityNoTime(activity) {
 		var originNickOrName = sc.utils.originNickOrName;
 
 		var activityHandlers = {
 			'ActionMessage': function(activity) {
-				var cls = 'activity';
+				var className = 'activity';
 
 				if (activity.mentionMe) {
-					cls = 'activity_mentionme';
+					className = 'activity_mentionme';
 				}
 
-				return basicText(cls, '* ' + originNickOrName(activity.origin) + ' ' + activity.text);
+				return basicText(className, '* ' + originNickOrName(activity.origin) + ' ' + activity.text);
 			},
 			'ChannelNotice': function(activity) {
 				return basicText('activity_notice', '-' + originNickOrName(activity.origin) + ':' + activity.channelName + '- ' + activity.text);
@@ -306,19 +314,7 @@ webircApp.directive('chatlog', function() {
 					className = 'activity_mentionme';
 				}
 
-				var wrapperDiv = angular.element('<div />').addClass(className);
-
-				wrapperDiv[0].appendChild(document.createTextNode('<'));
-
-				var originSpan = document.createElement('span');
-				originSpan.title = moment(activity.time * 1000).calendar();
-				originSpan.appendChild(document.createTextNode(originNickOrName(activity.origin)));
-
-				wrapperDiv[0].appendChild(originSpan);
-
-				wrapperDiv[0].appendChild(document.createTextNode('> ' + activity.text));
-
-				return wrapperDiv;
+				return basicText(className, '<' + originNickOrName(activity.origin) + '> ' + activity.text);
 			},
 			'Error': function(activity) {
 				return basicText('activity_error', '* ' + activity.text);
