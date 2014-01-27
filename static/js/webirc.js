@@ -284,11 +284,11 @@ webircApp.directive('chatlog', function() {
 	};
 
 	function elementFromActivity(activity) {
-		var el = elementFromActivityNoTime(activity);
+		var innerSpan = elementFromActivityNoTime(activity);
 
-		el[0].title = moment(activity.time * 1000).calendar();
+		innerSpan[0].title = moment(activity.time * 1000).calendar();
 
-		return el;
+		return angular.element('<div />').append(innerSpan);
 	}
 
 	function elementFromActivityNoTime(activity) {
@@ -385,7 +385,7 @@ webircApp.directive('chatlog', function() {
 		}
 
 		function basicText(className, text) {
-			return angular.element('<div />').addClass(className).text(text);
+			return angular.element('<span />').addClass(className).text(text);
 		}
 	}
 });
