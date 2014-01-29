@@ -5,6 +5,7 @@ var test = require('./test.js');
 
 var serverCommandHandlers = {
 	'CLOSE': getHandler(0, 0, handleClose),
+	'HELP': getHandler(0, 0, handleHelp),
 	'HOP': getHandler(0, 0, handleHop),
 	'LOGOUT': getHandler(1, 0, handleLogout),
 	'ME': getHandler(1, 1, handleMe),
@@ -19,6 +20,16 @@ var serverCommandHandlers = {
 
 function handleClose() {
 	this.activeEntity.removeEntity();
+}
+
+function handleHelp() {
+	this.user.showInfo('Common commands:');
+	this.user.showInfo('/server [host] [port] [password] to connect to a new server in the current server window. Prefix the port with + for SSL. If you got disconnected and want to reconnect to the same server, just type /server with no parameters.');
+	this.user.showInfo('/join #channel [key] to join a channel with the optional key');
+	this.user.showInfo('/msg <nick> <text> to start a private chat');
+	this.user.showInfo('/close to close the current window. This is the same as clicking the X in the window list column.');
+	this.user.showInfo('/sessions to list currently logged-in sessions, or /logout [all]');
+	this.user.showInfo('All unrecognized commands are treated as raw and sent to the server directly. For example, you can do: /privmsg #chan :text');
 }
 
 function handleHop() {

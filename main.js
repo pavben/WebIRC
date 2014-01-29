@@ -74,6 +74,14 @@ readConfig('config.json', check(
 					}
 
 					server.listen(spec.port);
+					/* TODO:
+					server.listen(spec.port, function() {
+						console.log('LISTEN CB args:', arguments)
+					});
+					server.on('error', function() {
+						console.log('server Error args:', arguments)
+					});
+					*/
 					var sio = socketio.listen(server);
 
 					sio.configure(function() {
