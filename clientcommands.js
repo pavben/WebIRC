@@ -15,6 +15,7 @@ var serverCommandHandlers = {
 	'SERVER': getHandler(3, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
+	'TOPIC': getHandler(2, 1, handleTopic),
 	'W': getHandler(1, 1, handleWhois),
 	'WHOIS': getHandler(1, 1, handleWhois),
 };
@@ -201,6 +202,14 @@ function handleTest(testId) {
 	test.runTest(this, testId);
 }
 
+function handleTopic(channel, text) {
+	if (this.numArgs == 1) {
+		this.server.send('TOPIC ' + channel);
+	} else if (this.numArgs == 2) {
+		this.server.send('TOPIC ' + channel + ' :' + text);
+	}
+}
+
 function handleWhois(targetName) {
 	var self = this;
 
@@ -227,7 +236,7 @@ function handleClientCommand(activeEntity, command, args, sessionId) {
 
 			handler.apply(handlerThisObject, parsedArgs);
 		} else {
-			// error: Not enough parameters
+			activeEntity.server.user.showError('Not enough parameters.');
 		}
 	} else {
 		activeEntity.server.ifRegistered(function() {
