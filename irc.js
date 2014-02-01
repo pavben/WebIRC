@@ -40,6 +40,7 @@ var serverCommandHandlers = {
 	'376': handleCommandRequireArgs(2, showInfoLast), // RPL_ENDOFMOTD
 	'378': handleCommandRequireArgs(3, handle378), // RPL_MOTD
 	'401': handleCommandRequireArgs(2, handle401), // ERR_NOSUCHNICK
+	'421': handleCommandRequireArgs(2, handle421), // ERR_UNKNOWNCOMMAND
 	'422': handleCommandRequireArgs(2, showInfoLast),
 	'432': handleCommandRequireArgs(2, handle432), // ERR_ERRONEUSNICKNAME
 	'433': handleCommandRequireArgs(2, handle433), // ERR_NICKNAMEINUSE
@@ -246,6 +247,10 @@ function handle366(user, server, origin, myNickname, channelName) {
 
 function handle401(user, server, origin, myNickname, targetName) {
 	user.showError('No such nick/channel: ' + targetName);
+}
+
+function handle421(user, server, origin, myNickname, commandName, text) {
+	user.showError('Unknown command: ' + commandName);
 }
 
 function handle432(user, server, origin, myNickname, targetName) {
