@@ -23,16 +23,16 @@ async()
 	.add('config', function(cb) {
 		utils.readJsonFile('config.json', cb);
 	})
-	.add('initLogger', function(config) {
+	.add('initLogger', ['config'], function(config) {
 		logger.init(config.logLevels.console, config.logLevels.file);
 	})
-	.add('usersInitialized', function(initLogger, cb) {
+	.add('usersInitialized', ['@initLogger'], function(cb) {
 		users.initialize(cb);
 	})
 	.add('sessionStore', function() {
 		return new express.session.MemoryStore();
 	})
-	.add('expressApp', function(config, sessionStore) {
+	.add('expressApp', ['config', 'sessionStore'], function(config, sessionStore) {
 		var app = express();
 
 		app.configure(function() {
@@ -48,7 +48,7 @@ async()
 
 		return app;
 	})
-	.add('startWebListeners', function(config, initLogger, usersInitialized, expressApp, sessionStore, cb) {
+	.add('startWebListeners', ['config', 'expressApp', 'sessionStore', '@initLogger', '@usersInitialized'], function(config, expressApp, sessionStore, cb) {
 		var a = async();
 
 		if (config.http && config.http.port) {
@@ -65,7 +65,7 @@ async()
 
 		a.run(cb);
 	})
-	.add(function(usersInitialized) {
+	.add(['@usersInitialized'], function() {
 		process.once('SIGINT', function() {
 			logger.info('Received SIGINT -- saving users and exiting');
 

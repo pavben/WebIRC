@@ -34,19 +34,38 @@ function AsyncTracker() {
 
 AsyncTracker.prototype = {
 	add: function() {
+		var addArgs = arguments;
 		var provides = null;
+		var depsList = [];
 		var func = null;
-		var funcAsync = false;
 
-		if (arguments.length >= 1) {
-			func = Array.prototype.pop.call(arguments);
+		if (addArgs.length >= 1) {
+			func = Array.prototype.pop.call(addArgs);
+
+			assert(typeof func === 'function');
 		}
 
-		if (arguments.length >= 1) {
-			provides = Array.prototype.pop.call(arguments);
+		var readProvidesAndDeps = function() {
+			if (addArgs.length >= 1) {
+				var val = Array.prototype.pop.call(addArgs);
+
+				if (typeof val === 'string') {
+					assert(provides === null);
+
+					provides = val;
+				} else if (Array.isArray(val)) {
+					assert(depsList.length === 0);
+
+					depsList = val;
+				}
+
+				readProvidesAndDeps();
+			}
 		}
 
-		var asyncBlock = new AsyncBlock(this, provides, func);
+		readProvidesAndDeps();
+
+		var asyncBlock = new AsyncBlock(this, provides, depsList, func);
 
 		this._addBlock(asyncBlock);
 
@@ -107,51 +126,69 @@ AsyncTracker.prototype = {
 	}
 };
 
-function AsyncBlock(tracker, provides, func) {
+function AsyncBlock(tracker, provides, rawDepsList, func) {
+	if (provides !== null) {
+		if (provides.length == 0 || provides[0] === '@') {
+			throw new Error('async: "' + provides + '" is an invalid block name.');
+		}
+	}
+
 	this.tracker = tracker;
 	this.provides = provides;
 	this.func = func;
 
 	this.providedValue = undefined;
-	this.depsList = [];
+	this.depsForParams = [];
 	this.deps = {};
-	this.funcAsync = false; // default to false unless we see a callback param
 	this.depsRemaining = 0;
-	this._addDeps(getParamNames(func));
+	this._addDeps(rawDepsList);
 	this.triggered = false;
 }
 
 AsyncBlock.prototype = {
-	_addDeps: function(params) {
+	_addDeps: function(rawDepsList) {
+		function parseParam(param) {
+			var resultNeeded = true;
+
+			if (param.length > 0 && param[0] === '@') {
+				resultNeeded = false;
+
+				param = param.slice(1);
+			}
+
+			return {
+				resultNeeded: resultNeeded,
+				param: param
+			}
+		}
+
 		var self = this;
 
-		params.forEach(function(param) {
-			if (param in self.deps) {
-				throw new Error('async: dependency (' + param + ') is listed multiple times.');
+		rawDepsList.forEach(function(param) {
+			var parseResult = parseParam(param);
+
+			if (parseResult.param in self.deps) {
+				throw new Error('async: dependency (' + parseResult.param + ') is listed multiple times.');
 			}
 
-			// special case: recognize the 'cb' param at the end for async functions
-			if (param === 'cb') {
-				if (!self.funcAsync) {
-					self.funcAsync = true;
-				} else {
-					throw new Error('async: callback listed multiple times in function arguments');
+			if (parseResult.param in self.tracker.provides) {
+				self.deps[parseResult.param] = false; // false = result not yet available
+
+				if (parseResult.resultNeeded) {
+					self.depsForParams.push(self.tracker.provides[parseResult.param]);
 				}
-				return; // move on to the next param
-			}
 
-			if (self.funcAsync) {
-				throw new Error('async: callback must be the last argument');
-			}
-
-			if (param in self.tracker.provides) {
-				self.deps[param] = false; // false = result not yet available
-				self.depsList.push(self.tracker.provides[param]);
 				self.depsRemaining++;
 			} else {
-				throw new Error('async: dependency (' + param + ') is not provided by any earlier blocks.');
+				throw new Error('async: dependency (' + parseResult.param + ') is not provided by any earlier blocks.');
 			}
 		});
+
+		if (this.func.length > this.depsForParams.length + 1) {
+			throw new Error('async: function has ' + this.func.length + ' params, but only ' + this.depsForParams.length + ' dependencies.');
+		} else if (this.func.length < this.depsForParams.length) {
+			throw new Error('async: function has ' + this.func.length + ' params while there are ' + this.depsForParams.length + ' dependencies.');
+		}
 	},
 	depProvided: function(dep) {
 		if (dep in this.deps) {
@@ -176,9 +213,11 @@ AsyncBlock.prototype = {
 		if (this.depsRemaining === 0) {
 			this.triggered = true;
 
-			var args = this.depsList.map(function(depAsyncBlock) {
+			var args = this.depsForParams.map(function(depAsyncBlock) {
 				return depAsyncBlock.providedValue;
 			});
+
+			var funcAsync = (this.func.length == this.depsForParams.length + 1);
 
 			var handleResult = function(err) {
 				if (err) {
@@ -192,7 +231,7 @@ AsyncBlock.prototype = {
 				}
 			};
 
-			if (this.funcAsync) {
+			if (funcAsync) {
 				args.push(runOnceOrThrow(handleResult));
 			}
 
@@ -205,7 +244,7 @@ AsyncBlock.prototype = {
 				handleResultOnce(err);
 			}
 
-			if (!this.funcAsync) {
+			if (!funcAsync) {
 				handleResultOnce(null, funcRet);
 			}
 		}
@@ -242,18 +281,6 @@ function runOnceOrThrow(cb) {
 
 function async() {
 	return new AsyncTracker();
-}
-
-function getParamNames(func) {
-	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-	var fnStr = func.toString().replace(STRIP_COMMENTS, '');
-	var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(/([^\s,]+)/g);
-
-	if (result === null) {
-		result = [];
-	}
-
-	return result;
 }
 
 async.map = map;

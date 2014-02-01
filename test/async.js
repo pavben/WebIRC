@@ -9,8 +9,10 @@ describe('basic', function() {
 				.add('userId', function() {
 					return 3;
 				})
-				.add(function(userId) {
+				.add(['userId'], function(userId, cb) {
 					userId.should.equal(3);
+
+					cb();
 				})
 				.run(function(err) {
 					(err === undefined).should.be.ok;
@@ -24,7 +26,7 @@ describe('basic', function() {
 				.add('groupId', function(cb) {
 					cb(null, 7);
 				})
-				.add(function(groupId) {
+				.add(['groupId'], function(groupId) {
 					groupId.should.equal(7);
 				})
 				.run(function(err) {
@@ -41,7 +43,7 @@ describe('basic', function() {
 						cb(null, 7);
 					});
 				})
-				.add(function(groupId) {
+				.add(['groupId'], function(groupId) {
 					groupId.should.equal(7);
 				})
 				.run(function(err) {
@@ -68,11 +70,59 @@ describe('basic', function() {
 				.add('userId', function() {
 					return 3;
 				})
-				.add(function(userId) {
+				.add(['userId'], function(userId) {
 					userId.should.equal(3);
 				})
-				.add(function(userId) {
+				.add(['userId'], function(userId) {
 					userId.should.equal(3);
+				})
+				.run(function(err) {
+					(err === undefined).should.be.ok;
+
+					cb();
+				});
+		});
+
+		it('non-required dependencies', function(cb) {
+			async()
+				.add('userId', function() {
+					return 3;
+				})
+				.add('startServer', function(cb) {
+					cb();
+				})
+				.add('groupId', function() {
+					return 7;
+				})
+				.add(['@startServer', 'userId', 'groupId'], function(userId, groupId) {
+					userId.should.equal(3);
+					groupId.should.equal(7);
+				})
+				.add(['userId', '@startServer', 'groupId'], function(userId, groupId) {
+					userId.should.equal(3);
+					groupId.should.equal(7);
+				})
+				.add(['userId', 'groupId', '@startServer'], function(userId, groupId) {
+					userId.should.equal(3);
+					groupId.should.equal(7);
+				})
+				.add(['@startServer', 'userId', 'groupId'], function(userId, groupId, cb) {
+					userId.should.equal(3);
+					groupId.should.equal(7);
+
+					cb();
+				})
+				.add(['userId', '@startServer', 'groupId'], function(userId, groupId, cb) {
+					userId.should.equal(3);
+					groupId.should.equal(7);
+
+					cb();
+				})
+				.add(['userId', 'groupId', '@startServer'], function(userId, groupId, cb) {
+					userId.should.equal(3);
+					groupId.should.equal(7);
+
+					cb();
 				})
 				.run(function(err) {
 					(err === undefined).should.be.ok;
@@ -88,7 +138,7 @@ describe('basic', function() {
 				.add('userId', function() {
 					throw new Error();
 				})
-				.add(function(userId) {
+				.add(['userId'], function(userId) {
 					false.should.be.ok; // must not be run
 				})
 				.run(function(err) {
@@ -103,7 +153,7 @@ describe('basic', function() {
 				.add('groupId', function(cb) {
 					throw new Error();
 				})
-				.add(function(groupId) {
+				.add(['groupId'], function(groupId) {
 					false.should.be.ok; // must not be run
 				})
 				.run(function(err) {
@@ -121,7 +171,7 @@ describe('basic', function() {
 					.add('userId', function() {
 						return 3;
 					})
-					.add(function(randomDep) {
+					.add(['randomDep'], function(randomDep) {
 					})
 					.run(function() {
 						false.should.be.ok;
@@ -139,7 +189,7 @@ describe('basic', function() {
 					.add('userId', function() {
 						return 3;
 					})
-					.add(function(userId, userId) {
+					.add(['userId', 'userId'], function(userId, userId) {
 					})
 					.run(function() {
 						false.should.be.ok;
@@ -151,34 +201,75 @@ describe('basic', function() {
 			}
 		});
 
-		it('callback out of order', function(cb) {
+		it('too many params listed', function(cb) {
 			try {
 				async()
 					.add('userId', function() {
 						return 3;
 					})
-					.add(function(cb, userId) {
+					.add(['userId'], function(userId, groupId, level) {
 					})
-					.run(function() {
+					.run(function(err) {
 						false.should.be.ok;
 					});
 			} catch (err) {
-				err.message.should.match(/must be the last argument/);
+				err.message.should.match(/3 params, but only 1 dependencies/);
 
 				cb();
 			}
 		});
 
-		it('callback listed twice', function(cb) {
+		it('too many deps listed', function(cb) {
 			try {
 				async()
-					.add(function(cb, cb) {
+					.add('userId', function() {
+						return 3;
+					})
+					.add('groupId', function() {
+						return 7;
+					})
+					.add('level', function() {
+						return 1;
+					})
+					.add(['userId', 'groupId', 'level'], function(userId) {
+					})
+					.run(function(err) {
+						false.should.be.ok;
+					});
+			} catch (err) {
+				err.message.should.match(/1 params while there are 3 dependencies/);
+
+				cb();
+			}
+		});
+
+		it('empty block name', function(cb) {
+			try {
+				async()
+					.add('', function() {
+						return 3;
 					})
 					.run(function() {
 						false.should.be.ok;
 					});
 			} catch (err) {
-				err.message.should.match(/callback listed multiple times/);
+				err.message.should.match(/invalid block name/);
+
+				cb();
+			}
+		});
+
+		it('reserved block prefix', function(cb) {
+			try {
+				async()
+					.add('@userId', function() {
+						return 3;
+					})
+					.run(function() {
+						false.should.be.ok;
+					});
+			} catch (err) {
+				err.message.should.match(/invalid block name/);
 
 				cb();
 			}
