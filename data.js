@@ -46,8 +46,6 @@ User.prototype = {
 
 		var args = Array.prototype.slice.call(arguments, 1);
 
-		logger.debug('%s state change args', funcId, args);
-
 		// first, send it to the clients
 		this.sendToWeb('ApplyStateChange', {
 			funcId: funcId,

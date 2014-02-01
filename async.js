@@ -74,7 +74,7 @@ AsyncTracker.prototype = {
 		// deps
 		Object.keys(asyncBlock.deps).forEach(function(dep) {
 			if (dep in self.deps) {
-				self.deps[dep].append(asyncBlock);
+				self.deps[dep].push(asyncBlock);
 			} else {
 				self.deps[dep] = [asyncBlock];
 			}

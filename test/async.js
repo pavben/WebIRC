@@ -62,6 +62,24 @@ describe('basic', function() {
 					cb();
 				});
 		});
+
+		it('same dep used in multiple places', function(cb) {
+			async()
+				.add('userId', function() {
+					return 3;
+				})
+				.add(function(userId) {
+					userId.should.equal(3);
+				})
+				.add(function(userId) {
+					userId.should.equal(3);
+				})
+				.run(function(err) {
+					(err === undefined).should.be.ok;
+
+					cb();
+				});
+		});
 	});
 
 	describe('raised exceptions', function() {
@@ -96,7 +114,7 @@ describe('basic', function() {
 		});
 	});
 
-	describe.only('improper usage', function() {
+	describe('improper usage', function() {
 		it('nonexistent dependency', function(cb) {
 			try {
 				async()
