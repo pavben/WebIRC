@@ -11,6 +11,7 @@ var serverCommandHandlers = {
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
 	'NOTICE': getHandler(2, 2, handleNotice),
+	'RAW': getHandler(1, 0, handleRaw),
 	'QUIT': getHandler(1, 0, handleQuit),
 	'SERVER': getHandler(3, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
@@ -134,6 +135,10 @@ function handleNotice(targetName, text) {
 
 		self.server.send('NOTICE ' + targetName + ' :' + text);
 	});
+}
+
+function handleRaw(cmd) {
+	this.server.send(cmd);
 }
 
 function handleQuit(msg) {
