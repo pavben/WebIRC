@@ -11,6 +11,7 @@ var serverCommandHandlers = {
 	'ME': getHandler(1, 1, handleMe),
 	'MSG': getHandler(2, 2, handleMsg),
 	'NOTICE': getHandler(2, 2, handleNotice),
+	'QUIT': getHandler(1, 0, handleQuit),
 	'SERVER': getHandler(3, 0, handleServer),
 	'SESSIONS': getHandler(0, 0, handleSessions),
 	'TEST': getHandler(1, 1, handleTest),
@@ -132,6 +133,14 @@ function handleNotice(targetName, text) {
 
 		self.server.send('NOTICE ' + targetName + ' :' + text);
 	});
+}
+
+function handleQuit(msg) {
+	msg = msg || ''; // empty if not provided
+
+	this.server.send('QUIT :' + msg);
+
+	this.server.disconnect(true);
 }
 
 function handleServer(host, port, password) {

@@ -83,7 +83,7 @@ describe('basic', function() {
 				});
 		});
 
-		it('non-required dependencies', function(cb) {
+		it('valueless dependencies', function(cb) {
 			async()
 				.add('userId', function() {
 					return 3;
