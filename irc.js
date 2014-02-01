@@ -30,6 +30,7 @@ var serverCommandHandlers = {
 	'319': handleCommandRequireArgs(3, handle319), // RPL_WHOISCHANNELS
 	'328': handleCommandRequireArgs(3, handle328), // RPL_CHANNEL_URL
 	'330': handleCommandRequireArgs(4, handle330), // RPL_WHOISACCOUNT
+	'331': handleCommandRequireArgs(3, handle331), // RPL_NOTOPIC
 	'332': handleCommandRequireArgs(3, handle332), // RPL_TOPIC
 	'333': handleCommandRequireArgs(4, handle333), // RPL_TOPICWHOTIME
 	'353': handleCommandRequireArgs(4, handle353), // RPL_NAMREPLY
@@ -164,6 +165,10 @@ function handle328(user, server, origin, myNickname, channelName, channelUrl) {
 
 function handle330(user, server, origin, myNickname, nick, authName, text) {
 	server.showWhois(nick + ' ' + text + ' ' + authName);
+}
+
+function handle331(user, server, origin, myNickname, channelName, text) {
+	server.showInfo(text, true);
 }
 
 function handle332(user, server, origin, myNickname, channelName, topicText) {
