@@ -198,7 +198,29 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 			if (targetEntity !== null) {
 				user.setActiveEntity(targetEntity.entityId);
 			} else {
-				logger.error('Invalid targetEntityId in SetActiveEntity from client', data);
+				logger.warn('Invalid targetEntityId in SetActiveEntity from client', data);
+			}
+		}
+	});
+
+	socket.on('JoinChannelOnServer', function(data) {
+		if ('serverEntityId' in data && typeof data.serverEntityId === 'number' &&
+			'channelName' in data && typeof data.channelName === 'string') {
+			var server = user.getEntityById(data.serverEntityId);
+
+			if (server !== null) {
+				server.withChannel(data.channelName, check(
+					function(err) {
+						server.ifRegistered(function() {
+							server.send('JOIN ' + data.channelName);
+						});
+					},
+					function(channel) {
+						user.setActiveEntity(channel.entityId);
+					}
+				));
+			} else {
+				logger.warn('Invalid serverEntityId in JoinChannelOnServer from client', data);
 			}
 		}
 	});
@@ -210,7 +232,7 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 			if (targetEntity !== null) {
 				targetEntity.removeEntity();
 			} else {
-				logger.error('Invalid targetEntityId in CloseWindow from client', data);
+				logger.warn('Invalid targetEntityId in CloseWindow from client', data);
 			}
 		}
 	});

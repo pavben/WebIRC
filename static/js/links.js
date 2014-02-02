@@ -3,23 +3,23 @@
 var LinkChunkType = {
 	Text : 1,
 	Url : 2,
-	Email : 3
+	Channel : 3
 }
 
-function convertLinksForDomTree(root) {
+function convertLinksForDomTree(root, server) {
 	// make a copy of child nodes for iterating since we'll be changing it as we go
 	var childNodes = Array.prototype.slice.call(root.childNodes, 0);
 
 	childNodes.forEach(function(childNode) {
 		if (childNode.nodeType === 1) { // element that may have children to recurse onto
-			convertLinksForDomTree(childNode);
+			convertLinksForDomTree(childNode, server);
 		} else if (childNode.nodeType === 3) { // text
 			var chunks = textMessageToLinkChunks(childNode.data);
 
 			// this if is just an optimization to avoid the insertBefore/remove of the same node
 			if (chunks.length > 1 || (chunks.length == 1 && chunks[0].type != LinkChunkType.Text)) {
 				chunks.forEach(function(chunk) {
-					root.insertBefore(linkChunkToElement(chunk), childNode);
+					root.insertBefore(linkChunkToElement(chunk, server), childNode);
 				});
 
 				root.removeChild(childNode);
@@ -28,30 +28,32 @@ function convertLinksForDomTree(root) {
 	});
 }
 
-function linkChunkToElement(chunk) {
+function linkChunkToElement(chunk, server) {
+	function getLinkSpan(label, tooltip, f) {
+		var newSpan = document.createElement('span');
+
+		newSpan.appendChild(document.createTextNode(label));
+
+		newSpan.className = 'chatlogLink';
+		newSpan.title = tooltip;
+		newSpan.onclick = f;
+
+		return newSpan;
+	}
+
 	switch (chunk.type) {
 		case LinkChunkType.Text:
 			return document.createTextNode(chunk.text);
 		case LinkChunkType.Url:
-			var newA = document.createElement('a');
+			var url = (/^https?:\/\//i).test(chunk.text) ? chunk.text : 'http://' + chunk.text;
 
-			newA.href = (/^https?:\/\//i).test(chunk.text) ? chunk.text : 'http://' + chunk.text;
-			newA.target = '_blank';
-			newA.tabIndex = -1;
-
-			newA.appendChild(document.createTextNode(chunk.text));
-
-			return newA;
-		case LinkChunkType.Email:
-			var newA = document.createElement('a');
-
-			newA.href = 'mailto:' + chunk.text;
-			newA.target = '_blank';
-			newA.tabIndex = -1;
-
-			newA.appendChild(document.createTextNode(chunk.text));
-
-			return newA;
+			return getLinkSpan(chunk.text, 'Open ' + url + ' in a new window or tab.', function() {
+				window.open(url, '_blank');
+			});
+		case LinkChunkType.Channel:
+			return getLinkSpan(chunk.text, 'Join ' + chunk.text + ' on ' + server.label + '.', function() {
+				g_requestJoinChannelOnServer(server.entityId, chunk.text);
+			});
 		default:
 			return document.createTextNode('*** UNKNOWN LINK CHUNK ELEMENT ***');
 	}
@@ -81,46 +83,69 @@ function textMessageToLinkChunks(textMessage) {
 	)?
 	*/
 	var urlRegex = /\b(https?:\/\/www\.|https?:\/\/|www\.)(([-\w\d]+\.)+([\w]{2,4})|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d{1,5})?(\/?(([-\w\d+&@#\/%=$?~_\|\.,;:!]*\([-\w\d+&@#\/%=$?~_\|\.,;:!]*\)([-\w\d+&@#\/%=$?~_\|]*([\.,;:!]+[-\w\d+&@#\/%=$?~_\|]+)*)?)|([-\w\d+&@#\/%=$?~_\|]*([\.,;:!]+[-\w\d+&@#\/%=$?~_\|]+)*))?)?/i;
-	var emailRegex = /\b[A-Z0-9._%-]+@[A-Z0-9-]+\.[A-Z]{2,4}(?![\.-])\b/i;
+	var channelRegex = /#[A-Z0-9._-]{1,32}\b/i; // TODO: fix #chan. case
 
-	var first = true;
-	var tempString = textMessage;
+	var linkRegexes = [{
+		type: LinkChunkType.Url,
+		regex: urlRegex
+	}, {
+		type: LinkChunkType.Channel,
+		regex: channelRegex
+	}];
+
 	var chunks = [];
 
 	function addChunk(type, text) {
 		chunks.push({ type: type, text: text });
 	}
 
-	while (true) {
-		var nextMatchPosUrl = tempString.search(urlRegex);
-		var nextMatchPosEmail = tempString.search(emailRegex);
+	function getNextMatch(str, linkRegexes) {
+		var bestMatchPos = null;
+		var bestMatchType = null;
+		var bestMatchRegex = null;
 
-		var nextMatchType = null;
-		var nextMatchPos = -1;
+		linkRegexes.forEach(function(linkRegex) {
+			var matchPos = str.search(linkRegex.regex);
 
-		if (nextMatchPosUrl >= 0 && (nextMatchPosEmail == -1 || nextMatchPosUrl <= nextMatchPosEmail)) {
-			nextMatchType = LinkChunkType.Url;
-			nextMatchPos = nextMatchPosUrl;
-		} else if (nextMatchPosEmail >= 0 /* && (nextMatchPosUrl == -1 || nextMatchPosEmail <= nextMatchPosUrl */) {
-			nextMatchType = LinkChunkType.Email;
-			nextMatchPos = nextMatchPosEmail;
+			if (matchPos >= 0) {
+				if (bestMatchPos == null || matchPos < bestMatchPos) {
+					bestMatchPos = matchPos;
+					bestMatchType = linkRegex.type;
+					bestMatchRegex = linkRegex.regex;
+				}
+			}
+		});
+
+		if (bestMatchPos !== null) {
+			return {
+				pos: bestMatchPos,
+				type: bestMatchType,
+				length: str.slice(bestMatchPos).match(bestMatchRegex)[0].length
+			};
+		} else {
+			return null;
 		}
+	}
 
-		if (nextMatchPos >= 0) {
+	var tempString = textMessage;
+
+	while (true) {
+		var nextMatch = getNextMatch(tempString, linkRegexes);
+
+		if (nextMatch !== null) {
 			// the text before the match is considered to be normal text
-			var normalTextChunk = tempString.substring(0, nextMatchPos);
+			var normalTextChunk = tempString.slice(0, nextMatch.pos);
 			if (normalTextChunk != '') {
 				addChunk(LinkChunkType.Text, normalTextChunk);
 			}
 
 			// advance the string past the normal text to the beginning of the match
-			tempString = tempString.substring(nextMatchPos);
+			tempString = tempString.slice(nextMatch.pos);
 
-			var matchLength = tempString.match(nextMatchType == LinkChunkType.Url ? urlRegex : emailRegex)[0].length;
-			addChunk(nextMatchType, tempString.substring(0, matchLength));
+			addChunk(nextMatch.type, tempString.slice(0, nextMatch.length));
 
 			// advance the string past the match
-			tempString = tempString.substring(matchLength);
+			tempString = tempString.slice(nextMatch.length);
 		} else {
 			// take the last normal text chunk and push it, if non-empty
 			if (tempString != '') {

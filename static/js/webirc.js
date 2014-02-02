@@ -246,13 +246,25 @@ webircApp.directive('chatlog', function() {
 		require: '^resizeMaincell',
 		compile: function(element, attr) {
 			return function($scope, $element, $attr, resizeMaincellCtrl) {
+				var server = null;
+
+				$scope.$watch($attr.server, function(newServer) {
+					server = newServer;
+				});
+
 				var lastLen = 0;
 
 				$scope.$watchCollection($attr.activityLog, function(activityLog) {
-					function convertLinksForDomTreeAng(root) {
-						convertLinksForDomTree(root[0]);
+					function convertLinksForDomTreeAng(root, server) {
+						convertLinksForDomTree(root[0], server);
 
 						return root;
+					}
+
+					function appendActivities(activities) {
+						activities.forEach(function(activity) {
+							$element.append(convertLinksForDomTreeAng(elementFromActivity(activity), server));
+						});
 					}
 
 					if (activityLog.length > lastLen) {
@@ -260,9 +272,7 @@ webircApp.directive('chatlog', function() {
 						var newEntries = activityLog.slice(lastLen);
 
 						// and append them
-						newEntries.forEach(function(activity) {
-							$element.append(convertLinksForDomTreeAng(elementFromActivity(activity)));
-						});
+						appendActivities(newEntries);
 
 						resizeMaincellCtrl.delayedScroll();
 					} else {
@@ -270,9 +280,7 @@ webircApp.directive('chatlog', function() {
 						// this won't happen often, so we can be lazy and re-generate the entire chatlog
 						$element.children().remove();
 
-						activityLog.forEach(function(activity) {
-							$element.append(convertLinksForDomTreeAng(elementFromActivity(activity)));
-						});
+						appendActivities(activityLog);
 
 						resizeMaincellCtrl.resetScroll();
 					}

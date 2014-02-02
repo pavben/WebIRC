@@ -48,7 +48,7 @@
 				<div class="rightcell">
 					<div ng-repeat="server in state.servers">
 						<div ng-show="isActiveEntity(server.entityId)">
-							<chatlog activity-log="server.activityLog" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></chatlog>
+							<chatlog activity-log="server.activityLog" server="server" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></chatlog>
 							<div class="chatboxwrapper">
 								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="server" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>
@@ -56,7 +56,7 @@
 						<div ng-repeat="channel in server.channels" ng-show="isActiveEntity(channel.entityId)" class="fixedtable">
 							<div class="tablerow">
 								<div class="tablecell">
-									<chatlog activity-log="channel.activityLog" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></chatlog>
+									<chatlog activity-log="channel.activityLog" server="server" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></chatlog>
 								</div>
 								<div class="userlistcell">
 									<div userlist class="userlist" ng-style="{height: maincellHeight}">
@@ -73,7 +73,7 @@
 							</div>
 						</div>
 						<div ng-repeat="query in server.queries" ng-show="isActiveEntity(query.entityId)">
-							<chatlog activity-log="query.activityLog" class="chatlog" resize-maincell="query" ng-style="{height: maincellHeight}"></chatlog>
+							<chatlog activity-log="query.activityLog" server="server" class="chatlog" resize-maincell="query" ng-style="{height: maincellHeight}"></chatlog>
 							<div class="chatboxwrapper">
 								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="query" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>

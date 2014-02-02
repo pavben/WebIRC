@@ -36,6 +36,7 @@ webircApp.factory('socketFactory', function ($rootScope) {
 });
 
 var g_requestSetActiveEntity;
+var g_requestJoinChannelOnServer;
 
 function initializeSocketConnection($rootScope, socketFactory) {
 	var socket = socketFactory.newSocket();
@@ -159,6 +160,13 @@ function initializeSocketConnection($rootScope, socketFactory) {
 
 	g_requestSetActiveEntity = $rootScope.requestSetActiveEntity = function(targetEntityId) {
 		$rootScope.sendToGateway('SetActiveEntity', { targetEntityId: targetEntityId });
+	}
+
+	g_requestJoinChannelOnServer = $rootScope.requestJoinChannelOnServer = function(serverEntityId, channelName) {
+		$rootScope.sendToGateway('JoinChannelOnServer', {
+			serverEntityId: serverEntityId,
+			channelName: channelName
+		});
 	}
 
 	$rootScope.requestCloseWindow = function(targetEntityId) {
