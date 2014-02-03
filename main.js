@@ -66,11 +66,15 @@ async()
 		a.run(cb);
 	})
 	.add(['@usersInitialized'], function() {
-		process.once('SIGINT', function() {
-			logger.info('Received SIGINT -- saving users and exiting');
+		function getShutdownSignalHandler(sig) {
+			return function() {
+				logger.info('Received ' + sig + ' -- saving users and exiting');
 
-			users.saveAndShutdown();
-		});
+				users.saveAndShutdown();
+			};
+		}
+		process.once('SIGINT', getShutdownSignalHandler('SIGINT'));
+		process.once('SIGTERM', getShutdownSignalHandler('SIGTERM'));
 	})
 	.run(check(
 		function(err) {
