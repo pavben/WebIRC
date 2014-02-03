@@ -1,7 +1,3 @@
-.chatlogLink {
-	cursor: pointer;
-}
-
 .activity {
 	display: inline-block;
 	white-space: pre-wrap;
@@ -28,6 +24,111 @@
 	}
 	&_whois:extend(.activity) {
 		color: #66DAF1;
+	}
+}
+
+.chatlogLink {
+	cursor: pointer;
+}
+
+.windowbuttonblock {
+	margin-bottom: 8px;
+}
+
+.sidebutton {
+	display: table;
+	table-layout: fixed;
+	width: 100%;
+	height: 28px;
+
+	&:active {
+		position: relative;
+		top: 1px;
+	}
+
+	&_rightcell {
+		display: table-cell;
+		width: 25px;
+		vertical-align: middle;
+
+		&:not(:hover) {
+			.sidebutton_rightinner_addserver {
+				color: #7C7C6D;
+			}
+
+			.sidebutton_rightinner_close {
+				color: #7C7C6D;
+			}
+		}
+	}
+}
+
+.addserverbutton:extend(.sidebutton) {
+	margin-top: 3px;
+
+	&_maincell {
+		display: table-cell;
+	}
+
+	.sidebutton_rightcell {
+		cursor: pointer;
+	}
+}
+
+.windowbutton:extend(.sidebutton) {
+	cursor: pointer;
+
+	&_alttitle {
+		font-style: italic;
+	}
+
+	&_current {
+		background-color: #3E3E32;
+		border-radius: 5px;
+	}
+
+	&_maincell {
+		display: table-cell;
+		height: 18px;
+		padding: 5px 7px 5px 7px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		overflow: hidden;
+		vertical-align: middle;
+	}
+}
+
+.sidebutton_rightinner {
+	padding: 3px;
+	line-height: 18px;
+	font-size: 15px;
+	border-radius: 5px;
+	text-align: center;
+
+	&_alert:extend(.sidebutton_rightinner) {
+		background-color: #F90071;
+	}
+
+	&_event:extend(.sidebutton_rightinner) {
+		background-color: #3E3E32;
+	}
+
+	&_close:extend(.sidebutton_rightinner) {
+		background-color: #3E3E32;
+		font-family: 'FontAwesome';
+
+		&:before {
+			content: '\f00d';
+		}
+	}
+
+	&_addserver:extend(.sidebutton_rightinner) {
+		font-family: 'FontAwesome';
+
+		&:before {
+			display: block;
+			content: '\f067';
+		}
 	}
 }
 

@@ -39,10 +39,11 @@
 		<div class="fulltable">
 			<div class="tablerow">
 				<div class="leftbarcell">
-					<div ng-repeat="server in state.servers">
-						<windowlistbutton label="server.label" hover-label="server.host + ':' + server.port + (server.ssl ? ' SSL' : '')" entity="server" class="serverbutton"></windowlistbutton>
-						<windowlistbutton ng-repeat="channel in server.channels" label="channel.name" entity="channel"></windowlistbutton>
-						<windowlistbutton ng-repeat="query in server.queries" label="query.name" entity="query"></windowlistbutton>
+					<div addserverbutton hover-label="'Add server'" class="addserverbutton"></div>
+					<div ng-repeat="server in state.servers" class="windowbuttonblock">
+						<div windowbutton entity="server" label="server.label" alt-label="'New Server'" hover-label="server.host ? (server.host + ':' + server.port + (server.ssl ? ' SSL' : '')) : 'New Server'" class="windowbutton"></div>
+						<div windowbutton entity="channel" ng-repeat="channel in server.channels" label="channel.name" class="windowbutton"></div>
+						<div windowbutton entity="query" ng-repeat="query in server.queries" label="query.name" class="windowbutton"></div>
 					</div>
 				</div>
 				<div class="rightcell">

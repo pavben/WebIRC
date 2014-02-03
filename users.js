@@ -58,7 +58,9 @@ function initialize(cb) {
 			if (user.servers.length > 0) {
 				user.servers.forEach(function(server) {
 					// TODO: connect only to the servers that weren't disconnected by the user
-					server.reconnect();
+					if (server.host !== null) {
+						server.reconnect();
+					}
 				});
 			} else {
 				// TODO: decide what to do here

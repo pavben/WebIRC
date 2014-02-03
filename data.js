@@ -96,17 +96,12 @@ User.prototype = {
 };
 
 function Server(spec, getNextEntityId) {
-	utils.ensureRequiredFields(spec, [
-		'host',
-		'port'
-	]);
-
 	this.entityId = spec.entityId || getNextEntityId();
 	this.type = 'server';
 
 	this.label = spec.label || spec.host;
-	this.host = spec.host;
-	this.port = spec.port;
+	this.host = spec.host || null;
+	this.port = spec.port || null;
 	this.ssl = spec.ssl || false;
 	this.password = spec.password || null;
 	this.currentNickname = null;

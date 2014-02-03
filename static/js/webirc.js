@@ -135,20 +135,51 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 	}
 });
 
-webircApp.directive('windowlistbutton', function($rootScope) {
+webircApp.directive('addserverbutton', function($rootScope) {
 	return {
-		restrict: 'E',
+		compile: function(element, attr) {
+			return function($scope, $element, $attr) {
+				var trElement = angular.element('<div/>').addClass('tablerow');
+				var maincellElement = angular.element('<div/>').addClass('addserverbutton_maincell');
+				var rightcellElement = angular.element('<div/>').addClass('sidebutton_rightcell');
+
+				trElement.append(maincellElement);
+				trElement.append(rightcellElement);
+
+				$element.append(trElement);
+
+				$scope.$watch($attr.hoverLabel, function(newHoverLabel) {
+					if (typeof newHoverLabel === 'string') {
+						rightcellElement[0].title = newHoverLabel;
+					}
+				}, true);
+
+				var eventInner = angular.element('<div/>').addClass('sidebutton_rightinner_addserver');
+
+				rightcellElement.append(eventInner);
+
+				rightcellElement.on('mousedown', function() {
+					$scope.requestAddServer();
+				});
+			}
+		}
+	}
+});
+
+webircApp.directive('windowbutton', function($rootScope) {
+	return {
 		compile: function(element, attr) {
 			return function($scope, $element, $attr) {
 				var alertCount = 0;
 				var eventCount = 0;
 				var entityId = null;
 				var isCurrent = false;
+				var updateView = null;
 
 				// the elements
 				var trElement = angular.element('<div/>').addClass('tablerow');
-				var maincellElement = angular.element('<div/>').addClass('windowlistbutton_maincell');
-				var rightcellElement = angular.element('<div/>').addClass('windowlistbutton_rightcell');
+				var maincellElement = angular.element('<div/>').addClass('windowbutton_maincell');
+				var rightcellElement = angular.element('<div/>').addClass('sidebutton_rightcell');
 
 				trElement.append(maincellElement);
 				trElement.append(rightcellElement);
@@ -156,11 +187,36 @@ webircApp.directive('windowlistbutton', function($rootScope) {
 				$element.append(trElement);
 
 				// attributes
-				$scope.$watch($attr.label, function(newLabel) {
-					if (typeof newLabel === 'string') {
-						maincellElement.text(newLabel);
+				var label = null;
+				var altLabel = '';
+
+				var updateLabel = function() {
+					maincellElement.removeClass('windowbutton_alttitle');
+
+					if (!label) {
+						maincellElement.addClass('windowbutton_alttitle');
 					}
+
+					maincellElement.text(label || altLabel);
+				}
+
+				$scope.$watch($attr.label, function(newLabel) {
+					if (typeof newLabel === 'string' && newLabel.length > 0) {
+						label = newLabel;
+					} else {
+						label = null;
+					}
+
+					updateLabel();
 				}, true);
+
+				if ('altLabel' in $attr) {
+					$scope.$watch($attr.altLabel, function(newAltLabel) {
+						altLabel = newAltLabel;
+
+						updateLabel();
+					}, true);
+				}
 
 				$scope.$watch($attr.hoverLabel, function(newHoverLabel) {
 					if (typeof newHoverLabel === 'string') {
@@ -206,27 +262,27 @@ webircApp.directive('windowlistbutton', function($rootScope) {
 					updateView();
 				});
 
-				function updateView() {
-					$element.removeClass('windowlistbutton_current');
+				updateView = function() {
+					$element.removeClass('windowbutton_current');
 
 					rightcellElement.children().remove();
 
 					if (isCurrent) {
-						$element.addClass('windowlistbutton_current');
+						$element.addClass('windowbutton_current');
 					}
 
 					if (isCurrent) {
-						var closeInner = angular.element('<div/>').addClass('windowlistbutton_rightinnerclose');
+						var closeInner = angular.element('<div/>').addClass('sidebutton_rightinner_close');
 
 						rightcellElement.append(closeInner);
 					} else if (alertCount > 0) {
-						var alertInner = angular.element('<div/>').addClass('windowlistbutton_rightinneralert');
+						var alertInner = angular.element('<div/>').addClass('sidebutton_rightinner_alert');
 
 						alertInner.text(alertCount < 10 ? alertCount : '9+');
 
 						rightcellElement.append(alertInner);
 					} else if (eventCount > 0) {
-						var eventInner = angular.element('<div/>').addClass('windowlistbutton_rightinnerevent');
+						var eventInner = angular.element('<div/>').addClass('sidebutton_rightinner_event');
 
 						eventInner.text(eventCount < 10 ? eventCount : '9+');
 

@@ -191,14 +191,24 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 		});
 	});
 
-	socket.on('SetActiveEntity', function(data) {
+	socket.on('AddServer', function() {
+		var newServer = new Server({}, user.getNextEntityId.bind(user));
+
+		user.addServer(newServer);
+
+		newServer.showInfo('To connect: /server [host] [port] [password]');
+
+		user.setActiveEntity(newServer.entityId);
+	});
+
+	socket.on('CloseWindow', function(data) {
 		if ('targetEntityId' in data) {
 			var targetEntity = user.getEntityById(data.targetEntityId);
 
 			if (targetEntity !== null) {
-				user.setActiveEntity(targetEntity.entityId);
+				targetEntity.removeEntity();
 			} else {
-				logger.warn('Invalid targetEntityId in SetActiveEntity from client', data);
+				logger.warn('Invalid targetEntityId in CloseWindow from client', data);
 			}
 		}
 	});
@@ -225,14 +235,14 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 		}
 	});
 
-	socket.on('CloseWindow', function(data) {
+	socket.on('SetActiveEntity', function(data) {
 		if ('targetEntityId' in data) {
 			var targetEntity = user.getEntityById(data.targetEntityId);
 
 			if (targetEntity !== null) {
-				targetEntity.removeEntity();
+				user.setActiveEntity(targetEntity.entityId);
 			} else {
-				logger.warn('Invalid targetEntityId in CloseWindow from client', data);
+				logger.warn('Invalid targetEntityId in SetActiveEntity from client', data);
 			}
 		}
 	});

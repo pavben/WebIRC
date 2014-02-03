@@ -158,8 +158,12 @@ function initializeSocketConnection($rootScope, socketFactory) {
 		}
 	}
 
-	g_requestSetActiveEntity = $rootScope.requestSetActiveEntity = function(targetEntityId) {
-		$rootScope.sendToGateway('SetActiveEntity', { targetEntityId: targetEntityId });
+	$rootScope.requestAddServer = function() {
+		$rootScope.sendToGateway('AddServer', {});
+	}
+
+	$rootScope.requestCloseWindow = function(targetEntityId) {
+		$rootScope.sendToGateway('CloseWindow', { targetEntityId: targetEntityId });
 	}
 
 	g_requestJoinChannelOnServer = $rootScope.requestJoinChannelOnServer = function(serverEntityId, channelName) {
@@ -169,8 +173,8 @@ function initializeSocketConnection($rootScope, socketFactory) {
 		});
 	}
 
-	$rootScope.requestCloseWindow = function(targetEntityId) {
-		$rootScope.sendToGateway('CloseWindow', { targetEntityId: targetEntityId });
+	g_requestSetActiveEntity = $rootScope.requestSetActiveEntity = function(targetEntityId) {
+		$rootScope.sendToGateway('SetActiveEntity', { targetEntityId: targetEntityId });
 	}
 
 	$rootScope.isActiveEntity = function(entityId) {
