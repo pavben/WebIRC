@@ -4,6 +4,7 @@ var async = require('./async');
 var fs = require('fs-extra');
 var logger = require('./logger.js');
 var path = require('path');
+var ReadWriteLock = require('rwlock');
 var utils = require('./utils.js');
 
 var USERS_PATH = path.join(__dirname, 'users');
@@ -11,45 +12,67 @@ var USERS_TEMP_PATH = path.join(__dirname, 'users.tmp');
 
 var users = [];
 
-// TODO: change all of the Sync function calls in this file to async
+var usersFolderLock = new ReadWriteLock();
 
 function writeAllUsers(cb) {
 	function getTempFilePathForUser(user) {
 		return path.resolve(USERS_TEMP_PATH, user.username + '.json');
 	}
 
-	fs.removeSync(USERS_TEMP_PATH);
+	usersFolderLock.writeLock(function(releaseLock) {
+		async()
+			.add('removeTemp', function(cb) {
+				fs.remove(USERS_TEMP_PATH, cb);
+			})
+			.add('makeTemp', ['@removeTemp'], function(cb) {
+				fs.mkdir(USERS_TEMP_PATH, cb);
+			})
+			.add('writeUsers', ['@makeTemp'], function(cb) {
+				// TODO: change map to forEach
+				async.map(users.map(copyStateForSave), function(userCopy, cb) {
+					fs.writeFile(getTempFilePathForUser(userCopy), JSON.stringify(userCopy, null, 4), cb);
+				}, cb);
+			})
+			.add('removeOldUsersFolder', ['@writeUsers'], function(cb) {
+				fs.remove(USERS_PATH, cb);
+			})
+			.add(['@removeOldUsersFolder'], function(cb) {
+				fs.rename(USERS_TEMP_PATH, USERS_PATH, cb);
+			})
+			.run(function(err) {
+				releaseLock();
 
-	fs.mkdirSync(USERS_TEMP_PATH);
-
-	// TODO: change map to forEach
-	async.map(users.map(copyStateForSave), function(userCopy, cb) {
-		fs.writeFile(getTempFilePathForUser(userCopy), JSON.stringify(userCopy, null, 4), cb);
-	}, check(cb, function() {
-		// all users successfully written
-
-		fs.removeSync(USERS_PATH);
-
-		fs.renameSync(USERS_TEMP_PATH, USERS_PATH);
-
-		cb();
-	}));
+				cb(err);
+			});
+	});
 }
 
 function readAllUsers(cb) {
-	fs.readdir(USERS_PATH, check(cb, function(list) {
-		async.map(list, function(filename, cb) {
-			utils.readJsonFile(path.join(USERS_PATH, filename), check(cb, function(userSpec) {
-				var user = parseUserSpec(userSpec);
+	// we use a write lock here too because this function sets the 'users' value
+	usersFolderLock.writeLock(function(releaseLock) {
+		async()
+			.add('userFiles', function(cb) {
+				fs.readdir(USERS_PATH, cb);
+			})
+			.add('rawUserData', ['userFiles'], function(userFiles, cb) {
+				async.map(userFiles, function(filename, cb) {
+					utils.readJsonFile(path.join(USERS_PATH, filename), cb);
+				}, cb);
+			})
+			.add('userData', ['rawUserData'], function(rawUserData) {
+				return rawUserData.map(function(userSpec) {
+					return parseUserSpec(userSpec);
+				});
+			})
+			.add(['userData'], function(userData) {
+				users = userData;
+			})
+			.run(function(err) {
+				releaseLock();
 
-				cb(null, user);
-			}));
-		}, check(cb, function(readUsers) {
-			users = readUsers;
-
-			cb();
-		}));
-	}));
+				cb(err);
+			});
+	});
 }
 
 function initialize(cb) {
