@@ -3,7 +3,7 @@
 This is a new concept for an always-on web-based IRC client. WebIRC runs as a daemon (similar to a BNC), and is always connected to your favorite IRC networks. Seamlessly open the same session from home, work, and your mobile devices to continue exactly where you left off.
 
 ## Screenshot
-![](http://img17.imageshack.us/img17/8301/fydc.jpg)
+![](http://img835.imageshack.us/img835/9553/6hfy.png)
 
 ## Setting it up
 
