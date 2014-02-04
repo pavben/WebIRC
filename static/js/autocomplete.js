@@ -120,7 +120,7 @@ function initAutoComplete() {
 			});
 
 			// and add our name at the end
-			suggestions.push(server.nickname);
+			suggestions.push(server.currentNickname);
 		}
 
 		// now we have the suggestions in the order we want
