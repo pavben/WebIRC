@@ -1,6 +1,7 @@
 "use strict";
 
 var clientcommands = require('./clientcommands.js');
+var errno = require('errno');
 var logger = require('./logger.js');
 var mode = require('./mode.js');
 var moment = require('moment');
@@ -492,9 +493,9 @@ function handleCtcp(server, origin, target, ctcpMessage) {
 }
 
 function reconnectServer(server) {
-	if (server.socket !== null) {
-		server.disconnect();
-	}
+	server.disconnect(); // noop if not connected
+
+	server.showInfo('Connecting to ' + server.host + ':' + server.port);
 
 	var connectOptions = {
 		host: server.host,
@@ -510,8 +511,6 @@ function reconnectServer(server) {
 	var serverSocket = netOrTls.connect(connectOptions, function() {
 		logger.info('Connected to server %s:%d', server.host, server.port);
 
-		server.socket = serverSocket;
-
 		server.user.applyStateChange('EditServer', server.entityId, {
 			connected: true
 		});
@@ -526,11 +525,20 @@ function reconnectServer(server) {
 		server.send('USER ' + activeIdentity.username + ' ' + activeIdentity.username + ' ' + server.host + ' :' + activeIdentity.realName);
 	});
 
+	server.socket = serverSocket;
+
 	serverSocket.on('error', function(err) {
-		// TODO: show this to the user
 		logger.warn('Connection to server closed due to error:', err);
 
-		server.disconnect(true);
+		var errorString = err.syscall + ': ' + ((err.code in errno.code) ? errno.code[err.code].description : err.code);
+
+		if (server.connected) {
+			server.showInfo('Connection closed (' + errorString + ')');
+		} else {
+			server.showError('Unable to connect (' + errorString + ')');
+		}
+
+		server.disconnect();
 	});
 
 	var readBuffer = '';
@@ -552,7 +560,7 @@ function reconnectServer(server) {
 	});
 
 	serverSocket.on('end', function() {
-		server.disconnect(true);
+		server.disconnect();
 	});
 }
 

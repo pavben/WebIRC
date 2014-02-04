@@ -123,11 +123,9 @@ Server.prototype = {
 	reconnect: function() {
 		irc.reconnectServer(this);
 	},
-	disconnect: function(isDeadSocket) {
+	disconnect: function() {
 		if (this.socket !== null) {
-			if (!isDeadSocket) {
-				this.send('QUIT :');
-			}
+			this.send('QUIT :'); // noop if the socket is closed
 
 			this.socket.destroy();
 
@@ -217,7 +215,7 @@ Server.prototype = {
 	},
 	send: function(data) {
 		logger.data('SEND: %s', data);
-		if (this.socket !== null) {
+		if (this.socket !== null && this.socket.writable) {
 			this.socket.write(data + '\r\n');
 		} else {
 			logger.error('send called on a server with null socket');

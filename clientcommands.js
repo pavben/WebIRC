@@ -146,7 +146,7 @@ function handleQuit(msg) {
 
 	this.server.send('QUIT :' + msg);
 
-	this.server.disconnect(true);
+	this.server.disconnect();
 }
 
 function handleServer(host, port, password) {
@@ -164,6 +164,7 @@ function handleServer(host, port, password) {
 	if (this.numArgs >= 1) { // if host provided
 		var serverChanges = {};
 
+		serverChanges.label = host;
 		serverChanges.host = host;
 		serverChanges.port = 6667;
 		serverChanges.ssl = false;
