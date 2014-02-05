@@ -533,7 +533,7 @@ function reconnectServer(server) {
 		var errorString = err.syscall + ': ' + ((err.code in errno.code) ? errno.code[err.code].description : err.code);
 
 		if (server.connected) {
-			server.showInfo('Connection closed (' + errorString + ')');
+			server.showError('Connection closed (' + errorString + ')');
 		} else {
 			server.showError('Unable to connect (' + errorString + ')');
 		}

@@ -9,13 +9,5 @@
         ],
         "username": "webirc",
         "realName": "webirc"
-    },
-    "servers": [
-        {
-            "host": "irc.freenode.net",
-            "port": 6667,
-            "ssl": false,
-            "password": null
-        }
-    ]
+    }
 }
