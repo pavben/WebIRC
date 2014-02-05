@@ -12,6 +12,9 @@ var USERS_TEMP_PATH = path.join(__dirname, 'users.tmp');
 
 var users = [];
 
+var nextSaveTimeout = null;
+var saveInterval = 5 * 60 * 1000; // save users to disk every 5 minutes
+
 var usersFolderLock = new ReadWriteLock();
 
 function writeAllUsers(cb) {
@@ -47,6 +50,24 @@ function writeAllUsers(cb) {
 	});
 }
 
+function refreshSaveTimeout() {
+	if (nextSaveTimeout) {
+		clearTimeout(nextSaveTimeout);
+	}
+
+	nextSaveTimeout = setTimeout(function() {
+		writeAllUsers(function(err) {
+			if (err) {
+				logger.error('Error saving users', err);
+			} else {
+				logger.info('User data saved');
+			}
+
+			refreshSaveTimeout();
+		});
+	}, saveInterval);
+}
+
 function readAllUsers(cb) {
 	// we use a write lock here too because this function sets the 'users' value
 	usersFolderLock.writeLock(function(releaseLock) {
@@ -76,22 +97,27 @@ function readAllUsers(cb) {
 }
 
 function initialize(cb) {
-	readAllUsers(check(cb, function() {
-		users.forEach(function(user) {
-			if (user.servers.length > 0) {
+	async()
+		.add('readAllUsers', function(cb) {
+			readAllUsers(cb);
+		})
+		.add(['@readAllUsers'], function() {
+			users.forEach(function(user) {
+				// TODO: if !user.defaultIdentity, show the welcome/settings screen
+
 				user.servers.forEach(function(server) {
 					// TODO: connect only to the servers that weren't disconnected by the user
 					if (server.host !== null) {
 						server.reconnect();
 					}
 				});
-			} else {
-				// TODO: decide what to do here
-			}
-		});
-
-		cb();
-	}));
+			});
+		})
+		.add(function() {
+			// begin saving user data every 'saveInterval' time
+			refreshSaveTimeout();
+		})
+		.run(cb);
 }
 
 function copyWithoutPointers(user) {
