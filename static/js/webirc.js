@@ -352,7 +352,7 @@ webircApp.directive('chatlog', function() {
 
 		innerSpan[0].title = moment(activity.time * 1000).calendar();
 
-		return angular.element('<div />').append(innerSpan);
+		return angular.element('<div />').addClass('activityblock').append(innerSpan);
 	}
 
 	function elementFromActivityNoTime(activity) {
