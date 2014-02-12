@@ -4,7 +4,6 @@
 	<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
 	<title>WebIRC</title>
 	<link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Varela+Round" />
-	<link rel="stylesheet" type="text/css" href="css/webirc.css" />
 	<link rel="stylesheet/less" type="text/css" href="less/webirc.less" />
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
@@ -22,10 +21,10 @@
 		<div class="fulltable">
 			<div class="tablecellvmid">
 				<div loginbox class="loginbox">
-					<div class="chatboxwrapper">
+					<div class="loginfieldwrapper">
 						<input type="text" class="chatbox" placeholder="Username" ng-model="username" focus-key="LoginUsername" />
 					</div>
-					<div class="chatboxwrapper">
+					<div class="loginfieldwrapper">
 						<input type="password" class="chatbox" placeholder="Password" ng-model="password" ng-keydown="passwordKeyDown($event)" />
 					</div>
 					<div class="loginbuttonwrapper">
@@ -49,7 +48,7 @@
 				<div class="rightcell">
 					<div ng-repeat="server in state.servers">
 						<div ng-show="isActiveEntity(server.entityId)">
-							<chatlog activity-log="server.activityLog" server="server" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></chatlog>
+							<div chatlog activity-log="server.activityLog" server="server" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></div>
 							<div class="chatboxwrapper">
 								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="server" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>
@@ -57,7 +56,7 @@
 						<div ng-repeat="channel in server.channels" ng-show="isActiveEntity(channel.entityId)" class="fixedtable">
 							<div class="tablerow">
 								<div class="tablecell">
-									<chatlog activity-log="channel.activityLog" server="server" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></chatlog>
+									<div chatlog activity-log="channel.activityLog" server="server" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></div>
 								</div>
 								<div class="userlistcell">
 									<div userlist class="userlist" ng-style="{height: maincellHeight}">
@@ -74,7 +73,7 @@
 							</div>
 						</div>
 						<div ng-repeat="query in server.queries" ng-show="isActiveEntity(query.entityId)">
-							<chatlog activity-log="query.activityLog" server="server" class="chatlog" resize-maincell="query" ng-style="{height: maincellHeight}"></chatlog>
+							<div chatlog activity-log="query.activityLog" server="server" class="chatlog" resize-maincell="query" ng-style="{height: maincellHeight}"></div>
 							<div class="chatboxwrapper">
 								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="query" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>

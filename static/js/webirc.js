@@ -298,7 +298,6 @@ webircApp.directive('windowbutton', function($rootScope) {
 
 webircApp.directive('chatlog', function() {
 	return {
-		restrict: 'E',
 		require: '^resizeMaincell',
 		compile: function(element, attr) {
 			return function($scope, $element, $attr, resizeMaincellCtrl) {

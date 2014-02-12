@@ -1,9 +1,9 @@
 @font-face {
-  font-family: 'FontAwesome';
-  src: url('../font/fontawesome-webfont.eot?v=3.2.1');
-  src: url('../font/fontawesome-webfont.eot?#iefix&v=3.2.1') format('embedded-opentype'), url('../font/fontawesome-webfont.woff?v=3.2.1') format('woff'), url('../font/fontawesome-webfont.ttf?v=3.2.1') format('truetype'), url('../font/fontawesome-webfont.svg#fontawesomeregular?v=3.2.1') format('svg');
-  font-weight: normal;
-  font-style: normal;
+	font-family: 'FontAwesome';
+	src: url('../fonts/fontawesome-webfont.eot?v=4.0.3');
+	src: url('../fonts/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'), url('../fonts/fontawesome-webfont.woff?v=4.0.3') format('woff'), url('../fonts/fontawesome-webfont.ttf?v=4.0.3') format('truetype'), url('../fonts/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }
 
 body {
@@ -15,7 +15,7 @@ body {
 	line-height: 1.15;
 }
 
-body > div {
+html, body, body > div {
 	height: 100%;
 }
 
@@ -25,40 +25,177 @@ input {
 	outline: none;
 }
 
-.activityblock {
-	padding: 1px 0px 1px 0px;
+// General tables
+
+.fulltable {
+	display: table;
+	table-layout: fixed;
+	width: 100%;
+	height: 100%;
 }
 
-.activity {
-	white-space: pre-wrap;
-	word-wrap: break-word;
+.fixedtable {
+	display: table;
+	table-layout: fixed;
+	width: 100%;
+}
 
-	&_error:extend(.activity) {
-		color: #F90071;
-	}
-	&_info:extend(.activity) {
-		color: #A6E807;
-	}
-	&_kick:extend(.activity) {
-		color: #66DAF1;
-	}
-	&_mentionme:extend(.activity) {
-		color: #E6DF6D;
-	}
-	&_mychat:extend(.activity) {
-		color: #FE9700;
-	}
-	&_notice:extend(.activity) {
-		color: #AD75F4;
-	}
-	&_whois:extend(.activity) {
-		color: #66DAF1;
-	}
+.tablerow {
+	display: table-row;
+}
+
+.tablecell {
+	display: table-cell;
+}
+
+.tablecellvmid {
+	display: table-cell;
+	vertical-align: middle;
+}
+
+// Login screen
+
+.loginbox {
+	margin: auto;
+	width: 400px;
+	padding: 0px 10px 10px 10px;
+}
+
+.loginfieldwrapper {
+	padding: 3px 3px 3px 3px;
+}
+
+.loginbuttonwrapper {
+	padding-top: 10px;
+}
+
+// Login screen button
+
+.button1 {
+	padding: 5px 7px 5px 7px;
+	cursor: pointer;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.button1:hover {
+	background-color: #3E3E32;
+	border-radius: 5px;
+}
+
+.button1:active {
+	position: relative;
+	top: 1px;
+}
+
+.centertext {
+	text-align:center;
+}
+
+// Main screen
+
+.leftbarcell {
+	display: table-cell;
+	width: 160px;
+	padding: 0px 0px 10px 5px;
+}
+.rightcell {
+	display: table-cell;
+	vertical-align: bottom;
+}
+
+// Chatlog and userlist
+
+.chatlog-and-userlist() { // for lack of a better name
+	box-sizing: border-box;
+
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+// Chatlog
+
+.chatlog {
+	padding: 6px 12px 6px 6px;
+
+	.chatlog-and-userlist();
 }
 
 .chatlogLink {
 	cursor: pointer;
 }
+
+// Userlist
+
+.userlist {
+	padding: 6px 5px 6px 0px;
+
+	.chatlog-and-userlist();
+}
+
+.userlistcell {
+	display: table-cell;
+	width: 180px;
+	vertical-align: bottom;
+}
+
+.userlistentry {
+	padding: 1px 2px 0px 2px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.userlist_color {
+	&_owner {
+		color: #F90071;
+	}
+	&_admin {
+		color: #66DAF1;
+	}
+	&_op {
+		color: #A6E807;
+	}
+	&_halfop {
+		color: #AD75F4;
+	}
+	&_voice {
+		color: #FE9700;
+	}
+}
+
+// Chatbox
+
+.chatboxwrapper {
+	padding: 3px 3px 3px 3px;
+}
+.chatbox, .chatboxshadow {
+	padding: 0px 0px 0px 0px;
+	border: 0px;
+	font: inherit;
+	resize: none;
+	background-color: #272822;
+	color: #FE9700;
+	outline: none;
+	vertical-align: top;
+}
+.chatbox {
+	width: 100%;
+}
+.chatboxshadow {
+	width: 200px;
+	position: absolute;
+	top: -9999px;
+	left: -9999px;
+	white-space: pre-wrap;      /* CSS3 */
+	white-space: -moz-pre-wrap; /* Firefox */
+	white-space: -pre-wrap;     /* Opera <7 */
+	white-space: -o-pre-wrap;   /* Opera 7 */
+	word-wrap: break-word;      /* IE */
+}
+
+// Side buttons
 
 .windowbuttonblock {
 	margin-bottom: 8px;
@@ -161,20 +298,36 @@ input {
 	}
 }
 
-.userlist_color {
-	&_owner {
+// Activities
+
+.activityblock {
+	padding: 1px 0px 1px 0px;
+}
+
+.activity {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+
+	&_error:extend(.activity) {
 		color: #F90071;
 	}
-	&_admin {
-		color: #66DAF1;
-	}
-	&_op {
+	&_info:extend(.activity) {
 		color: #A6E807;
 	}
-	&_halfop {
-		color: #AD75F4;
+	&_kick:extend(.activity) {
+		color: #66DAF1;
 	}
-	&_voice {
+	&_mentionme:extend(.activity) {
+		color: #E6DF6D;
+	}
+	&_mychat:extend(.activity) {
 		color: #FE9700;
 	}
+	&_notice:extend(.activity) {
+		color: #AD75F4;
+	}
+	&_whois:extend(.activity) {
+		color: #66DAF1;
+	}
 }
+
