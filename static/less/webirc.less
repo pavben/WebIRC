@@ -25,6 +25,14 @@ input {
 	outline: none;
 }
 
+// Browser compatibility mixins
+.white-space(@val) {
+	white-space: @val;
+	white-space: ~"-moz-@{val}";
+	white-space: ~"-@{val}";
+	white-space: ~"-o-@{val}";
+}
+
 // General tables
 
 .fulltable {
@@ -75,7 +83,7 @@ input {
 	padding: 5px 7px 5px 7px;
 	cursor: pointer;
 	text-overflow: ellipsis;
-	white-space: nowrap;
+	.white-space(nowrap);
 	overflow: hidden;
 }
 
@@ -143,7 +151,7 @@ input {
 .userlistentry {
 	padding: 1px 2px 0px 2px;
 	text-overflow: ellipsis;
-	white-space: nowrap;
+	.white-space(nowrap);
 	overflow: hidden;
 }
 
@@ -188,11 +196,8 @@ input {
 	position: absolute;
 	top: -9999px;
 	left: -9999px;
-	white-space: pre-wrap;      /* CSS3 */
-	white-space: -moz-pre-wrap; /* Firefox */
-	white-space: -pre-wrap;     /* Opera <7 */
-	white-space: -o-pre-wrap;   /* Opera 7 */
-	word-wrap: break-word;      /* IE */
+	.white-space(pre-wrap);
+	word-wrap: break-word;
 }
 
 // Side buttons
@@ -258,7 +263,7 @@ input {
 		height: 18px;
 		padding: 5px 7px 5px 7px;
 		text-overflow: ellipsis;
-		white-space: nowrap;
+		.white-space(nowrap);
 		overflow: hidden;
 		vertical-align: middle;
 	}
@@ -305,7 +310,7 @@ input {
 }
 
 .activity {
-	white-space: pre-wrap;
+	.white-space(pre-wrap);
 	word-wrap: break-word;
 
 	&_error:extend(.activity) {
