@@ -53,23 +53,21 @@
 								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="server" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>
 						</div>
-						<div ng-repeat="channel in server.channels" ng-show="isActiveEntity(channel.entityId)" class="fixedtable">
-							<div class="tablerow">
-								<div class="tablecell">
-									<div chatlog activity-log="channel.activityLog" server="server" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></div>
-								</div>
-								<div class="userlistcell">
-									<div userlist class="userlist" ng-style="{height: maincellHeight}">
-										<div ng-repeat="user in channel.userlist" class="userlistentry" ng-class="getUserlistClass(user)">{{getUserlistNamePrefix(user)}}{{user.nick}}</div>
+						<div ng-repeat="channel in server.channels" ng-show="isActiveEntity(channel.entityId)">
+							<div class="fixedtable">
+								<div class="tablerow">
+									<div class="tablecell">
+										<div chatlog activity-log="channel.activityLog" server="server" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></div>
+									</div>
+									<div class="userlistcell">
+										<div userlist class="userlist" ng-style="{height: maincellHeight}">
+											<div ng-repeat="user in channel.userlist" class="userlistentry" ng-class="getUserlistClass(user)">{{getUserlistNamePrefix(user)}}{{user.nick}}</div>
+										</div>
 									</div>
 								</div>
 							</div>
-							<div class="tablerow">
-								<div class="tablecell">
-									<div class="chatboxwrapper">
-										<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="channel" class="chatbox" focus-key="Chatbox"></textarea>
-									</div>
-								</div>
+							<div class="chatboxwrapper">
+								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="channel" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>
 						</div>
 						<div ng-repeat="query in server.queries" ng-show="isActiveEntity(query.entityId)">
