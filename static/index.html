@@ -58,16 +58,16 @@
 								<div class="tablerow">
 									<div class="tablecell">
 										<div chatlog activity-log="channel.activityLog" server="server" class="chatlog" resize-maincell="channel" ng-style="{height: maincellHeight}"></div>
+										<div class="chatboxwrapper">
+											<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="channel" class="chatbox" focus-key="Chatbox"></textarea>
+										</div>
 									</div>
 									<div class="userlistcell">
-										<div userlist class="userlist" ng-style="{height: maincellHeight}">
+										<div userlist class="userlist" ng-style="{height: fullHeight}">
 											<div ng-repeat="user in channel.userlist" class="userlistentry" ng-class="getUserlistClass(user)">{{getUserlistNamePrefix(user)}}{{user.nick}}</div>
 										</div>
 									</div>
 								</div>
-							</div>
-							<div class="chatboxwrapper">
-								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="channel" class="chatbox" focus-key="Chatbox"></textarea>
 							</div>
 						</div>
 						<div ng-repeat="query in server.queries" ng-show="isActiveEntity(query.entityId)">

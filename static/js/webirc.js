@@ -109,11 +109,16 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 					bodyOverflowY = 'auto';
 				}
 
-				return {maincellHeight: maincellHeight, bodyOverflowY: bodyOverflowY};
+				return {
+					maincellHeight: maincellHeight,
+					fullHeight: $(window).height(),
+					bodyOverflowY: bodyOverflowY
+				};
 			}
 
 			scope.$watch(getResizeParams, function(newVal) {
 				scope.maincellHeight = newVal.maincellHeight + 'px';
+				scope.fullHeight = newVal.fullHeight + 'px';
 
 				scope.delayedScroll();
 			}, true);
