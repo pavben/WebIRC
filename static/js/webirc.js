@@ -141,7 +141,7 @@ webircApp.directive('addserverbutton', function($rootScope) {
 			return function($scope, $element, $attr) {
 				var trElement = angular.element('<div/>').addClass('tablerow');
 				var maincellElement = angular.element('<div/>').addClass('addserverbutton_maincell');
-				var rightcellElement = angular.element('<div/>').addClass('sidebutton_rightcell');
+				var rightcellElement = angular.element('<div/>').addClass('sidebutton_iconcell');
 
 				trElement.append(maincellElement);
 				trElement.append(rightcellElement);
@@ -154,7 +154,7 @@ webircApp.directive('addserverbutton', function($rootScope) {
 					}
 				}, true);
 
-				var eventInner = angular.element('<div/>').addClass('sidebutton_rightinner_addserver');
+				var eventInner = angular.element('<div/>').addClass('sidebutton_iconinner_addserver');
 
 				rightcellElement.append(eventInner);
 
@@ -170,21 +170,49 @@ webircApp.directive('windowbutton', function($rootScope) {
 	return {
 		compile: function(element, attr) {
 			return function($scope, $element, $attr) {
+				function setElementHoverLabel(el, title) {
+					el[0].title = title;
+				}
+
 				var alertCount = 0;
 				var eventCount = 0;
 				var entityId = null;
 				var isCurrent = false;
+				var isMouseOver = false;
 				var updateView = null;
 
 				// the elements
 				var trElement = angular.element('<div/>').addClass('tablerow');
 				var maincellElement = angular.element('<div/>').addClass('windowbutton_maincell');
-				var rightcellElement = angular.element('<div/>').addClass('sidebutton_rightcell');
+				var optionscellElement = null;
+				var rightcellElement = angular.element('<div/>').addClass('sidebutton_iconcell');
 
 				trElement.append(maincellElement);
+
+				if ('optionsbutton' in $attr) {
+					optionscellElement = angular.element('<div/>').addClass('sidebutton_iconcell_displaynone');
+					optionscellElement.append(angular.element('<div/>').addClass('sidebutton_iconinner_options'));
+
+					setElementHoverLabel(optionscellElement, 'Options');
+
+					trElement.append(optionscellElement);
+				}
+
 				trElement.append(rightcellElement);
 
 				$element.append(trElement);
+
+				$element.on('mouseenter', function() {
+					isMouseOver = true;
+
+					updateView();
+				});
+
+				$element.on('mouseleave', function() {
+					isMouseOver = false;
+
+					updateView();
+				});
 
 				// attributes
 				var label = null;
@@ -220,7 +248,7 @@ webircApp.directive('windowbutton', function($rootScope) {
 
 				$scope.$watch($attr.hoverLabel, function(newHoverLabel) {
 					if (typeof newHoverLabel === 'string') {
-						$element[0].title = newHoverLabel;
+						setElementHoverLabel(maincellElement, newHoverLabel);
 					}
 				}, true);
 
@@ -230,8 +258,12 @@ webircApp.directive('windowbutton', function($rootScope) {
 					updateView();
 				});
 
-				maincellElement.on('mousedown', function() {
+				function onMainClick() {
 					$scope.requestSetActiveEntity(entityId);
+				}
+
+				maincellElement.on('mousedown', function() {
+					onMainClick();
 				});
 
 				rightcellElement.on('mousedown', function() {
@@ -240,7 +272,7 @@ webircApp.directive('windowbutton', function($rootScope) {
 						$scope.requestCloseWindow(entityId);
 					} else {
 						// otherwise treat it the same as clicking on the label
-						$scope.requestSetActiveEntity(entityId);
+						onMainClick();
 					}
 				});
 
@@ -263,30 +295,62 @@ webircApp.directive('windowbutton', function($rootScope) {
 				});
 
 				updateView = function() {
+					function setOptionsCellVisible(visible) {
+						if (optionscellElement) {
+							// reset optionscellElement
+							optionscellElement.removeClass('sidebutton_iconcell');
+
+							if (visible) {
+								optionscellElement.addClass('sidebutton_iconcell');
+							}
+						}
+					}
+
+					function setRightCellContent(content) {
+						// reset rightcellElement
+						rightcellElement.children().remove();
+
+						if (content) {
+							rightcellElement.append(content);
+						}
+					}
+
+					// reset current
 					$element.removeClass('windowbutton_current');
 
-					rightcellElement.children().remove();
-
+					// apply current
 					if (isCurrent) {
 						$element.addClass('windowbutton_current');
 					}
 
-					if (isCurrent) {
-						var closeInner = angular.element('<div/>').addClass('sidebutton_rightinner_close');
+					// apply optionscellElement
+					setOptionsCellVisible(isCurrent && isMouseOver);
 
-						rightcellElement.append(closeInner);
+					// apply rightcell
+					if (isCurrent) {
+						var closeInner = angular.element('<div/>').addClass('sidebutton_iconinner_close');
+
+						setElementHoverLabel(closeInner, 'Close');
+
+						setRightCellContent(closeInner);
 					} else if (alertCount > 0) {
-						var alertInner = angular.element('<div/>').addClass('sidebutton_rightinner_alert');
+						var alertInner = angular.element('<div/>').addClass('sidebutton_iconinner_alert');
 
 						alertInner.text(alertCount < 10 ? alertCount : '9+');
 
-						rightcellElement.append(alertInner);
+						setElementHoverLabel(alertInner, alertCount + ' new alert' + (alertCount > 1 ? 's' : ''));
+
+						setRightCellContent(alertInner);
 					} else if (eventCount > 0) {
-						var eventInner = angular.element('<div/>').addClass('sidebutton_rightinner_event');
+						var eventInner = angular.element('<div/>').addClass('sidebutton_iconinner_event');
 
 						eventInner.text(eventCount < 10 ? eventCount : '9+');
 
-						rightcellElement.append(eventInner);
+						setElementHoverLabel(eventInner, eventCount + ' new event' + (eventCount > 1 ? 's' : ''));
+
+						setRightCellContent(eventInner);
+					} else {
+						setRightCellContent(null);
 					}
 				}
 
