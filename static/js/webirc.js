@@ -195,6 +195,10 @@ webircApp.directive('windowbutton', function($rootScope) {
 
 					setElementHoverLabel(optionscellElement, 'Options');
 
+					optionscellElement.on('mousedown', function() {
+						$scope.$eval($attr['optionsbutton']);
+					});
+
 					trElement.append(optionscellElement);
 				}
 

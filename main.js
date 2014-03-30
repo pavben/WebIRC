@@ -239,6 +239,18 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 		}
 	});
 
+	socket.on('OpenServerOptions', function(data) {
+		if ('serverEntityId' in data && typeof data.serverEntityId === 'number') {
+			var server = user.getEntityById(data.serverEntityId);
+
+			if (server !== null) {
+				server.showInfo('Server options aren\'t quite ready yet :)');
+			} else {
+				logger.warn('Invalid serverEntityId in OpenServerOptions from client', data);
+			}
+		}
+	});
+
 	socket.on('SetActiveEntity', function(data) {
 		if ('targetEntityId' in data) {
 			var targetEntity = user.getEntityById(data.targetEntityId);

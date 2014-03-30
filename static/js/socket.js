@@ -173,6 +173,12 @@ function initializeSocketConnection($rootScope, socketFactory) {
 		});
 	}
 
+	$rootScope.requestOpenServerOptions = function(serverEntityId) {
+		$rootScope.sendToGateway('OpenServerOptions', {
+			serverEntityId: serverEntityId
+		});
+	}
+
 	g_requestSetActiveEntity = $rootScope.requestSetActiveEntity = function(targetEntityId) {
 		$rootScope.sendToGateway('SetActiveEntity', { targetEntityId: targetEntityId });
 	}

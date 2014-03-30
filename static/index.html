@@ -40,7 +40,7 @@
 				<div class="leftbarcell">
 					<div addserverbutton hover-label="'Add server'" class="addserverbutton"></div>
 					<div ng-repeat="server in state.servers" class="windowbuttonblock">
-						<div windowbutton entity="server" label="server.label" alt-label="'New Server'" hover-label="server.host ? (server.host + ':' + server.port + (server.ssl ? ' SSL' : '')) : 'New Server'" optionsbutton class="windowbutton"></div>
+						<div windowbutton entity="server" label="server.label" alt-label="'New Server'" hover-label="server.host ? (server.host + ':' + server.port + (server.ssl ? ' SSL' : '')) : 'New Server'" optionsbutton="requestOpenServerOptions(server.entityId)" class="windowbutton"></div>
 						<div windowbutton entity="channel" ng-repeat="channel in server.channels" label="channel.name" class="windowbutton"></div>
 						<div windowbutton entity="query" ng-repeat="query in server.queries" label="query.name" class="windowbutton"></div>
 					</div>
