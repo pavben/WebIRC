@@ -3,13 +3,15 @@
 	"version": "0.0.1",
 	"author": "Pavel Bennett",
 	"dependencies": {
-		"connect": ">= 2.7.0",
+		"connect": "*",
 		"cookie": "*",
+		"cookie-parser": "*",
 		"errno": "*",
-		"express": ">= 3.0.3",
+		"express": "*",
+		"express-session": "*",
 		"fs-extra": "*",
 		"rwlock": "*",
-		"socket.io": ">= 0.9.11",
+		"socket.io": "*",
 		"moment": "*",
 		"winston": "*"
 	},

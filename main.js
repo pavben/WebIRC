@@ -6,7 +6,9 @@ require('./utils.js').installGlobals();
 var assert = require('assert');
 var connect = require('connect');
 var cookie = require('cookie');
+var cookieParser = require('cookie-parser');
 var express = require('express');
+var expressSession = require('express-session');
 var fs = require('fs-extra');
 var http = require('http');
 var https = require('https');
@@ -26,64 +28,74 @@ async()
 	.add('initLogger', ['config'], function(config) {
 		logger.init(config.logLevels.console, config.logLevels.file);
 	})
-	.add('usersInitialized', ['@initLogger'], function(cb) {
-		users.initialize(cb);
-	})
-	.add('sessionStore', function() {
-		return new express.session.MemoryStore();
-	})
-	.add('expressApp', ['config', 'sessionStore'], function(config, sessionStore) {
-		var app = express();
+	.add(['config', '@initLogger'], function(config, cb) {
+		async()
+			.add('usersInitialized', function(cb) {
+				users.initialize(cb);
+			})
+			.add('sessionStore', function() {
+				return new expressSession.MemoryStore();
+			})
+			.add('expressApp', ['sessionStore'], function(sessionStore) {
+				var app = express();
 
-		app.configure(function() {
-			app.use(express.cookieParser());
-			app.use(express.session({
-				store: sessionStore,
-				secret: config.sessionSecret,
-				maxAge: 24 * 60 * 60,
-				key: sessionKey
-			}));
-			app.use(express.static(__dirname + '/static'));
-		});
+				app.use(cookieParser());
+				app.use(expressSession({
+					store: sessionStore,
+					secret: config.sessionSecret,
+					maxAge: 24 * 60 * 60,
+					key: sessionKey
+				}));
+				app.use(express.static(__dirname + '/static'));
 
-		return app;
-	})
-	.add('startWebListeners', ['config', 'expressApp', 'sessionStore', '@initLogger', '@usersInitialized'], function(config, expressApp, sessionStore, cb) {
-		var a = async();
+				return app;
+			})
+			.add('startWebListeners', ['expressApp', 'sessionStore', '@usersInitialized'], function(expressApp, sessionStore, cb) {
+				var a = async();
 
-		if (config.http && config.http.port) {
-			a.add(function(cb) {
-				createWebServer(config.http, expressApp, config, sessionStore, cb);
-			});
-		}
+				if (config.http && config.http.port) {
+					a.add(function(cb) {
+						createWebServer(config.http, expressApp, config, sessionStore, cb);
+					});
+				}
 
-		if (config.https && config.https.port) {
-			a.add(function(cb) {
-				createWebServer(config.https, expressApp, config, sessionStore, cb);
-			});
-		}
+				if (config.https && config.https.port) {
+					a.add(function(cb) {
+						createWebServer(config.https, expressApp, config, sessionStore, cb);
+					});
+				}
 
-		a.run(cb);
-	})
-	.add(['@usersInitialized'], function() {
-		function getShutdownSignalHandler(sig) {
-			return function() {
-				logger.info('Received ' + sig + ' -- saving users and exiting');
+				a.run(cb);
+			})
+			.add(['@usersInitialized', '@startWebListeners'], function() {
+				function getShutdownSignalHandler(sig) {
+					return function() {
+						logger.info('Received ' + sig + ' -- saving users and exiting');
 
-				users.saveAndShutdown();
-			};
-		}
-		process.once('SIGINT', getShutdownSignalHandler('SIGINT'));
-		process.once('SIGTERM', getShutdownSignalHandler('SIGTERM'));
+						users.saveAndShutdown();
+					};
+				}
+				process.once('SIGINT', getShutdownSignalHandler('SIGINT'));
+				process.once('SIGTERM', getShutdownSignalHandler('SIGTERM'));
+			})
+			.run(check(
+				function(err) {
+					logger.error('Failed to start WebIRC:', err.toString());
+					process.exit(1);
+				},
+				function() {
+					logger.info('WebIRC started');
+
+					cb();
+				}
+			));
 	})
 	.run(check(
 		function(err) {
-			logger.error('Failed to start WebIRC', err);
+			console.error('Failed to start WebIRC', err);
 			process.exit(1);
 		},
-		function() {
-			logger.info('WebIRC started');
-		}
+		function() {}
 	));
 
 function createWebServer(spec, expressApp, config, sessionStore, cb) {
@@ -170,6 +182,8 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 				});
 			});
 		});
+
+		cb();
 	});
 
 	server.on('error', function(err) {
