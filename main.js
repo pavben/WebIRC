@@ -257,8 +257,8 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 		if ('serverEntityId' in data && typeof data.serverEntityId === 'number') {
 			var server = user.getEntityById(data.serverEntityId);
 
-			if (server !== null) {
-				server.showInfo('Server options aren\'t quite ready yet :)');
+			if (server !== null && server.type === 'server') {
+				user.applyStateChange('SetActiveSubtab', data.serverEntityId, 'settings');
 			} else {
 				logger.warn('Invalid serverEntityId in OpenServerOptions from client', data);
 			}

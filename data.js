@@ -26,6 +26,7 @@ function User(spec) {
 
 	this.entities = {};
 	this.activeEntityId = spec.activeEntityId || null;
+	this.activeSubtab = spec.activeSubtab || null;
 	this.nextEntityId = spec.nextEntityId || 0;
 }
 

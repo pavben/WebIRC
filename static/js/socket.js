@@ -186,4 +186,8 @@ function initializeSocketConnection($rootScope, socketFactory) {
 	$rootScope.isActiveEntity = function(entityId) {
 		return ($rootScope.state.activeEntityId === entityId);
 	}
+
+	$rootScope.isActiveSubtab = function(entity, subtab) {
+		return (entity.activeSubtab === subtab);
+	}
 }

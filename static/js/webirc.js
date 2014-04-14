@@ -2,7 +2,7 @@
 
 var webircApp = angular.module('webircApp', []);
 
-webircApp.directive('loginbox', function($rootScope) {
+webircApp.directive('logindialog', function($rootScope) {
 	return {
 		scope: true,
 		link: function(scope) {
@@ -22,6 +22,46 @@ webircApp.directive('loginbox', function($rootScope) {
 					scope.login();
 				}
 			}
+		}
+	};
+});
+
+webircApp.directive('serversettingsdialog', function($rootScope) {
+	return {
+		scope: true,
+		link: function(scope, element, attrs) {
+			//var server = scope.$eval(attrs.serversettingsdialog);
+
+			scope.$watch('server.host', function(newHost) {
+				console.log('server host changed:', newHost);
+
+				scope.host = newHost;
+			});
+
+			scope.$watch('server.port', function(newPort) {
+				console.log('server port changed:', newPort);
+
+				scope.port = newPort;
+			});
+
+			scope.$watch('server.nicknames', function(newNicknamesList) {
+				console.log('server nicknames changed:', newNicknamesList);
+
+				scope.nicknames = newNicknamesList.join(' ');
+			});
+
+			scope.save = function() {
+				/*
+				$rootScope.sendToGateway('Login', {
+					username: scope.username,
+					password: scope.password
+				});
+
+				if (window.webkitNotifications && window.webkitNotifications.checkPermission() !== 0) {
+					window.webkitNotifications.requestPermission();
+				}
+				*/
+			};
 		}
 	};
 });
@@ -124,6 +164,9 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 			}, true);
 
 			var entity = scope.$eval(attrs.resizeMaincell);
+
+			// XXX
+			//var onActiveEntityOrSubtabChange = function()
 
 			$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
 				if (newActiveEntityId === entity.entityId) {

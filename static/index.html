@@ -20,14 +20,14 @@
 	<div ng-show="screen === 'login'">
 		<div class="fulltable">
 			<div class="tablecellvmid">
-				<div loginbox class="loginbox">
-					<div class="loginfieldwrapper">
-						<input type="text" class="chatbox" placeholder="Username" ng-model="username" focus-key="LoginUsername" />
+				<div logindialog class="dialogbox">
+					<div class="dialogfieldwrapper">
+						<input type="text" class="dialogfield" placeholder="Username" ng-model="username" focus-key="LoginUsername" />
 					</div>
-					<div class="loginfieldwrapper">
-						<input type="password" class="chatbox" placeholder="Password" ng-model="password" ng-keydown="passwordKeyDown($event)" />
+					<div class="dialogfieldwrapper">
+						<input type="password" class="dialogfield" placeholder="Password" ng-model="password" ng-keydown="passwordKeyDown($event)" />
 					</div>
-					<div class="loginbuttonwrapper">
+					<div class="dialogbuttonwrapper">
 						<div class="button1 centertext" ng-click="login()">Login</div>
 					</div>
 				</div>
@@ -48,9 +48,31 @@
 				<div class="rightcell">
 					<div ng-repeat="server in state.servers">
 						<div ng-show="isActiveEntity(server.entityId)">
-							<div chatlog activity-log="server.activityLog" server="server" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></div>
-							<div class="chatboxwrapper">
-								<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="server" class="chatbox" focus-key="Chatbox"></textarea>
+							<div ng-show="isActiveSubtab(server, null)">
+								<div chatlog activity-log="server.activityLog" server="server" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></div>
+								<div class="chatboxwrapper">
+									<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="server" class="chatbox" focus-key="Chatbox"></textarea>
+								</div>
+							</div>
+							<div ng-show="isActiveSubtab(server, 'settings')">
+								<div class="fulltable">
+									<div class="tablecellvmid">
+										<div serversettingsdialog="server" class="dialogbox">
+											<div class="dialogfieldwrapper">
+												<input type="text" class="dialogfield" placeholder="Server host/IP" ng-model="host" />
+											</div>
+											<div class="dialogfieldwrapper">
+												<input type="text" class="dialogfield" placeholder="Port" ng-model="port" />
+											</div>
+											<div class="dialogfieldwrapper">
+												<input type="text" class="dialogfield" placeholder="Nicknames (space-separated; empty to inherit)" ng-model="nicknames" />
+											</div>
+											<div class="dialogbuttonwrapper">
+												<div class="button1 centertext" ng-click="save()">Save</div>
+											</div>
+										</div>
+									</div>
+								</div>
 							</div>
 						</div>
 						<div ng-repeat="channel in server.channels" ng-show="isActiveEntity(channel.entityId)">

@@ -336,11 +336,23 @@ var sc = {
 		'SetActiveEntity': function(targetEntityId, utils) {
 			var targetEntity = utils.getEntityById(this, targetEntityId);
 
+			// if this entity has subtabs, reset it to main
+			if ('activeSubtab' in targetEntity) {
+				targetEntity.activeSubtab = 'main';
+			}
+
 			// reset the events and alerts
 			targetEntity.numEvents = 0;
 			targetEntity.numAlerts = 0;
 
 			this.activeEntityId = targetEntity.entityId;
+		},
+		'SetActiveSubtab': function(targetEntityId, targetSubtab, utils) {
+			var targetEntity = utils.getEntityById(this, targetEntityId);
+
+			assert('activeSubtab' in targetEntity);
+
+			targetEntity.activeSubtab = targetSubtab;
 		},
 		'SetTopic': function(channelEntityId, origin, newTopic, utils) {
 			var channel = utils.getEntityById(this, channelEntityId);
