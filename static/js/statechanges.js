@@ -333,26 +333,17 @@ var sc = {
 		'RemoveEntity': function(targetEntityId, utils) {
 			utils.removeEntity(this, targetEntityId);
 		},
-		'SetActiveEntity': function(targetEntityId, utils) {
+		'SetActiveEntity': function(targetEntityId, targetSubtab, utils) {
 			var targetEntity = utils.getEntityById(this, targetEntityId);
-
-			// if this entity has subtabs, reset it to main
-			if ('activeSubtab' in targetEntity) {
-				targetEntity.activeSubtab = 'main';
-			}
 
 			// reset the events and alerts
 			targetEntity.numEvents = 0;
 			targetEntity.numAlerts = 0;
 
-			this.activeEntityId = targetEntity.entityId;
-		},
-		'SetActiveSubtab': function(targetEntityId, targetSubtab, utils) {
-			var targetEntity = utils.getEntityById(this, targetEntityId);
-
-			assert('activeSubtab' in targetEntity);
-
-			targetEntity.activeSubtab = targetSubtab;
+			this.activeEntity = {
+				entityId: targetEntity.entityId,
+				subtab: targetSubtab
+			};
 		},
 		'SetTopic': function(channelEntityId, origin, newTopic, utils) {
 			var channel = utils.getEntityById(this, channelEntityId);
@@ -430,13 +421,15 @@ var sc = {
 			return (typeof document === 'object' && document.hasFocus());
 		},
 		isActiveEntity: function(state, entityId) {
-			return (entityId === state.activeEntityId);
+			return (state.activeEntity && state.activeEntity.entityId === entityId);
 		},
 		isActiveAndFocusedEntity: function(state, entityId) {
 			return sc.utils.isPageFocused() && sc.utils.isActiveEntity(state, entityId);
 		},
-		setActiveEntity: function(state, targetEntityId) {
-			callStateChangeFunction(state, 'SetActiveEntity', [targetEntityId]);
+		setActiveEntity: function(state, targetEntityId, targetSubtab) {
+			targetSubtab = targetSubtab || null;
+
+			callStateChangeFunction(state, 'SetActiveEntity', [targetEntityId, targetSubtab]);
 		},
 		addEntity: function(state, entity) {
 			assert(!(entity.entityId in state.entities)); // must not already exist
@@ -459,7 +452,7 @@ var sc = {
 				case 'server':
 					var serverIdx = state.servers.indexOf(targetEntity);
 
-					if (targetEntity.entityId === state.activeEntityId) {
+					if (state.activeEntity && state.activeEntity.entityId === targetEntity.entityId) {
 						if (serverIdx > 0) {
 							// the server entity being closed is not the first
 							var previousServerIdx = serverIdx - 1;
@@ -488,8 +481,7 @@ var sc = {
 				case 'channel':
 					var channelIdx = server.channels.indexOf(targetEntity);
 
-					if (targetEntity.entityId === state.activeEntityId) {
-
+					if (state.activeEntity && state.activeEntity.entityId === targetEntity.entityId) {
 						if (channelIdx > 0) {
 							sc.utils.setActiveEntity(state, server.channels[channelIdx - 1].entityId);
 						} else {
@@ -502,8 +494,7 @@ var sc = {
 				case 'query':
 					var queryIdx = server.queries.indexOf(targetEntity);
 
-					if (targetEntity.entityId === state.activeEntityId) {
-
+					if (state.activeEntity && state.activeEntity.entityId === targetEntity.entityId) {
 						if (queryIdx > 0) {
 							sc.utils.setActiveEntity(state, server.queries[queryIdx - 1].entityId);
 						} else {

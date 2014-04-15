@@ -105,7 +105,7 @@ function handleMsg(targetName, text) {
 
 					self.user.applyStateChange('MyChatMessage', query.entityId, text);
 
-					self.user.setActiveEntity(query.entityId);
+					self.user.setActiveEntity(query.entityId, null);
 
 					displayed = true;
 				}

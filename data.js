@@ -25,8 +25,7 @@ function User(spec) {
 	this.loggedInSessions = [];
 
 	this.entities = {};
-	this.activeEntityId = spec.activeEntityId || null;
-	this.activeSubtab = spec.activeSubtab || null;
+	this.activeEntity = spec.activeEntity || null;
 	this.nextEntityId = spec.nextEntityId || 0;
 }
 
@@ -34,8 +33,10 @@ User.prototype = {
 	addServer: function(server) {
 		this.applyStateChange('AddServer', server);
 	},
-	setActiveEntity: function(targetEntityId) {
-		this.applyStateChange('SetActiveEntity', targetEntityId);
+	setActiveEntity: function(targetEntityId, targetSubtab) {
+		targetSubtab = targetSubtab || null;
+
+		this.applyStateChange('SetActiveEntity', targetEntityId, targetSubtab);
 	},
 	sendToWeb: function(msgId, data) {
 		this.activeWebSockets.forEach(function(socket) {
@@ -85,13 +86,13 @@ User.prototype = {
 		}
 	},
 	showError: function(text) {
-		if (this.activeEntityId) {
-			this.applyStateChange('Error', this.activeEntityId, text);
+		if (this.activeEntity) {
+			this.applyStateChange('Error', this.activeEntity.entityId, text);
 		}
 	},
 	showInfo: function(text) {
-		if (this.activeEntityId) {
-			this.applyStateChange('Info', this.activeEntityId, text);
+		if (this.activeEntity) {
+			this.applyStateChange('Info', this.activeEntity.entityId, text);
 		}
 	}
 };
@@ -159,7 +160,7 @@ Server.prototype = {
 
 				server.user.applyStateChange('Info', channel.entityId, 'Joined channel ' + channel.name);
 
-				server.user.setActiveEntity(channel.entityId);
+				server.user.setActiveEntity(channel.entityId, null);
 			},
 			function(channel) {
 				channel.rejoining = false;
@@ -261,8 +262,8 @@ Server.prototype = {
 		this.user.applyStateChange('Whois', this.getActiveOrServerEntity(), text);
 	},
 	getActiveOrServerEntity: function() {
-		if (this.user.activeEntityId !== null && this.user.getEntityById(this.user.activeEntityId).server === this) {
-			return this.user.activeEntityId;
+		if (this.user.activeEntity !== null && this.user.getEntityById(this.user.activeEntity.entityId).server === this) {
+			return this.user.activeEntity.entityId;
 		} else {
 			return this.entityId;
 		}

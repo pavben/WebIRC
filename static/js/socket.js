@@ -184,10 +184,10 @@ function initializeSocketConnection($rootScope, socketFactory) {
 	}
 
 	$rootScope.isActiveEntity = function(entityId) {
-		return ($rootScope.state.activeEntityId === entityId);
+		return ($rootScope.state.activeEntity && $rootScope.state.activeEntity.entityId === entityId);
 	}
 
-	$rootScope.isActiveSubtab = function(entity, subtab) {
-		return (entity.activeSubtab === subtab);
+	$rootScope.isActiveSubtab = function(subtab) {
+		return ($rootScope.state.activeEntity && $rootScope.state.activeEntity.subtab === subtab);
 	}
 }

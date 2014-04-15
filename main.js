@@ -216,7 +216,7 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 
 		newServer.showInfo('To connect: /server [host] [port] [password]');
 
-		user.setActiveEntity(newServer.entityId);
+		user.setActiveEntity(newServer.entityId, null);
 	});
 
 	socket.on('CloseWindow', function(data) {
@@ -244,7 +244,7 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 						});
 					},
 					function(channel) {
-						user.setActiveEntity(channel.entityId);
+						user.setActiveEntity(channel.entityId, null);
 					}
 				));
 			} else {
@@ -255,10 +255,10 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 
 	socket.on('OpenServerOptions', function(data) {
 		if ('serverEntityId' in data && typeof data.serverEntityId === 'number') {
-			var server = user.getEntityById(data.serverEntityId);
+			var targetEntity = user.getEntityById(data.serverEntityId);
 
-			if (server !== null && server.type === 'server') {
-				user.applyStateChange('SetActiveSubtab', data.serverEntityId, 'settings');
+			if (targetEntity !== null && targetEntity.type === 'server') {
+				user.setActiveEntity(targetEntity.entityId, 'settings');
 			} else {
 				logger.warn('Invalid serverEntityId in OpenServerOptions from client', data);
 			}
@@ -270,7 +270,7 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 			var targetEntity = user.getEntityById(data.targetEntityId);
 
 			if (targetEntity !== null) {
-				user.setActiveEntity(targetEntity.entityId);
+				user.setActiveEntity(targetEntity.entityId, null);
 			} else {
 				logger.warn('Invalid targetEntityId in SetActiveEntity from client', data);
 			}

@@ -48,13 +48,13 @@
 				<div class="rightcell">
 					<div ng-repeat="server in state.servers">
 						<div ng-show="isActiveEntity(server.entityId)">
-							<div ng-show="isActiveSubtab(server, null)">
+							<div ng-show="isActiveSubtab(null)">
 								<div chatlog activity-log="server.activityLog" server="server" class="chatlog" resize-maincell="server" ng-style="{height: maincellHeight}"></div>
 								<div class="chatboxwrapper">
 									<textarea chatbox chatbox-autocomplete chatbox-autogrow entity="server" class="chatbox" focus-key="Chatbox"></textarea>
 								</div>
 							</div>
-							<div ng-show="isActiveSubtab(server, 'settings')">
+							<div ng-show="isActiveSubtab('settings')">
 								<div class="fulltable">
 									<div class="tablecellvmid">
 										<div serversettingsdialog="server" class="dialogbox">

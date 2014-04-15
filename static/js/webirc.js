@@ -44,11 +44,13 @@ webircApp.directive('serversettingsdialog', function($rootScope) {
 				scope.port = newPort;
 			});
 
+			/*
 			scope.$watch('server.nicknames', function(newNicknamesList) {
 				console.log('server nicknames changed:', newNicknamesList);
 
 				scope.nicknames = newNicknamesList.join(' ');
 			});
+			*/
 
 			scope.save = function() {
 				/*
@@ -165,11 +167,8 @@ webircApp.directive('resizeMaincell', function($rootScope) {
 
 			var entity = scope.$eval(attrs.resizeMaincell);
 
-			// XXX
-			//var onActiveEntityOrSubtabChange = function()
-
-			$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
-				if (newActiveEntityId === entity.entityId) {
+			$rootScope.$watch('state.activeEntity', function(newActiveEntity) {
+				if (newActiveEntity && newActiveEntity.entityId === entity.entityId && newActiveEntity.subtab === null) {
 					// if this window is becoming active, scroll to the bottom
 					scope.delayedScroll(true);
 				}
@@ -340,11 +339,11 @@ webircApp.directive('windowbutton', function($rootScope) {
 					updateView();
 				});
 
-				$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
-					isCurrent = (entityId === newActiveEntityId);
+				$rootScope.$watch('state.activeEntity', function(newActiveEntity) {
+					isCurrent = (newActiveEntity && newActiveEntity.entityId === entityId);
 
 					updateView();
-				});
+				}, true);
 
 				updateView = function() {
 					function setOptionsCellVisible(visible) {
@@ -694,15 +693,15 @@ webircApp.directive('chatbox', function($rootScope, $timeout) {
 			currentHistoryId = null;
 		});
 
-		$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
-			if (entity.entityId === newActiveEntityId) {
-				// if our entity is becoming active, focus the chatbox
+		$rootScope.$watch('state.activeEntity', function(newActiveEntity) {
+			if (newActiveEntity && newActiveEntity === entity.entityId && newActiveEntity.subtab === null) {
+				// if our entity's default subtab is becoming active, focus the chatbox
 
 				$timeout(function() {
 					element[0].focus();
 				});
 			}
-		});
+		}, true);
 	};
 });
 
@@ -714,14 +713,16 @@ webircApp.directive('chatboxAutocomplete', function($rootScope) {
 
 		element.bind('keydown', function(e) {
 			if (e.keyCode === 9) { // tab
-				var activeEntity = sc.utils.getEntityById($rootScope.state, $rootScope.state.activeEntityId);
+				if ($rootScope.state.activeEntity) {
+					var activeEntity = sc.utils.getEntityById($rootScope.state, $rootScope.state.activeEntity.entityId);
 
-				var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeEntity);
+					var autoCompleteResult = autoComplete.next(element.val(), rawElement.selectionStart, activeEntity);
 
-				if (autoCompleteResult) {
-					element.val(autoCompleteResult.chatboxValue);
+					if (autoCompleteResult) {
+						element.val(autoCompleteResult.chatboxValue);
 
-					rawElement.selectionStart = rawElement.selectionEnd = autoCompleteResult.cursorPos;
+						rawElement.selectionStart = rawElement.selectionEnd = autoCompleteResult.cursorPos;
+					}
 				}
 
 				e.preventDefault();
