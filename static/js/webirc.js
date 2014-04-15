@@ -567,6 +567,7 @@ webircApp.directive('userlist', function() {
 
 webircApp.directive('chatbox', function($rootScope, $timeout) {
 	return function(scope, element, attrs) {
+		var rawElement = element[0];
 		var history = [];
 		var currentHistoryId = null;
 
@@ -578,8 +579,6 @@ webircApp.directive('chatbox', function($rootScope, $timeout) {
 
 		element.bind('keydown', function(e) {
 			function setCursorPosToEnd() {
-				var rawElement = element[0];
-
 				rawElement.selectionStart = rawElement.selectionEnd = element.val().length;
 			}
 
@@ -609,16 +608,22 @@ webircApp.directive('chatbox', function($rootScope, $timeout) {
 				e.preventDefault();
 			} else if (e.keyCode === 38) { // up
 				if (currentHistoryId === null) {
-					currentHistoryId = history.length - 1;
+					if (rawElement.selectionStart === 0) {
+						currentHistoryId = history.length - 1;
+					} else {
+						// pressing up while not at position 0 will naturally move the cursor up or to position 0
+					}
 				} else if (currentHistoryId > 0) {
 					currentHistoryId--;
 				}
 
-				element.val(history[currentHistoryId]);
+				if (currentHistoryId !== null) {
+					element.val(history[currentHistoryId]);
 
-				setCursorPosToEnd();
+					setCursorPosToEnd();
 
-				e.preventDefault();
+					e.preventDefault();
+				}
 			} else if (e.keyCode === 40) { // down
 				if (currentHistoryId === null) {
 					// no effect
@@ -636,6 +641,12 @@ webircApp.directive('chatbox', function($rootScope, $timeout) {
 
 				e.preventDefault();
 			}
+		});
+
+		element.bind('input', function(e) {
+			// when editing a line from history, treat it as a new entry
+
+			currentHistoryId = null;
 		});
 
 		$rootScope.$watch('state.activeEntityId', function(newActiveEntityId) {
