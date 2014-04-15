@@ -631,15 +631,17 @@ webircApp.directive('chatbox', function($rootScope, $timeout) {
 					currentHistoryId++;
 
 					element.val(history[currentHistoryId]);
+
+					setCursorPosToEnd();
+
+					e.preventDefault();
 				} else {
 					currentHistoryId = null;
 
 					element.val('');
+
+					e.preventDefault();
 				}
-
-				setCursorPosToEnd();
-
-				e.preventDefault();
 			}
 		});
 
