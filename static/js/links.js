@@ -29,6 +29,18 @@ function convertLinksForDomTree(root, server) {
 }
 
 function linkChunkToElement(chunk, server) {
+	function getLinkAnchor(label, url) {
+		var newAnchor = document.createElement('a');
+
+		newAnchor.appendChild(document.createTextNode(label));
+
+		newAnchor.className = 'chatlogLink';
+		newAnchor.href = url;
+		newAnchor.target = '_blank';
+
+		return newAnchor;
+	}
+
 	function getLinkSpan(label, tooltip, f) {
 		var newSpan = document.createElement('span');
 
@@ -47,9 +59,7 @@ function linkChunkToElement(chunk, server) {
 		case LinkChunkType.Url:
 			var url = (/^https?:\/\//i).test(chunk.text) ? chunk.text : 'http://' + chunk.text;
 
-			return getLinkSpan(chunk.text, 'Open ' + url + ' in a new window or tab.', function() {
-				window.open(url, '_blank');
-			});
+			return getLinkAnchor(chunk.text, url);
 		case LinkChunkType.Channel:
 			return getLinkSpan(chunk.text, 'Join ' + chunk.text + ' on ' + server.label + '.', function() {
 				g_requestJoinChannelOnServer(server.entityId, chunk.text);
