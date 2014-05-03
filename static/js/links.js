@@ -37,6 +37,7 @@ function linkChunkToElement(chunk, server) {
 		newAnchor.className = 'chatlogLink';
 		newAnchor.href = url;
 		newAnchor.target = '_blank';
+		newAnchor.tabIndex = -1;
 
 		return newAnchor;
 	}
