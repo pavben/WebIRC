@@ -528,9 +528,12 @@ var sc = {
 			return ~text.toLowerCase().split(/[^\w\d]+/).indexOf(nick.toLowerCase());
 		},
 		notify: function(icon, title, text, entityId) {
-			if (typeof window === 'object' && window.webkitNotifications) {
-				if (window.webkitNotifications.checkPermission() === 0) {
-					var notification = window.webkitNotifications.createNotification(icon, title, text);
+			if (typeof window === 'object' && window.Notification) {
+				if (window.Notification.permission === 'granted') {
+					var notification = new window.Notification(title, {
+						body: text,
+						icon: icon
+					});
 
 					notification.onclick = function() {
 						if (typeof g_requestSetActiveEntity === 'function') {
@@ -540,13 +543,11 @@ var sc = {
 						window.focus();
 					}
 
-					notification.show();
-
 					setTimeout(function() {
-						notification.cancel();
+						notification.close();
 					}, 6000);
 				} else {
-					window.webkitNotifications.requestPermission();
+					window.Notification.requestPermission();
 				}
 			}
 		},

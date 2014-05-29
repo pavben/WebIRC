@@ -12,8 +12,8 @@ webircApp.directive('loginbox', function($rootScope) {
 					password: scope.password
 				});
 
-				if (window.webkitNotifications && window.webkitNotifications.checkPermission() !== 0) {
-					window.webkitNotifications.requestPermission();
+				if (window.Notification && window.Notification.permission !== 'granted') {
+					window.Notification.requestPermission();
 				}
 			};
 
