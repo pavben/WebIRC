@@ -11,7 +11,7 @@
 		"express-session": "*",
 		"fs-extra": "*",
 		"rwlock": "*",
-		"socket.io": "*",
+		"socket.io": "0.9.17",
 		"moment": "*",
 		"winston": "*"
 	},
