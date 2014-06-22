@@ -119,7 +119,7 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 
 			sio.set('authorization', function(data, accept) {
 				if ('cookie' in data.headers) {
-					var cookies = connect.utils.parseSignedCookies(cookie.parse(data.headers.cookie), config.sessionSecret);
+					var cookies = cookieParser.signedCookies(cookie.parse(data.headers.cookie), config.sessionSecret);
 
 					if (sessionKey in cookies) {
 						sessionStore.get(cookies[sessionKey], function(err, session) {

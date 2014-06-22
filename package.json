@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"author": "Pavel Bennett",
 	"dependencies": {
-		"connect": "*",
+		"connect": "3.*",
 		"cookie": "*",
 		"cookie-parser": "*",
 		"errno": "*",
