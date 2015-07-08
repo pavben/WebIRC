@@ -42,6 +42,7 @@ async()
 				app.use(cookieParser());
 				app.use(expressSession({
 					store: sessionStore,
+					// TODO: Since we store the session stuff in memory anyway, can't we just randomize the session secret on each start?
 					secret: config.sessionSecret,
 					maxAge: 24 * 60 * 60,
 					key: sessionKey
@@ -100,17 +101,22 @@ async()
 
 function createWebServer(spec, expressApp, config, sessionStore, cb) {
 	var server;
+	var serverProtocol;
 	if (spec.keyFile && spec.certFile) {
 		server = https.createServer({
 			key: fs.readFileSync(spec.keyFile),
 			cert: fs.readFileSync(spec.certFile),
 			rejectUnauthorized: false
 		}, expressApp);
+		serverProtocol = 'https';
 	} else {
 		server = http.createServer(expressApp);
+		serverProtocol = 'http';
 	}
 
 	server.listen(spec.port, function() {
+		logger.info("WebIRC is listening for", serverProtocol, "connections on port", spec.port);
+
 		var sio = socketio.listen(server);
 
 		sio.configure(function() {
