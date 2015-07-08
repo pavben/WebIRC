@@ -125,7 +125,9 @@ Server.prototype = {
 	},
 	disconnect: function() {
 		if (this.socket !== null) {
-			this.send('QUIT :'); // noop if the socket is closed
+			if (this.isSocketWritable()) {
+				this.send('QUIT :'); // noop if the socket is closed
+			}
 
 			this.socket.destroy();
 
@@ -213,12 +215,16 @@ Server.prototype = {
 
 		return queryRet;
 	},
+	isSocketWritable: function() {
+		return this.socket !== null && this.socket.writable;
+	},
 	send: function(data) {
 		logger.data('SEND: %s', data);
-		if (this.socket !== null && this.socket.writable) {
+		if (this.isSocketWritable()) {
 			this.socket.write(data + '\r\n');
 		} else {
-			logger.error('send called on a server with null socket');
+			logger.error('send called on a server with non-writable/null socket');
+			utils.printStackTrace();
 		}
 	},
 	startPings: function() {
