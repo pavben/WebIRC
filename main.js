@@ -130,11 +130,11 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 
 				if (sessionKey in parsedCookies) {
 					sessionStore.get(parsedCookies[sessionKey], function(err, session) {
-						// TODO: if the session cannot be looked up, tell the client to refresh, creating a new session
 						if (!err && session) {
 							processNewConnectionWithSessionId(socket, parsedCookies[sessionKey]);
 						} else {
 							console.warn('Session lookup failed -- invalid session ID received from client during WebSocket upgrade request');
+							socket.send('refresh');
 							socket.close();
 						}
 					});
@@ -144,6 +144,7 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 				}
 			} else {
 				console.warn('No cookie header or no headers');
+				socket.send('refresh');
 				socket.close();
 			}
 		});

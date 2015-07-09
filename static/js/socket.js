@@ -8,6 +8,11 @@ webircApp.factory('websocketFactory', function ($rootScope) {
 
 			ws.onmessage = function (event) {
 				var rawMessage = event.data;
+				// If the server thinks it's time for us to refresh our browser, do it. The specific case this is designed for is when the server is restarted, it loses the session data, preventing any WebSocket reconnect attempts from succeeding. In this case, we need to refresh the page which will create a new session.
+				if (rawMessage === 'refresh') {
+					location.reload();
+					return;
+				}
 				var message;
 				try {
 					message = JSON.parse(rawMessage);
