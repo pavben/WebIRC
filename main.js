@@ -7,6 +7,7 @@ var assert = require('assert');
 var connect = require('connect');
 var cookie = require('cookie');
 var cookieParser = require('cookie-parser');
+var crypto = require('crypto');
 var express = require('express');
 var expressSession = require('express-session');
 var fs = require('fs-extra');
@@ -20,6 +21,8 @@ var utils = require('./utils.js');
 var wss = require('ws');
 
 var sessionKey = 'sid';
+// Randomize the session secret at startup
+var sessionSecret = crypto.randomBytes(32).toString('base64');
 
 async()
 	.add('config', function(cb) {
@@ -42,8 +45,7 @@ async()
 				app.use(cookieParser());
 				app.use(expressSession({
 					store: sessionStore,
-					// TODO: Since we store the session stuff in memory anyway, can't we just randomize the session secret on each start?
-					secret: config.sessionSecret,
+					secret: sessionSecret,
 					maxAge: 24 * 60 * 60,
 					key: sessionKey,
 					resave: false,
@@ -126,7 +128,7 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 		wsServer.on('connection', function(socket) {
 			var headers = socket.upgradeReq.headers;
 			if (typeof headers == 'object' && 'cookie' in headers) {
-				var parsedCookies = cookieParser.signedCookies(cookie.parse(headers.cookie), config.sessionSecret);
+				var parsedCookies = cookieParser.signedCookies(cookie.parse(headers.cookie), sessionSecret);
 
 				if (sessionKey in parsedCookies) {
 					sessionStore.get(parsedCookies[sessionKey], function(err, session) {

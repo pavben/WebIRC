@@ -7,7 +7,6 @@
 		"keyFile": "./key.pem",
 		"certFile": "./cert.pem"
 	},
-	"sessionSecret": "notsosecret",
 	"logLevels": {
 		"console": "info",
 		"file": "data"
