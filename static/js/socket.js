@@ -3,7 +3,8 @@
 webircApp.factory('websocketFactory', function ($rootScope) {
 	return {
 		newSocket: function() {
-			var ws = new WebSocket('ws://' + location.host);
+			var protocolPrefix = (window.location.protocol === 'https:') ? 'wss:' : 'ws:';
+			var ws = new WebSocket(protocolPrefix + '//' + location.host);
 			var eventHandlers = {};
 
 			ws.onmessage = function (event) {
