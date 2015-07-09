@@ -86,12 +86,6 @@ function initializeSocketConnection($rootScope, websocketFactory) {
 		connected = true;
 	});
 
-	socket.on('error', function(err) {
-		console.log('Connection error:', err);
-
-		scheduleReconnect();
-	});
-
 	socket.on('NeedLogin', function(data) {
 		delete $rootScope.state;
 		$rootScope.screen = 'login';
