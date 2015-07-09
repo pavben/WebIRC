@@ -35,7 +35,9 @@ webircApp.factory('websocketFactory', function ($rootScope) {
 			var socket = {
 				onOpen: function(callback) {
 					ws.onopen = function() {
-						callback.apply(socket, arguments);
+						$rootScope.$apply(function () {
+							callback.apply(socket, arguments);
+						});
 					};
 				},
 				on: function (eventName, callback) {
@@ -54,12 +56,14 @@ webircApp.factory('websocketFactory', function ($rootScope) {
 						});
 					})
 				},
-				disconnect: function() {
+				close: function() {
 					ws.close();
 				},
 				onClose: function(callback) {
 					ws.onclose = function() {
-						callback.apply(socket, arguments);
+						$rootScope.$apply(function () {
+							callback.apply(socket, arguments);
+						});
 					};
 				},
 			};
@@ -159,7 +163,7 @@ function initializeSocketConnection($rootScope, websocketFactory) {
 	});
 
 	function scheduleReconnect() {
-		socket.disconnect();
+		socket.close();
 
 		connected = false;
 

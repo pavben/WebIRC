@@ -117,7 +117,7 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 	}
 
 	server.listen(spec.port, function() {
-		logger.info("WebIRC is listening for", serverProtocol, "connections on port", spec.port);
+		logger.info('WebIRC is listening for', serverProtocol, 'connections on port', spec.port);
 
 		var wsServer = new wss.Server({
 			server: server
@@ -146,17 +146,6 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 				console.warn('No cookie header or no headers');
 				socket.send('refresh');
 				socket.close();
-			}
-		});
-
-		wsServer.on('close', function() {
-			// TODO LOW: support connection timeouts
-			logger.info('WebSocket disconnected');
-
-			// remove the socket from activeWebSockets of the user
-			// nothing to remove if the socket was not yet logged in
-			if (user !== null) {
-				user.removeActiveWebSocket(socket);
 			}
 		});
 
@@ -208,6 +197,8 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 				} else {
 					socket.sendMessage('LoginFailed', {});
 				}
+			} else {
+				logger.warn('Unrecognized message type from an unidentified client: ' + msgId);
 			}
 		} else {
 			switch (msgId) {
@@ -285,13 +276,6 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 		}
 	});
 
-	// see if this socket belongs to a user who is already logged in
-	if (user !== null) {
-		handleSuccessfulLogin(user, socket, sessionId);
-	} else {
-		socket.sendMessage('NeedLogin', {});
-	}
-
 	socket.on('close', function() {
 		// TODO LOW: support connection timeouts
 		logger.info('WebSocket disconnected');
@@ -302,6 +286,13 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 			user.removeActiveWebSocket(socket);
 		}
 	});
+
+	// see if this socket belongs to a user who is already logged in
+	if (user !== null) {
+		handleSuccessfulLogin(user, socket, sessionId);
+	} else {
+		socket.sendMessage('NeedLogin', {});
+	}
 }
 
 function handleSuccessfulLogin(user, socket, sessionId) {
