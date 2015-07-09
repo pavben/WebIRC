@@ -38,7 +38,7 @@ User.prototype = {
 	},
 	sendToWeb: function(msgId, data) {
 		this.activeWebSockets.forEach(function(socket) {
-			socket.emit(msgId, data);
+			socket.sendMessage(msgId, data);
 		});
 	},
 	applyStateChange: function() {

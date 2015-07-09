@@ -11,9 +11,9 @@
 		"express-session": "*",
 		"fs-extra": "*",
 		"rwlock": "*",
-		"socket.io": "0.9.17",
 		"moment": "*",
-		"winston": "*"
+		"winston": "*",
+		"ws": "0.7.*"
 	},
 	"scripts": {
 		"start": "node main.js"

@@ -1,24 +1,46 @@
 "use strict";
 
-webircApp.factory('socketFactory', function ($rootScope) {
+webircApp.factory('websocketFactory', function ($rootScope) {
 	return {
 		newSocket: function() {
-			var socket = io.connect('', {
-				reconnect: false,
-				'force new connection': true
-			});
+			var ws = new WebSocket('ws://' + location.host);
+			var eventHandlers = {};
 
-			return {
-				on: function (eventName, callback) {
-					socket.on(eventName, function () {
-						var args = arguments;
-						$rootScope.$apply(function () {
-							callback.apply(socket, args);
+			ws.onmessage = function (event) {
+				var rawMessage = event.data;
+				var message;
+				try {
+					message = JSON.parse(rawMessage);
+				} catch (e) {
+					console.log('Error parsing JSON raw message from server:', rawMessage);
+					return;
+				}
+				if (typeof message.msgId == 'string' && typeof message.data == 'object') {
+					var handler = eventHandlers[message.msgId];
+					if (typeof handler == 'function') {
+						$rootScope.$apply(function() {
+							handler.call(ws, message.data);
 						});
-					});
+					} else {
+						console.log('Received a message without a registered handler:', message.msgId);
+					}
+				}
+			};
+
+			var socket = {
+				onOpen: function(callback) {
+					ws.onopen = function() {
+						callback.apply(socket, arguments);
+					};
 				},
-				emit: function (eventName, data, callback) {
-					socket.emit(eventName, data, function () {
+				on: function (eventName, callback) {
+					eventHandlers[eventName] = callback;
+				},
+				send: function (eventName, data, callback) {
+					ws.send(JSON.stringify({
+						msgId: eventName,
+						data: data
+					}), function () {
 						var args = arguments;
 						$rootScope.$apply(function () {
 							if (callback) {
@@ -28,9 +50,16 @@ webircApp.factory('socketFactory', function ($rootScope) {
 					})
 				},
 				disconnect: function() {
-					socket.disconnect();
-				}
+					ws.close();
+				},
+				onClose: function(callback) {
+					ws.onclose = function() {
+						callback.apply(socket, arguments);
+					};
+				},
 			};
+
+			return socket;
 		}
 	};
 });
@@ -38,32 +67,20 @@ webircApp.factory('socketFactory', function ($rootScope) {
 var g_requestSetActiveEntity;
 var g_requestJoinChannelOnServer;
 
-function initializeSocketConnection($rootScope, socketFactory) {
-	var socket = socketFactory.newSocket();
+function initializeSocketConnection($rootScope, websocketFactory) {
+	var socket = websocketFactory.newSocket();
 	var connected = false;
 
-	socket.on('connect', function() {
+	socket.onOpen(function() {
 		console.log('Connected')
 
 		connected = true;
 	});
 
-	// TODO: connect_failed isn't emitted
-	socket.on('connect_failed', function() {
-		console.log('Connection failed');
-
-		scheduleReconnect();
-	});
-
 	socket.on('error', function(err) {
 		console.log('Connection error:', err);
 
-		if (err === 'handshake error') {
-			// most likely a reconnection attempt with an old session ID after a server restart
-			location.reload(); // reload to get a new session ID
-		} else {
-			scheduleReconnect();
-		}
+		scheduleReconnect();
 	});
 
 	socket.on('NeedLogin', function(data) {
@@ -130,7 +147,7 @@ function initializeSocketConnection($rootScope, socketFactory) {
 		callStateChangeFunction($rootScope.state, data.funcId, data.args);
 	});
 
-	socket.on('disconnect', function() {
+	socket.onClose(function() {
 		console.log('Disconnected from WebIRC');
 
 		scheduleReconnect();
@@ -146,13 +163,13 @@ function initializeSocketConnection($rootScope, socketFactory) {
 
 		setTimeout(function() {
 			console.log('Reconnecting...');
-			initializeSocketConnection($rootScope, socketFactory);
+			initializeSocketConnection($rootScope, websocketFactory);
 		}, 5000);
 	}
 
 	$rootScope.sendToGateway = function(msgId, data) {
 		if (connected) {
-			socket.emit(msgId, data);
+			socket.send(msgId, data);
 		} else {
 			console.log('Not connected to WebIRC');
 		}

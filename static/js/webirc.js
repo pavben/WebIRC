@@ -745,8 +745,8 @@ webircApp.directive('chatboxAutogrow', function($rootScope, $timeout) {
 	};
 });
 
-function AppCtrl($rootScope, socketFactory) {
-	initializeSocketConnection($rootScope, socketFactory);
+function AppCtrl($rootScope, websocketFactory) {
+	initializeSocketConnection($rootScope, websocketFactory);
 }
 
 function getTargetHeightForMaincell(chatboxHeight) {
