@@ -3,26 +3,26 @@
 require('./data.js').install();
 require('./utils.js').installGlobals();
 
-var assert = require('assert');
-var connect = require('connect');
-var cookie = require('cookie');
-var cookieParser = require('cookie-parser');
-var crypto = require('crypto');
-var express = require('express');
-var expressSession = require('express-session');
-var fs = require('fs-extra');
-var http = require('http');
-var https = require('https');
-var logger = require('./logger.js');
-var async = require('./async.js')
-var irc = require('./irc.js');
-var users = require('./users.js');
-var utils = require('./utils.js');
-var wss = require('ws');
+let assert = require('assert');
+let connect = require('connect');
+let cookie = require('cookie');
+let cookieParser = require('cookie-parser');
+let crypto = require('crypto');
+let express = require('express');
+let expressSession = require('express-session');
+let fs = require('fs-extra');
+let http = require('http');
+let https = require('https');
+let logger = require('./logger.js');
+let async = require('./async.js')
+let irc = require('./irc.js');
+let users = require('./users.js');
+let utils = require('./utils.js');
+let wss = require('ws');
 
-var sessionKey = 'sid';
+let sessionKey = 'sid';
 // Randomize the session secret at startup
-var sessionSecret = crypto.randomBytes(32).toString('base64');
+let sessionSecret = crypto.randomBytes(32).toString('base64');
 
 async()
 	.add('config', function(cb) {
@@ -40,7 +40,7 @@ async()
 				return new expressSession.MemoryStore();
 			})
 			.add('expressApp', ['sessionStore'], function(sessionStore) {
-				var app = express();
+				let app = express();
 
 				app.use(cookieParser());
 				app.use(expressSession({
@@ -56,7 +56,7 @@ async()
 				return app;
 			})
 			.add('startWebListeners', ['expressApp', 'sessionStore', '@usersInitialized'], function(expressApp, sessionStore, cb) {
-				var a = async();
+				let a = async();
 
 				if (config.http && config.http.port) {
 					a.add(function(cb) {
@@ -104,8 +104,8 @@ async()
 	));
 
 function createWebServer(spec, expressApp, config, sessionStore, cb) {
-	var server;
-	var serverProtocol;
+	let server;
+	let serverProtocol;
 	if (spec.keyFile && spec.certFile) {
 		server = https.createServer({
 			key: fs.readFileSync(spec.keyFile),
@@ -121,14 +121,14 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 	server.listen(spec.port, function() {
 		logger.info('WebIRC is listening for', serverProtocol, 'connections on port', spec.port);
 
-		var wsServer = new wss.Server({
+		let wsServer = new wss.Server({
 			server: server
 		});
 
 		wsServer.on('connection', function(socket) {
-			var headers = socket.upgradeReq.headers;
+			let headers = socket.upgradeReq.headers;
 			if (typeof headers == 'object' && 'cookie' in headers) {
-				var parsedCookies = cookieParser.signedCookies(cookie.parse(headers.cookie), sessionSecret);
+				let parsedCookies = cookieParser.signedCookies(cookie.parse(headers.cookie), sessionSecret);
 
 				if (sessionKey in parsedCookies) {
 					sessionStore.get(parsedCookies[sessionKey], function(err, session) {
@@ -170,18 +170,18 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 		}));
 	}
 
-	var user = users.getUserBySessionId(sessionId);
+	let user = users.getUserBySessionId(sessionId);
 
 	socket.on('message', function(rawMessage, flags) {
-		var message;
+		let message;
 		try {
 			message = JSON.parse(rawMessage);
 		} catch (e) {
 			logger.warn('Failed to parse raw message from client: ' + rawMessage);
 			return;
 		}
-		var msgId = message.msgId;
-		var data = message.data;
+		let msgId = message.msgId;
+		let data = message.data;
 		if (typeof data !== 'object') {
 			logger.warn('Got a message with an invalid data field: ' + data);
 			return;
@@ -204,7 +204,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 			}
 		} else {
 			switch (msgId) {
-				case 'ChatboxSend':
+				case 'ChatboxSend': {
 					logger.info('Chatbox send', data);
 					if (typeof data.entityId === 'number' && typeof data.exec == 'boolean') {
 						data.lines.forEach(function(line) {
@@ -214,15 +214,17 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 						logger.warn('Missing entityId/exec in ChatboxSend from client');
 					}
 					break;
-				case 'AddServer':
-					var newServer = new Server({}, user.getNextEntityId.bind(user));
+				}
+				case 'AddServer': {
+					let newServer = new Server({}, user.getNextEntityId.bind(user));
 					user.addServer(newServer);
 					newServer.showInfo('To connect: /server [host] [port] [password]');
 					user.setActiveEntity(newServer.entityId);
 					break;
-				case 'CloseWindow':
+				}
+				case 'CloseWindow': {
 					if ('targetEntityId' in data) {
-						var targetEntity = user.getEntityById(data.targetEntityId);
+						let targetEntity = user.getEntityById(data.targetEntityId);
 
 						if (targetEntity !== null) {
 							targetEntity.removeEntity();
@@ -231,10 +233,11 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 						}
 					}
 					break;
-				case 'JoinChannelOnServer':
+				}
+				case 'JoinChannelOnServer': {
 					if ('serverEntityId' in data && typeof data.serverEntityId === 'number' &&
 						'channelName' in data && typeof data.channelName === 'string') {
-						var server = user.getEntityById(data.serverEntityId);
+						let server = user.getEntityById(data.serverEntityId);
 
 						if (server !== null) {
 							server.withChannel(data.channelName, check(
@@ -252,9 +255,10 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 						}
 					}
 					break;
-				case 'OpenServerOptions':
+				}
+				case 'OpenServerOptions': {
 					if ('serverEntityId' in data && typeof data.serverEntityId === 'number') {
-						var server = user.getEntityById(data.serverEntityId);
+						let server = user.getEntityById(data.serverEntityId);
 
 						if (server !== null) {
 							server.showInfo('Server options aren\'t quite ready yet :)');
@@ -263,9 +267,10 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 						}
 					}
 					break;
-				case 'SetActiveEntity':
+				}
+				case 'SetActiveEntity': {
 					if ('targetEntityId' in data) {
-						var targetEntity = user.getEntityById(data.targetEntityId);
+						let targetEntity = user.getEntityById(data.targetEntityId);
 
 						if (targetEntity !== null) {
 							user.setActiveEntity(targetEntity.entityId);
@@ -274,6 +279,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 						}
 					}
 					break;
+				}
 			}
 		}
 	});
@@ -301,7 +307,7 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 	// TODO: combine activeWebSockets with loggedInSessions
 	user.activeWebSockets.push(socket);
 
-	var userCopy = users.copyStateForClient(user);
+	let userCopy = users.copyStateForClient(user);
 
 	socket.sendMessage('CurrentState', userCopy);
 }

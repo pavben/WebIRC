@@ -16,10 +16,10 @@
 		"ws": "0.7.*"
 	},
 	"scripts": {
-		"start": "node main.js"
+		"start": "node --harmony_scoping main.js"
 	},
 	"engines": {
-		"node": ">= 0.8"
+		"node": ">= 0.10"
 	},
 	"repository": {
 		"type": "git",
