@@ -127,10 +127,6 @@ function ensureRequiredFields(obj, fields) {
 	});
 }
 
-function printStackTrace() {
-	console.error(new Error().stack);
-}
-
 exports.installGlobals = installGlobals;
 exports.parseCtcpMessage = parseCtcpMessage;
 exports.toCtcp = toCtcp;
@@ -140,7 +136,6 @@ exports.withParsedTarget = withParsedTarget;
 exports.parseKeyEqValue = parseKeyEqValue;
 exports.readJsonFile = readJsonFile;
 exports.ensureRequiredFields = ensureRequiredFields;
-exports.printStackTrace = printStackTrace;
 
 // from statechanges
 exports.equalsIgnoreCase = statechanges.utils.equalsIgnoreCase;

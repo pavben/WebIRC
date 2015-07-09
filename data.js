@@ -224,7 +224,7 @@ Server.prototype = {
 			this.socket.write(data + '\r\n');
 		} else {
 			logger.error('send called on a server with non-writable/null socket');
-			utils.printStackTrace();
+			console.trace();
 		}
 	},
 	startPings: function() {
