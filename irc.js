@@ -495,7 +495,6 @@ function reconnectServer(server) {
 		} else {
 			server.showError('Unable to connect (' + errorString + ')');
 		}
-		server.disconnect();
 	});
 	let readBuffer = '';
 	serverSocket.on('data', function(data) {
@@ -510,7 +509,7 @@ function reconnectServer(server) {
 			processLineFromServer(line, server);
 		}
 	});
-	serverSocket.on('end', function() {
+	serverSocket.on('close', function() {
 		server.disconnect();
 	});
 }
@@ -616,13 +615,13 @@ function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId
 				clientcommands.handleClientCommand(activeEntity, command, rest, sessionId);
 			} else {
 				if (activeEntity.type === 'channel') {
-					server.ifRegistered(function() {
+					server.requireRegistered(function() {
 						const channel = activeEntity;
 						user.applyStateChange('MyChatMessage', channel.entityId, rest);
 						server.send('PRIVMSG ' + channel.name + ' :' + rest);
 					});
 				} else if (activeEntity.type === 'query') {
-					server.ifRegistered(function() {
+					server.requireRegistered(function() {
 						const query = activeEntity;
 						user.applyStateChange('MyChatMessage', query.entityId, rest);
 						server.send('PRIVMSG ' + query.name + ' :' + rest);

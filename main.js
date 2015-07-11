@@ -233,7 +233,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 						if (server !== null) {
 							server.withChannel(data.channelName, check(
 								function (err) {
-									server.ifRegistered(function() {
+									server.requireRegistered(function() {
 										server.send('JOIN ' + data.channelName);
 									});
 								},

@@ -36,10 +36,9 @@ function handleHelp() {
 }
 
 function handleHop() {
-	let self = this;
 	if (this.activeEntity.type === 'channel') {
-		this.server.ifRegistered(function() {
-			let channel = self.activeEntity;
+		this.server.requireRegistered(() => {
+			let channel = this.activeEntity;
 			channel.rejoin();
 		});
 	} else {
@@ -51,11 +50,11 @@ function handleLogout(all) {
 	if (typeof all === 'string' && all.toLowerCase() === 'all') {
 		let numSessions = 0;
 		let loggedInSessionsCopy = this.user.loggedInSessions.slice();
-		loggedInSessionsCopy.forEach(function(sessionId) {
+		loggedInSessionsCopy.forEach(sessionId => {
 			if (this.user.removeLoggedInSession(sessionId)) {
 				numSessions++;
 			}
-		}, this);
+		});
 		this.user.showInfo(numSessions + ' session(s) have been logged out. Feel free to close your browser.');
 	} else {
 		if (this.user.removeLoggedInSession(this.sessionId)) {
@@ -67,12 +66,11 @@ function handleLogout(all) {
 }
 
 function handleMe(text) {
-	let self = this;
 	if (this.activeEntity.type === 'channel' || this.activeEntity.type === 'query') {
-		this.server.ifRegistered(function() {
-			let channelOrQuery = self.activeEntity;
-			self.user.applyStateChange('MyActionMessage', self.activeEntity.entityId, text);
-			self.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
+		this.server.requireRegistered(() => {
+			let channelOrQuery = this.activeEntity;
+			this.user.applyStateChange('MyActionMessage', this.activeEntity.entityId, text);
+			this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
 		});
 	} else {
 		this.user.showError('Can\'t /me in this window');
@@ -80,51 +78,55 @@ function handleMe(text) {
 }
 
 function handleMsg(targetName, text) {
-	let self = this;
-	utils.withParsedTarget(targetName, check(function(err) {
-		self.user.showError('Invalid target');
-	}, function(target) {
-		self.server.ifRegistered(function() {
+	utils.withParsedTarget(targetName, check(err => {
+		this.user.showError('Invalid target');
+	}, target => {
+		this.server.requireRegistered(() => {
 			let displayed = false;
 			if (target instanceof ClientTarget) {
 				// /msg nick@server will not open the query window
 				if (target.server === null) {
-					let query = self.server.ensureQuery(target.toString());
-					self.user.applyStateChange('MyChatMessage', query.entityId, text);
-					self.user.setActiveEntity(query.entityId);
+					let query = this.server.ensureQuery(target.toString());
+					this.user.applyStateChange('MyChatMessage', query.entityId, text);
+					this.user.setActiveEntity(query.entityId);
 					displayed = true;
 				}
 			} else if (target instanceof ChannelTarget) {
-				self.server.withChannel(target.name, silentFail(function(channel) {
-					self.user.applyStateChange('MyChatMessage', channel.entityId, text);
+				this.server.withChannel(target.name, silentFail(channel => {
+					this.user.applyStateChange('MyChatMessage', channel.entityId, text);
 					displayed = true;
 				}));
 			}
 			if (!displayed) {
-				self.user.showInfo('To ' + targetName + ': ' + text);
+				this.user.showInfo('To ' + targetName + ': ' + text);
 			}
 			// send the message to the unparsed target name
-			self.server.send('PRIVMSG ' + targetName + ' :' + text);
+			this.server.send('PRIVMSG ' + targetName + ' :' + text);
 		});
 	}));
 }
 
 function handleNotice(targetName, text) {
-	let self = this;
-	this.server.ifRegistered(function() {
-		self.user.showInfo('Notice to ' + targetName + ': ' + text);
-		self.server.send('NOTICE ' + targetName + ' :' + text);
+	this.server.requireRegistered(() => {
+		this.user.showInfo('Notice to ' + targetName + ': ' + text);
+		this.server.send('NOTICE ' + targetName + ' :' + text);
 	});
 }
 
 function handleRaw(cmd) {
-	this.server.send(cmd);
+	this.server.requireRegistered(() => {
+		this.server.send(cmd);
+	});
 }
 
 function handleQuit(msg) {
-	msg = msg || ''; // empty if not provided
-	this.server.send('QUIT :' + msg);
-	this.server.disconnect();
+	if (this.server.isConnected()) {
+		msg = msg || ''; // empty if not provided
+		this.server.send('QUIT :' + msg);
+		this.server.disconnect(true);
+	} else {
+		this.user.showError('Not connected', true);
+	}
 }
 
 function handleServer(host, port, password) {
@@ -160,11 +162,10 @@ function handleServer(host, port, password) {
 }
 
 function handleSessions() {
-	let self = this;
 	if (this.user.loggedInSessions.length > 0) {
 		this.user.showInfo('Logged-in sessions:');
-		this.user.loggedInSessions.forEach(function(sessionId, i) {
-			self.user.showInfo((i + 1) + ' - ' + sessionId + (sessionId == self.sessionId ? ' (current)' : ''));
+		this.user.loggedInSessions.forEach((sessionId, i) => {
+			this.user.showInfo((i + 1) + ' - ' + sessionId + (sessionId == this.sessionId ? ' (current)' : ''));
 		});
 	} else {
 		this.user.showInfo('No logged-in sessions.');
@@ -176,17 +177,18 @@ function handleTest(testId) {
 }
 
 function handleTopic(channel, text) {
-	if (this.numArgs == 1) {
-		this.server.send('TOPIC ' + channel);
-	} else if (this.numArgs == 2) {
-		this.server.send('TOPIC ' + channel + ' :' + text);
-	}
+	this.server.requireRegistered(() => {
+		if (this.numArgs == 1) {
+			this.server.send('TOPIC ' + channel);
+		} else if (this.numArgs == 2) {
+			this.server.send('TOPIC ' + channel + ' :' + text);
+		}
+	});
 }
 
 function handleWhois(targetName) {
-	let self = this;
-	this.server.ifRegistered(function() {
-		self.server.send('WHOIS ' + targetName);
+	this.server.requireRegistered(() => {
+		this.server.send('WHOIS ' + targetName);
 	});
 }
 
@@ -208,7 +210,7 @@ function handleClientCommand(activeEntity, command, args, sessionId) {
 			activeEntity.server.user.showError('Not enough parameters.');
 		}
 	} else {
-		activeEntity.server.ifRegistered(function() {
+		activeEntity.server.requireRegistered(function() {
 			activeEntity.server.send(command + ' ' + args);
 		});
 	}

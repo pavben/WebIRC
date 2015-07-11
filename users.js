@@ -138,7 +138,7 @@ function copyWithoutPointers(user) {
 			'server',
 			'channels',
 			'queries',
-			'timeoutPings'
+			'pingInterval'
 		]);
 		serverCopy.channels = server.channels.map(function(channel) {
 			return cloneExceptFields(channel, [

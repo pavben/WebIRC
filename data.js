@@ -120,20 +120,15 @@ Server.prototype = {
 	reconnect: function() {
 		irc.reconnectServer(this);
 	},
-	disconnect: function() {
+	disconnect: function(skipSendingQuit) {
 		if (this.socket !== null) {
-			if (this.isSocketWritable()) {
-				this.send('QUIT :'); // noop if the socket is closed
+			if (!skipSendingQuit && this.isConnected()) {
+				this.send('QUIT :');
 			}
-
 			this.socket.destroy();
-
 			this.socket = null;
-
 			this.endPings();
-
 			this.user.applyStateChange('Disconnect', this.entityId);
-
 			logger.info('Disconnected from server: %s:%d', this.host, this.port);
 		}
 	},
@@ -162,9 +157,7 @@ Server.prototype = {
 		));
 	},
 	withChannel: function(channelName, cb) {
-		const matchedChannel = utils.findFirst(this.channels, function(channel) {
-			return channel.name.toLowerCase() === channelName.toLowerCase()
-		});
+		const matchedChannel = utils.findFirst(this.channels, channel => channel.name.toLowerCase() === channelName.toLowerCase());
 		if (matchedChannel) {
 			cb(null, matchedChannel);
 		} else {
@@ -177,7 +170,7 @@ Server.prototype = {
 		this.user.applyStateChange('AddQuery', this.entityId, query);
 	},
 	ensureQuery: function(queryName) {
-		const matchedQuery = utils.findFirst(this.queries, query.name.toLowerCase() === queryName.toLowerCase());
+		const matchedQuery = utils.findFirst(this.queries, query => query.name.toLowerCase() === queryName.toLowerCase());
 		if (matchedQuery) {
 			return matchedQuery;
 		} else {
@@ -188,12 +181,12 @@ Server.prototype = {
 			return query;
 		}
 	},
-	isSocketWritable: function() {
+	isConnected: function() {
 		return this.socket !== null && this.socket.writable;
 	},
 	send: function(data) {
 		logger.data('SEND: %s', data);
-		if (this.isSocketWritable()) {
+		if (this.isConnected()) {
 			this.socket.write(data + '\r\n');
 		} else {
 			logger.error('send called on a server with non-writable/null socket');
@@ -201,21 +194,18 @@ Server.prototype = {
 		}
 	},
 	startPings: function() {
-		assert(typeof this.timeoutPings === 'undefined'); // must end any existing ones before starting
-		const self = this;
-		const pingInterval = 60000;
-		function sendPing() {
+		assert(typeof this.pingInterval === 'undefined'); // must end any existing ones before starting
+		const pingFrequency = 60000;
+		this.pingInterval = setInterval(() => {
 			// TODO LOW: do we care if we receive the correct token back? not checking for now
 			const randomToken = Math.floor(Math.random()*99999);
-			self.send('PING :' + randomToken);
-			self.timeoutPings = setTimeout(sendPing, pingInterval);
-		}
-		self.timeoutPings = setTimeout(sendPing, pingInterval);
+			this.send('PING :' + randomToken);
+		}, pingFrequency);
 	},
 	endPings: function() {
-		if (this.timeoutPings) {
-			clearTimeout(this.timeoutPings);
-			delete this.timeoutPings;
+		if (this.pingInterval) {
+			clearInterval(this.pingInterval);
+			delete this.pingInterval;
 		}
 	},
 	showError: function(text, preferActive) {
@@ -238,15 +228,16 @@ Server.prototype = {
 		return this.entityId;
 	},
 	isRegistered: function() {
+		// TODO: Make this isConnected and support the allowUnregistered option
 		return statechanges.utils.isRegisteredOnServer(this);
 	},
-	ifRegistered: function(successCallback) {
+	requireRegistered: function(successCallback) {
 		if (this.isRegistered()) {
 			successCallback();
 		} else {
 			// we call it registered since "connected" means established TCP connection only
 			// users will want to see "connected"
-			this.showError('Not connected', true);
+			this.user.showError('Not connected');
 		}
 	},
 	removeEntity: function() {
