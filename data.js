@@ -228,15 +228,13 @@ Server.prototype = {
 		return this.entityId;
 	},
 	isRegistered: function() {
-		// TODO: Make this isConnected and support the allowUnregistered option
 		return statechanges.utils.isRegisteredOnServer(this);
 	},
-	requireRegistered: function(successCallback) {
-		if (this.isRegistered()) {
+	requireConnected: function(successCallback, options) {
+		options = options || {};
+		if (this.isRegistered() || (options.allowUnregistered && this.isConnected())) {
 			successCallback();
 		} else {
-			// we call it registered since "connected" means established TCP connection only
-			// users will want to see "connected"
 			this.user.showError('Not connected');
 		}
 	},

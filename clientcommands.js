@@ -37,7 +37,7 @@ function handleHelp() {
 
 function handleHop() {
 	if (this.activeEntity.type === 'channel') {
-		this.server.requireRegistered(() => {
+		this.server.requireConnected(() => {
 			let channel = this.activeEntity;
 			channel.rejoin();
 		});
@@ -67,7 +67,7 @@ function handleLogout(all) {
 
 function handleMe(text) {
 	if (this.activeEntity.type === 'channel' || this.activeEntity.type === 'query') {
-		this.server.requireRegistered(() => {
+		this.server.requireConnected(() => {
 			let channelOrQuery = this.activeEntity;
 			this.user.applyStateChange('MyActionMessage', this.activeEntity.entityId, text);
 			this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
@@ -81,7 +81,7 @@ function handleMsg(targetName, text) {
 	utils.withParsedTarget(targetName, check(err => {
 		this.user.showError('Invalid target');
 	}, target => {
-		this.server.requireRegistered(() => {
+		this.server.requireConnected(() => {
 			let displayed = false;
 			if (target instanceof ClientTarget) {
 				// /msg nick@server will not open the query window
@@ -107,26 +107,26 @@ function handleMsg(targetName, text) {
 }
 
 function handleNotice(targetName, text) {
-	this.server.requireRegistered(() => {
+	this.server.requireConnected(() => {
 		this.user.showInfo('Notice to ' + targetName + ': ' + text);
 		this.server.send('NOTICE ' + targetName + ' :' + text);
 	});
 }
 
 function handleRaw(cmd) {
-	this.server.requireRegistered(() => {
+	this.server.requireConnected(() => {
 		this.server.send(cmd);
 	});
 }
 
 function handleQuit(msg) {
-	if (this.server.isConnected()) {
+	this.server.requireConnected(() => {
 		msg = msg || ''; // empty if not provided
 		this.server.send('QUIT :' + msg);
 		this.server.disconnect(true);
-	} else {
-		this.user.showError('Not connected', true);
-	}
+	}, {
+		allowUnregistered: true
+	});
 }
 
 function handleServer(host, port, password) {
@@ -177,7 +177,7 @@ function handleTest(testId) {
 }
 
 function handleTopic(channel, text) {
-	this.server.requireRegistered(() => {
+	this.server.requireConnected(() => {
 		if (this.numArgs == 1) {
 			this.server.send('TOPIC ' + channel);
 		} else if (this.numArgs == 2) {
@@ -187,7 +187,7 @@ function handleTopic(channel, text) {
 }
 
 function handleWhois(targetName) {
-	this.server.requireRegistered(() => {
+	this.server.requireConnected(() => {
 		this.server.send('WHOIS ' + targetName);
 	});
 }
@@ -210,7 +210,7 @@ function handleClientCommand(activeEntity, command, args, sessionId) {
 			activeEntity.server.user.showError('Not enough parameters.');
 		}
 	} else {
-		activeEntity.server.requireRegistered(function() {
+		activeEntity.server.requireConnected(function() {
 			activeEntity.server.send(command + ' ' + args);
 		});
 	}

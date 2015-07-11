@@ -615,13 +615,13 @@ function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId
 				clientcommands.handleClientCommand(activeEntity, command, rest, sessionId);
 			} else {
 				if (activeEntity.type === 'channel') {
-					server.requireRegistered(function() {
+					server.requireConnected(function() {
 						const channel = activeEntity;
 						user.applyStateChange('MyChatMessage', channel.entityId, rest);
 						server.send('PRIVMSG ' + channel.name + ' :' + rest);
 					});
 				} else if (activeEntity.type === 'query') {
-					server.requireRegistered(function() {
+					server.requireConnected(function() {
 						const query = activeEntity;
 						user.applyStateChange('MyChatMessage', query.entityId, rest);
 						server.send('PRIVMSG ' + query.name + ' :' + rest);
