@@ -1,16 +1,17 @@
 "use strict";
 
-var clientcommands = require('./clientcommands.js');
-var errno = require('errno');
-var logger = require('./logger.js');
-var mode = require('./mode.js');
-var moment = require('moment');
-var net = require('net');
-var tls = require('tls');
-var users = require('./users.js');
-var utils = require('./utils.js');
+const assert = require('assert');
+const clientcommands = require('./clientcommands.js');
+const errno = require('errno');
+const logger = require('./logger.js');
+const mode = require('./mode.js');
+const moment = require('moment');
+const net = require('net');
+const tls = require('tls');
+const users = require('./users.js');
+const utils = require('./utils.js');
 
-var serverCommandHandlers = {
+const serverCommandHandlers = {
 	'001': handleCommandRequireArgs(1, handle001),
 	'002': handleCommandRequireArgs(2, showInfoLast),
 	'003': handleCommandRequireArgs(2, showInfoLast),
@@ -61,7 +62,7 @@ var serverCommandHandlers = {
 };
 
 // commands allowed to be processed before registration (001)
-var preregAllowedCommands = [
+const preregAllowedCommands = [
 	'001',
 	'432', // ERR_ERRONEUSNICKNAME
 	'433', // ERR_NICKNAMEINUSE
@@ -84,8 +85,7 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 
 function showInfoLast(user, server, origin) {
 	if (arguments.length >= 5) {
-		var text = arguments[arguments.length - 1];
-
+		const text = arguments[arguments.length - 1];
 		server.showInfo(text);
 	} else {
 		logger.error('showInfoLast called with arguments.length = ' + arguments.length);
@@ -124,11 +124,9 @@ function handle004(user, server, origin, myNickname, serverName, serverVersion, 
 }
 
 function handle005(user, server, origin) {
-	var keyValueStrings = Array.prototype.slice.call(arguments, 4, arguments.length - 1);
-
+	const keyValueStrings = Array.prototype.slice.call(arguments, 4, arguments.length - 1);
 	keyValueStrings.forEach(function(keyValueStr) {
-		var kv = utils.parseKeyEqValue(keyValueStr);
-
+		const kv = utils.parseKeyEqValue(keyValueStr);
 		if (kv.key === 'NETWORK') {
 			if (kv.val) {
 				user.applyStateChange('EditServer', server.entityId, {
@@ -137,7 +135,6 @@ function handle005(user, server, origin) {
 			}
 		}
 	});
-
 	server.showInfo('Server settings: ' + keyValueStrings.join(' '));
 }
 
@@ -150,8 +147,7 @@ function handle312(user, server, origin, myNickname, nick, serverName, serverDes
 }
 
 function handle317(user, server, origin, myNickname, nick, secondsIdle, signonTime) {
-	var signonDate = new Date(signonTime * 1000);
-
+	const signonDate = new Date(signonTime * 1000);
 	server.showWhois(nick + ' has been idle for ' + moment().add('seconds', secondsIdle).fromNow(true) + ' (signed on ' + moment(signonDate).fromNow() + ')');
 }
 
@@ -181,8 +177,7 @@ function handle332(user, server, origin, myNickname, channelName, topicText) {
 
 function handle333(user, server, origin, myNickname, channelName, setByNick, topicTime) {
 	server.withChannel(channelName, silentFail(function(channel) {
-		var topicDate = new Date(topicTime * 1000);
-
+		const topicDate = new Date(topicTime * 1000);
 		user.applyStateChange('Info', channel.entityId, 'Set by ' + setByNick + ' (' + moment(topicDate).fromNow() + ')');
 	}));
 }
@@ -190,16 +185,13 @@ function handle333(user, server, origin, myNickname, channelName, setByNick, top
 function handle353(user, server, origin, myNickname, channelType, channelName, namesList) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		// build a list of UserlistEntry
-		var userlistEntries = [];
-
+		const userlistEntries = [];
 		namesList.trim().split(' ').forEach(function(nickWithFlags) {
-			var userlistEntryMaybe = parseUserlistEntry(nickWithFlags);
-
+			const userlistEntryMaybe = parseUserlistEntry(nickWithFlags);
 			if (userlistEntryMaybe !== null) {
 				userlistEntries.push(userlistEntryMaybe);
 			}
 		});
-
 		user.applyStateChange('NamesUpdateAdd', channel.entityId, userlistEntries);
 	}));
 }
@@ -211,9 +203,8 @@ function handle378(user, server, origin, myNickname, nick, text) {
 // ~owner, &admin, @op, %halfop, +voice, regular
 // combinations possible, e.g. &@name
 function parseUserlistEntry(nickWithFlags) {
-	var userlistEntry = new UserlistEntry();
-
-	for (var i = 0; i < nickWithFlags.length; i++) {
+	const userlistEntry = new UserlistEntry();
+	for (let i of indices(nickWithFlags.length)) {
 		switch (nickWithFlags.charAt(i)) {
 			case '~':
 				userlistEntry.owner = true;
@@ -256,7 +247,6 @@ function handle421(user, server, origin, myNickname, commandName, text) {
 
 function handle432(user, server, origin, myNickname, targetName) {
 	server.showError('Invalid nickname: ' + targetName, false);
-
 	if (!server.isRegistered()) {
 		tryAnotherNickname(server, targetName);
 	}
@@ -264,15 +254,13 @@ function handle432(user, server, origin, myNickname, targetName) {
 
 function handle433(user, server, origin, myNickname, targetName) {
 	server.showError('Nickname already in use: ' + targetName, false);
-
 	if (!server.isRegistered()) {
 		tryAnotherNickname(server, targetName);
 	}
 }
 
 function tryAnotherNickname(server, lastNickname) {
-	var nextNickname = server.getActiveIdentity().nextNickname(lastNickname);
-
+	const nextNickname = server.getActiveIdentity().nextNickname(lastNickname);
 	if (nextNickname !== null) {
 		server.send('NICK :' + nextNickname);
 	} else {
@@ -305,12 +293,10 @@ function handleJoin(user, server, origin, channelName) {
 		} else {
 			// someone joined one of the channels we should be in
 			server.withChannel(channelName, silentFail(function(channel) {
-				var newUserlistEntry = new UserlistEntry();
-
+				const newUserlistEntry = new UserlistEntry();
 				newUserlistEntry.nick = origin.nick;
 				newUserlistEntry.user = origin.user;
 				newUserlistEntry.host = origin.host;
-
 				user.applyStateChange('Join', channel.entityId, newUserlistEntry);
 			}));
 		}
@@ -330,8 +316,7 @@ function handleKick(user, server, origin, channelName, targetName, kickMessage) 
 }
 
 function handleMode(user, server, origin, targetName, modes) {
-	var handleModeArguments = arguments;
-
+	const handleModeArguments = arguments;
 	utils.withParsedTarget(targetName, silentFail(function(target) {
 		if (target instanceof ClientTarget) {
 			// it's a user mode
@@ -341,21 +326,16 @@ function handleMode(user, server, origin, targetName, modes) {
 		} else if (target instanceof ChannelTarget) {
 			// it's a channel mode
 			server.withChannel(target.name, silentFail(function(channel) {
-				var modeArgs = Array.prototype.slice.call(handleModeArguments, 5);
-
-				var parsedModes = mode.parseChannelModes(modes, modeArgs);
-
+				const modeArgs = Array.prototype.slice.call(handleModeArguments, 5);
+				const parsedModes = mode.parseChannelModes(modes, modeArgs);
 				user.applyStateChange('ModeChange', channel.entityId, origin, modes, modeArgs);
-
 				if (parsedModes !== null) {
 					parsedModes.forEach(function(parsedMode) {
 						// a, h, o, q, v
-						var userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
-
+						const userlistEntryAttribute = mode.getUserlistEntryAttributeByMode(parsedMode.mode);
 						if (userlistEntryAttribute !== null) {
 							user.applyStateChange('UserlistModeUpdate', channel.entityId, parsedMode.arg, parsedMode.plus, userlistEntryAttribute);
 						}
-
 						// for now, we ignore all other modes
 					});
 				} else {
@@ -377,9 +357,7 @@ function handleNotice(user, server, origin, targetName, text) {
 		if (server.isRegistered()) {
 			utils.withParsedTarget(targetName, silentFail(function(target) {
 				// here we have a valid target
-
-				var ctcpMessage = utils.parseCtcpMessage(text);
-
+				const ctcpMessage = utils.parseCtcpMessage(text);
 				if (ctcpMessage !== null) {
 					logger.warn('CTCP reply handling not implemented');
 				} else {
@@ -410,7 +388,6 @@ function handlePart(user, server, origin, channelName) {
 			// the server is confirming that we've left the channel
 			server.withChannel(channelName, silentFail(function(channel) {
 				utils.setNotInChannel(channel);
-
 				// if rejoining is set, keep the window open as we've already sent a JOIN for this channel
 				if (!channel.rejoining) {
 					channel.removeEntity();
@@ -419,12 +396,10 @@ function handlePart(user, server, origin, channelName) {
 		} else {
 			// someone left one of the channels we should be in
 			server.withChannel(channelName, silentFail(function(channel) {
-				var who = new UserlistEntry();
-
+				const who = new UserlistEntry();
 				who.nick = origin.nick;
 				who.user = origin.user;
 				who.host = origin.host;
-
 				user.applyStateChange('Part', channel.entityId, who);
 			}));
 		}
@@ -435,9 +410,7 @@ function handlePrivmsg(user, server, origin, targetName, text) {
 	if (origin !== null) {
 		utils.withParsedTarget(targetName, silentFail(function(target) {
 			// here we have a valid target
-
-			var ctcpMessage = utils.parseCtcpMessage(text);
-
+			const ctcpMessage = utils.parseCtcpMessage(text);
 			if (ctcpMessage !== null) {
 				handleCtcp(server, origin, target, ctcpMessage);
 			} else {
@@ -449,8 +422,7 @@ function handlePrivmsg(user, server, origin, targetName, text) {
 				} else if (target instanceof ClientTarget) {
 					if (utils.equalsIgnoreCase(server.currentNickname, target.nick)) {
 						// we are the recipient
-						var query = server.ensureQuery(origin.getNickOrName());
-
+						const query = server.ensureQuery(origin.getNickOrName());
 						user.applyStateChange('ChatMessage', query.entityId, origin, text);
 					}
 				}
@@ -481,8 +453,7 @@ function handleCtcp(server, origin, target, ctcpMessage) {
 			} else if (target instanceof ClientTarget) {
 				if (utils.equalsIgnoreCase(server.currentNickname, target.nick)) {
 					// we are the recipient
-					var query = server.ensureQuery(origin.getNickOrName());
-
+					const query = server.ensureQuery(origin.getNickOrName());
 					server.user.applyStateChange('ActionMessage', query.entityId, origin, ctcpMessage.args);
 				}
 			}
@@ -494,71 +465,51 @@ function handleCtcp(server, origin, target, ctcpMessage) {
 
 function reconnectServer(server) {
 	server.disconnect(); // noop if not connected
-
 	server.showInfo('Connecting to ' + server.host + ':' + server.port);
-
-	var connectOptions = {
+	const connectOptions = {
 		host: server.host,
 		port: server.port
 	};
-
 	if (server.ssl) {
 		connectOptions.rejectUnauthorized = false; // no certificate validation yet
 	}
-
-	var netOrTls = server.ssl ? tls : net;
-
-	var serverSocket = netOrTls.connect(connectOptions, function() {
+	const netOrTls = server.ssl ? tls : net;
+	const serverSocket = netOrTls.connect(connectOptions, function() {
 		logger.info('Connected to server %s:%d', server.host, server.port);
-
 		server.user.applyStateChange('EditServer', server.entityId, {
 			connected: true
 		});
-
 		if (server.password) {
 			server.send('PASS ' + server.password);
 		}
-
-		var activeIdentity = server.getActiveIdentity();
-
+		const activeIdentity = server.getActiveIdentity();
 		server.send('NICK ' + activeIdentity.nextNickname());
 		server.send('USER ' + activeIdentity.username + ' ' + activeIdentity.username + ' ' + server.host + ' :' + activeIdentity.realName);
 	});
-
 	server.socket = serverSocket;
-
 	serverSocket.on('error', function(err) {
 		logger.warn('Connection to server closed due to error:', err);
-
-		var errorString = err.syscall + ': ' + ((err.code in errno.code) ? errno.code[err.code].description : err.code);
-
+		const errorString = err.syscall + ': ' + ((err.code in errno.code) ? errno.code[err.code].description : err.code);
 		if (server.connected) {
 			server.showError('Connection closed (' + errorString + ')');
 		} else {
 			server.showError('Unable to connect (' + errorString + ')');
 		}
-
 		server.disconnect();
 	});
-
-	var readBuffer = '';
+	let readBuffer = '';
 	serverSocket.on('data', function(data) {
 		readBuffer += data;
-
-		while(true) {
-			var lineEndIndex = readBuffer.indexOf('\r\n');
+		while (true) {
+			const lineEndIndex = readBuffer.indexOf('\r\n');
 			if (lineEndIndex === -1) {
 				break;
 			}
-
-			var line = readBuffer.substring(0, lineEndIndex);
-
+			const line = readBuffer.substring(0, lineEndIndex);
 			readBuffer = readBuffer.substring(lineEndIndex + 2);
-
 			processLineFromServer(line, server);
 		}
 	});
-
 	serverSocket.on('end', function() {
 		server.disconnect();
 	});
@@ -566,9 +517,7 @@ function reconnectServer(server) {
 
 function processLineFromServer(line, server) {
 	logger.data('Line: ' + line);
-
-	var parseResult = parseLine(line);
-
+	const parseResult = parseLine(line);
 	if (parseResult !== null) {
 		if (parseResult.command in serverCommandHandlers) {
 			// either already registered (001) or it's a command that's allowed to be received before registration
@@ -594,17 +543,14 @@ function processLineFromServer(line, server) {
 
 // returns: { origin, command, args[] }
 function parseLine(line) {
-	var origin = null;
-	var command = null;
-	var args = [];
-
+	let origin = null;
+	let command = null;
+	const args = [];
 	if (line.length === 0) {
 		// empty line is not valid
 		return null;
 	}
-
-	var spaceAt;
-
+	let spaceAt;
 	// first, parse the origin (if any)
 	if (line.charAt(0) === ':') {
 		spaceAt = line.indexOf(' ');
@@ -616,12 +562,10 @@ function parseLine(line) {
 			return null;
 		}
 	}
-
 	if (line.length === 0) {
 		// no command? invalid line
 		return null;
 	}
-
 	// second, parse the command
 	spaceAt = line.indexOf(' ');
 	if (spaceAt !== -1) {
@@ -631,7 +575,6 @@ function parseLine(line) {
 		command = line;
 		line = null;
 	}
-
 	// now parse the args
 	while (line !== null && line.length > 0) {
 		if (line.charAt(0) === ':') {
@@ -648,7 +591,6 @@ function parseLine(line) {
 			}
 		}
 	}
-
 	return {
 		origin: origin,
 		command: command,
@@ -658,40 +600,31 @@ function parseLine(line) {
 
 function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId) {
 	if (user.currentActiveWindow !== null) {
-		var command = null;
-		var rest = line;
-
+		let command = null;
+		let rest = line;
 		if (parseCommands) {
-			var match;
-
+			let match;
 			if (match = line.match(/^\/([a-z0-9]*)\s*(.*?)$/i)) {
 				command = match[1].toUpperCase();
 				rest = match[2];
 			}
 		}
-
-		var activeEntity = user.getEntityById(activeEntityId);
-
-		var server = activeEntity.server;
-
+		const activeEntity = user.getEntityById(activeEntityId);
+		const server = activeEntity.server;
 		if (activeEntity !== null) {
 			if (command !== null) {
 				clientcommands.handleClientCommand(activeEntity, command, rest, sessionId);
 			} else {
 				if (activeEntity.type === 'channel') {
 					server.ifRegistered(function() {
-						var channel = activeEntity;
-
+						const channel = activeEntity;
 						user.applyStateChange('MyChatMessage', channel.entityId, rest);
-
 						server.send('PRIVMSG ' + channel.name + ' :' + rest);
 					});
 				} else if (activeEntity.type === 'query') {
 					server.ifRegistered(function() {
-						var query = activeEntity;
-
+						const query = activeEntity;
 						user.applyStateChange('MyChatMessage', query.entityId, rest);
-
 						server.send('PRIVMSG ' + query.name + ' :' + rest);
 					});
 				} else {

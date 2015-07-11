@@ -1,16 +1,17 @@
 "use strict";
 
-var fs = require('fs');
-var statechanges = require('./static/js/statechanges.js');
+const assert = require('assert');
+const fs = require('fs');
+const statechanges = require('./static/js/statechanges.js');
 
 function installGlobals() {
-	var globalFunctions = {
+	const globalFunctions = {
 		check: function(errorHandler, okHandler) {
 			return function(err, val) {
 				if (!err) {
-					okHandler.call(global, val);
+					okHandler(val);
 				} else {
-					errorHandler.call(global, err);
+					errorHandler(err);
 				}
 			}
 		},
@@ -23,6 +24,16 @@ function installGlobals() {
 					console.log('silentFail caught error:', err);
 				}
 			}
+		},
+		indices: function* (len) {
+			for (let i = 0; i < len; i++) {
+				yield i;
+			}
+		},
+		indicesReverse: function* (len) {
+			for (let i = len - 1; i >= 0; i--) {
+				yield i;
+			}
 		}
 	};
 
@@ -32,8 +43,8 @@ function installGlobals() {
 }
 
 function parseCtcpMessage(str) {
-	var match;
-	if (match = str.match(/^\u0001([^\s]+)(?: (.+))?\u0001$/)) {
+	const match = str.match(/^\u0001([^\s]+)(?: (.+))?\u0001$/);
+	if (match) {
 		return {command: match[1].toUpperCase(), args: (typeof match[2] === 'undefined' ? null : match[2])};
 	} else {
 		return null;
@@ -41,24 +52,20 @@ function parseCtcpMessage(str) {
 }
 
 function toCtcp(command, args) {
-	var ret = String.fromCharCode(1);
-
+	let ret = String.fromCharCode(1);
 	ret += command.toUpperCase();
-
 	if (typeof args !== 'undefined') {
 		ret += ' ' + args;
 	}
-
 	ret += String.fromCharCode(1);
-
 	return ret;
 }
 
 // note: we only validate the nick!user@host format and not what characters can or cannot be in each
 // on failure to match, we assume str is a server origin
 function parseOrigin(str) {
-	var match;
-	if (match = str.match(/^([^!]+?)!([^@]+?)@(.+?)$/)) {
+	const match = str.match(/^([^!]+?)!([^@]+?)@(.+?)$/);
+	if (match) {
 		return new ClientOrigin(match[1], match[2], match[3]);
 	} else {
 		return new ServerOrigin(str);
@@ -67,7 +74,7 @@ function parseOrigin(str) {
 
 // Possible channel types: & # + ! . ~
 function parseTarget(str) {
-	var match;
+	let match;
 	if (str.match(/^[#&+.~][^\s]{1,99}|![A-Z0-5]{5}[^\s]{1,94}$/)) {
 		return new ChannelTarget(str);
 	} else if (match = str.match(/^([a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*)(?:@([^@]+))?$/i)) {
@@ -78,8 +85,7 @@ function parseTarget(str) {
 }
 
 function withParsedTarget(targetName, cb) {
-	var maybeTarget = parseTarget(targetName);
-
+	const maybeTarget = parseTarget(targetName);
 	if (maybeTarget instanceof ChannelTarget ||
 		maybeTarget instanceof ClientTarget) {
 		cb(null, maybeTarget);
@@ -89,8 +95,7 @@ function withParsedTarget(targetName, cb) {
 }
 
 function parseKeyEqValue(str) {
-	var eqPos = str.indexOf('=');
-
+	const eqPos = str.indexOf('=');
 	if (eqPos >= 0) {
 		return {
 			key: str.substring(0, eqPos),
@@ -106,15 +111,13 @@ function parseKeyEqValue(str) {
 
 function readJsonFile(filePath, cb) {
 	fs.readFile(filePath, check(cb, function(data) {
-		var err = null;
-		var config = null;
-
+		let err = null;
+		let config = null;
 		try {
 			config = JSON.parse(data);
 		} catch(e) {
 			err = e;
 		}
-
 		cb(err, config);
 	}));
 }
@@ -127,6 +130,15 @@ function ensureRequiredFields(obj, fields) {
 	});
 }
 
+function findFirst(arr, f) {
+	for (let val of arr) {
+		if (f(val)) {
+			return val;
+		}
+	}
+	return null;
+}
+
 exports.installGlobals = installGlobals;
 exports.parseCtcpMessage = parseCtcpMessage;
 exports.toCtcp = toCtcp;
@@ -136,6 +148,7 @@ exports.withParsedTarget = withParsedTarget;
 exports.parseKeyEqValue = parseKeyEqValue;
 exports.readJsonFile = readJsonFile;
 exports.ensureRequiredFields = ensureRequiredFields;
+exports.findFirst = findFirst;
 
 // from statechanges
 exports.equalsIgnoreCase = statechanges.utils.equalsIgnoreCase;

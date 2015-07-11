@@ -1,45 +1,38 @@
 "use strict";
 
-var ModeType = {
+const ModeArgumentPresence = {
 	NONE: 0,
 	PLUS_ONLY: 1,
 	BOTH: 2
 };
 
 function parseChannelModes(modes, args) {
- 	var modesWithParams = {};
-
-	modesWithParams['a'] = ModeType.BOTH;
-	modesWithParams['b'] = ModeType.BOTH;
-	modesWithParams['e'] = ModeType.BOTH;
-	modesWithParams['f'] = ModeType.BOTH;
-	modesWithParams['h'] = ModeType.BOTH;
-	modesWithParams['I'] = ModeType.BOTH;
-	modesWithParams['j'] = ModeType.BOTH;
-	modesWithParams['k'] = ModeType.BOTH;
-	modesWithParams['l'] = ModeType.PLUS_ONLY;
-	modesWithParams['L'] = ModeType.BOTH;
-	modesWithParams['o'] = ModeType.BOTH;
-	modesWithParams['q'] = ModeType.BOTH;
-	modesWithParams['v'] = ModeType.BOTH;
-
-	return parseModes(modes, args, modesWithParams);
+ 	const modeToPresence = new Map();
+	modeToPresence.set('a', ModeArgumentPresence.BOTH);
+	modeToPresence.set('b', ModeArgumentPresence.BOTH);
+	modeToPresence.set('e', ModeArgumentPresence.BOTH);
+	modeToPresence.set('f', ModeArgumentPresence.BOTH);
+	modeToPresence.set('h', ModeArgumentPresence.BOTH);
+	modeToPresence.set('I', ModeArgumentPresence.BOTH);
+	modeToPresence.set('j', ModeArgumentPresence.BOTH);
+	modeToPresence.set('k', ModeArgumentPresence.BOTH);
+	modeToPresence.set('l', ModeArgumentPresence.PLUS_ONLY);
+	modeToPresence.set('L', ModeArgumentPresence.BOTH);
+	modeToPresence.set('o', ModeArgumentPresence.BOTH);
+	modeToPresence.set('q', ModeArgumentPresence.BOTH);
+	modeToPresence.set('v', ModeArgumentPresence.BOTH);
+	return parseModes(modes, args, modeToPresence);
 }
 
 function parseUserModes(modes, args) {
-	return parseModes(modes, args, {});
+	return parseModes(modes, args, new Map());
 }
 
-function parseModes(modes, args, modesWithParams) {
-	var plus = null;
-
-	var parsedModes = [];
-
-	var argIdx = 0;
-
-	for (var i = 0; i < modes.length; i++) {
-		var c = modes.charAt(i);
-
+function parseModes(modes, args, modeToPresence) {
+	let plus = null;
+	const parsedModes = [];
+	const argsIter = args[Symbol.iterator]();
+	for (let c of modes) {
 		if (c === '+') {
 			plus = true;
 		} else if (c === '-') {
@@ -50,26 +43,24 @@ function parseModes(modes, args, modesWithParams) {
 				// if we got a mode before a +/-, invalid input
 				return null;
 			}
-
-			var modeType = ModeType.NONE;
-			if (c in modesWithParams) {
-				modeType = modesWithParams[c];
-			}
-
-			// if this mode requires an arg, grab it
-			var arg = null;
-			if (modeType === ModeType.BOTH || (modeType === ModeType.PLUS_ONLY && plus)) {
-				if (argIdx < args.length) {
-					arg = args[argIdx++];
+			const modeType = modeToPresence.has(c) ? modeToPresence.get(c) : ModeArgumentPresence.NONE;
+			// if this mode has an arg, grab it
+			let arg = null;
+			if (modeType === ModeArgumentPresence.BOTH || (modeType === ModeArgumentPresence.PLUS_ONLY && plus)) {
+				const nextArg = argsIter.next();
+				if (!nextArg.done) {
+					arg = nextArg.value;
 				} else {
 					return null; // not enough args
 				}
 			}
-
-			parsedModes.push({mode: c, plus: plus, arg: arg});
+			parsedModes.push({
+				mode: c,
+				plus: plus,
+				arg: arg
+			});
 		}
 	}
-
 	return parsedModes;
 }
 

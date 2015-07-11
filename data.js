@@ -1,10 +1,10 @@
 "use strict";
 
-var assert = require('assert');
+const assert = require('assert');
 // irc.js include moved to the bottom due to circular dependency
-var logger = require('./logger.js');
-var statechanges = require('./static/js/statechanges.js');
-var utils = require('./utils.js');
+const logger = require('./logger.js');
+const statechanges = require('./static/js/statechanges.js');
+const utils = require('./utils.js');
 
 function User(spec) {
 	utils.ensureRequiredFields(spec, [
@@ -42,9 +42,8 @@ User.prototype = {
 		});
 	},
 	applyStateChange: function() {
-		var funcId = arguments[0];
-
-		var args = Array.prototype.slice.call(arguments, 1);
+		const funcId = arguments[0];
+		const args = Array.prototype.slice.call(arguments, 1);
 
 		// first, send it to the clients
 		this.sendToWeb('ApplyStateChange', {
@@ -52,10 +51,8 @@ User.prototype = {
 			args: args
 		});
 
-		// then apply the change on the server
-		var stateChangeFunctionReturn = statechanges.callStateChangeFunction(this, funcId, args);
-
-		return stateChangeFunctionReturn;
+		// then apply the change on the server and return the result
+		return statechanges.callStateChangeFunction(this, funcId, args);
 	},
 	getEntityById: function(targetEntityId) {
 		return statechanges.utils.getEntityById(this, targetEntityId);
@@ -64,7 +61,7 @@ User.prototype = {
 		return this.nextEntityId++;
 	},
 	removeActiveWebSocket: function(socket) {
-		var idx = this.activeWebSockets.indexOf(socket);
+		const idx = this.activeWebSockets.indexOf(socket);
 		if (idx !== -1) {
 			this.activeWebSockets.splice(idx, 1);
 
@@ -74,7 +71,7 @@ User.prototype = {
 		}
 	},
 	removeLoggedInSession: function(sessionId) {
-		var idx = this.loggedInSessions.indexOf(sessionId);
+		const idx = this.loggedInSessions.indexOf(sessionId);
 		if (idx !== -1) {
 			this.loggedInSessions.splice(idx, 1);
 
@@ -147,46 +144,32 @@ Server.prototype = {
 		this.user.applyStateChange('AddChannel', this.entityId, channel);
 	},
 	joinedChannel: function(channelName) {
-		var server = this;
-
+		const server = this;
 		server.withChannel(channelName, check(
 			function(err) {
-				var channel = new Channel({
+				const channel = new Channel({
 					name: channelName,
 					inChannel: true
 				}, server.user.getNextEntityId.bind(server.user));
-
 				server.addChannel(channel);
-
 				server.user.applyStateChange('Info', channel.entityId, 'Joined channel ' + channel.name);
-
 				server.user.setActiveEntity(channel.entityId);
 			},
 			function(channel) {
 				channel.rejoining = false;
-
 				server.user.applyStateChange('RejoinChannel', channel.entityId);
 			}
 		));
 	},
 	withChannel: function(channelName, cb) {
-		var matchedChannel;
-
-		this.channels.some(function(channel) {
-			if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-				matchedChannel = channel;
-
-				return true;
-			}
+		const matchedChannel = utils.findFirst(this.channels, function(channel) {
+			return channel.name.toLowerCase() === channelName.toLowerCase()
 		});
-
 		if (matchedChannel) {
 			cb(null, matchedChannel);
 		} else {
-			var err = new Error('No matching channel');
-
+			const err = new Error('No matching channel');
 			err.code = 'ENOENT';
-
 			cb(err);
 		}
 	},
@@ -194,26 +177,16 @@ Server.prototype = {
 		this.user.applyStateChange('AddQuery', this.entityId, query);
 	},
 	ensureQuery: function(queryName) {
-		var queryRet;
-
-		var exists = this.queries.some(function(query) {
-			if (query.name.toLowerCase() === queryName.toLowerCase()) {
-				queryRet = query;
-				return true;
-			}
-		});
-
-		if (!exists) {
-			var query = new Query({
+		const matchedQuery = utils.findFirst(this.queries, query.name.toLowerCase() === queryName.toLowerCase());
+		if (matchedQuery) {
+			return matchedQuery;
+		} else {
+			let query = new Query({
 				name: queryName
 			}, this.user.getNextEntityId.bind(this.user));
-
 			this.addQuery(query);
-
-			queryRet = query;
+			return query;
 		}
-
-		return queryRet;
 	},
 	isSocketWritable: function() {
 		return this.socket !== null && this.socket.writable;
@@ -229,37 +202,28 @@ Server.prototype = {
 	},
 	startPings: function() {
 		assert(typeof this.timeoutPings === 'undefined'); // must end any existing ones before starting
-
-		var self = this;
-
-		var pingInterval = 60000;
-
+		const self = this;
+		const pingInterval = 60000;
 		function sendPing() {
 			// TODO LOW: do we care if we receive the correct token back? not checking for now
-			var randomToken = Math.floor(Math.random()*99999);
-
+			const randomToken = Math.floor(Math.random()*99999);
 			self.send('PING :' + randomToken);
-
 			self.timeoutPings = setTimeout(sendPing, pingInterval);
 		}
-
 		self.timeoutPings = setTimeout(sendPing, pingInterval);
 	},
 	endPings: function() {
 		if (this.timeoutPings) {
 			clearTimeout(this.timeoutPings);
-
 			delete this.timeoutPings;
 		}
 	},
 	showError: function(text, preferActive) {
-		var targetEntity = preferActive ? this.getActiveOrServerEntity() : this.entityId;
-
+		const targetEntity = preferActive ? this.getActiveOrServerEntity() : this.entityId;
 		this.user.applyStateChange('Error', targetEntity, text);
 	},
 	showInfo: function(text, preferActive) {
-		var targetEntity = preferActive ? this.getActiveOrServerEntity() : this.entityId;
-
+		const targetEntity = preferActive ? this.getActiveOrServerEntity() : this.entityId;
 		this.user.applyStateChange('Info', targetEntity, text);
 	},
 	showWhois: function(text) {
@@ -271,7 +235,6 @@ Server.prototype = {
 		} else {
 			return this.entityId;
 		}
-
 		return this.entityId;
 	},
 	isRegistered: function() {
@@ -291,17 +254,14 @@ Server.prototype = {
 		if (this.user.servers.length > 1) {
 			// disconnect if connected
 			this.disconnect();
-
 			// close all the queries
-			for (var i = this.queries.length - 1; i >= 0; i--) {
+			for (let i of indicesReverse(this.queries.length)) {
 				this.queries[i].removeEntity();
 			}
-
 			// close all the channels
-			for (var i = this.channels.length - 1; i >= 0; i--) {
+			for (let i of indicesReverse(this.channels.length)) {
 				this.channels[i].removeEntity();
 			}
-
 			// and finally remove the server itself
 			this.user.applyStateChange('RemoveEntity', this.entityId);
 		} else {
@@ -336,25 +296,19 @@ function Channel(spec, getNextEntityId) {
 Channel.prototype = {
 	rejoin: function() {
 		this.server.user.applyStateChange('Info', this.entityId, 'Attempting to rejoin channel...');
-
 		if (this.inChannel) {
 			this.rejoining = true;
-
 			this.server.send('PART ' + this.name);
 		}
-
 		this.server.send('JOIN ' + this.name);
 	},
 	withUserlistEntry: function(nick, cb) {
-		var matchIndex = statechanges.utils.findUserlistEntryByNick(nick, this.userlist);
-
+		const matchIndex = statechanges.utils.findUserlistEntryByNick(nick, this.userlist);
 		if (matchIndex !== null) {
 			cb(null, this.userlist[matchIndex]);
 		} else {
-			var err = new Error('No matching userlist entry');
-
+			const err = new Error('No matching userlist entry');
 			err.code = 'ENOENT';
-
 			cb(err);
 		}
 	},
@@ -362,7 +316,6 @@ Channel.prototype = {
 		if (this.inChannel) {
 			this.server.send('PART ' + this.name);
 		}
-
 		this.server.user.applyStateChange('RemoveEntity', this.entityId);
 	}
 };
@@ -408,8 +361,7 @@ function ServerIdentity(spec) {
 ServerIdentity.prototype = {
 	nextNickname: function(lastNickname) {
 		// if lastNickname is undefined or not in the list, indexOf will return -1, then +1 will make nextIndex 0
-		var nextIndex = (this.nicknames.indexOf(lastNickname) + 1) % this.nicknames.length;
-
+		const nextIndex = (this.nicknames.indexOf(lastNickname) + 1) % this.nicknames.length;
 		if (typeof lastNickname === 'string' && nextIndex === 0) {
 			// either the given nickname was not found or it's a rollover
 			return null;
@@ -468,12 +420,10 @@ function ClientTarget(nick, server) {
 
 ClientTarget.prototype = {
 	toString: function() {
-		var ret = this.nick;
-
+		let ret = this.nick;
 		if (this.server) {
 			ret += '@' + this.server;
 		}
-
 		return ret;
 	}
 }
@@ -491,4 +441,4 @@ exports.install = function() {
 }
 
 // down here due to circular dependency
-var irc = require('./irc.js');
+const irc = require('./irc.js');

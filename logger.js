@@ -1,9 +1,9 @@
 "use strict";
 
-var fs = require('fs');
-var winston = require('winston');
+const fs = require('fs');
+const winston = require('winston');
 
-var loggerConfig = {
+const loggerConfig = {
 	levels: {
 		data: 0,
 		debug: 1,
@@ -20,22 +20,18 @@ var loggerConfig = {
 	}
 };
 
-var logger = null;
+let logger = null;
 
 function init(logLevelConsole, logLevelFile) {
 	logLevelConsole = validateLogLevel(logLevelConsole, 'debug');
 	logLevelFile = validateLogLevel(logLevelFile, 'data');
-
-	var logDir = 'logs';
-
+	const logDir = 'logs';
 	// sync is okay as this is on startup
 	if (!fs.existsSync(logDir)) {
 		fs.mkdirSync(logDir);
 	}
-
-	var unixTime = Math.floor((new Date()).getTime() / 1000);
-	var logPrefix = logDir + '/' + unixTime + '-';
-
+	const unixTime = Math.floor((new Date()).getTime() / 1000);
+	const logPrefix = logDir + '/' + unixTime + '-';
 	logger = new winston.Logger({
 		transports: [
 			new winston.transports.Console({
@@ -47,18 +43,10 @@ function init(logLevelConsole, logLevelFile) {
 				level: logLevelFile,
 				json: false
 			})
-		],/* this is annoying as it formats the stack traces poorly, so turned off for now
-		exceptionHandlers: [
-			new winston.transports.Console(),
-			new winston.transports.File({
-				filename: logPrefix + 'exceptions.log',
-				json: false
-			})
-		],*/
+		],
 		levels: loggerConfig.levels,
 		colors: loggerConfig.colors
 	});
-
 	logger.debug('Logger initialized with logLevelConsole %s and logLevelFile %s', logLevelConsole, logLevelFile);
 }
 
@@ -73,28 +61,33 @@ function validateLogLevel(logLevel, defaultLogLevel) {
 }
 
 function data() {
-	if (logger)
+	if (logger) {
 		logger.data.apply(this, arguments);
+	}
 }
 
 function debug() {
-	if (logger)
+	if (logger) {
 		logger.debug.apply(this, arguments);
+	}
 }
 
 function info() {
-	if (logger)
+	if (logger) {
 		logger.info.apply(this, arguments);
+	}
 }
 
 function warn() {
-	if (logger)
+	if (logger) {
 		logger.warn.apply(this, arguments);
+	}
 }
 
 function error() {
-	if (logger)
+	if (logger) {
 		logger.error.apply(this, arguments);
+	}
 }
 
 module.exports.init = init;

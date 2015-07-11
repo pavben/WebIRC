@@ -1,21 +1,21 @@
 "use strict";
 
-var async = require('./async');
-var fs = require('fs-extra');
-var logger = require('./logger.js');
-var path = require('path');
-var ReadWriteLock = require('rwlock');
-var utils = require('./utils.js');
+const async = require('./async');
+const fs = require('fs-extra');
+const logger = require('./logger.js');
+const path = require('path');
+const ReadWriteLock = require('rwlock');
+const utils = require('./utils.js');
 
-var USERS_PATH = path.join(__dirname, 'users');
-var USERS_TEMP_PATH = path.join(__dirname, 'users.tmp');
+const USERS_PATH = path.join(__dirname, 'users');
+const USERS_TEMP_PATH = path.join(__dirname, 'users.tmp');
 
-var users = [];
+let users = [];
 
-var nextSaveTimeout = null;
-var saveInterval = 5 * 60 * 1000; // save users to disk every 5 minutes
+let nextSaveTimeout = null;
+const saveInterval = 5 * 60 * 1000; // save users to disk every 5 minutes
 
-var usersFolderLock = new ReadWriteLock();
+const usersFolderLock = new ReadWriteLock();
 
 function writeAllUsers(cb) {
 	function getTempFilePathForUser(user) {
@@ -31,7 +31,7 @@ function writeAllUsers(cb) {
 				fs.mkdir(USERS_TEMP_PATH, cb);
 			})
 			.add('writeUsers', ['@makeTemp'], function(cb) {
-				// TODO: change map to forEach
+				// TODO: change map to forEach (or promises?)
 				async.map(users.map(copyStateForSave), function(userCopy, cb) {
 					fs.writeFile(getTempFilePathForUser(userCopy), JSON.stringify(userCopy, null, 4), cb);
 				}, cb);
@@ -44,7 +44,6 @@ function writeAllUsers(cb) {
 			})
 			.run(function(err) {
 				releaseLock();
-
 				cb(err);
 			});
 	});
@@ -54,7 +53,6 @@ function refreshSaveTimeout() {
 	if (nextSaveTimeout) {
 		clearTimeout(nextSaveTimeout);
 	}
-
 	nextSaveTimeout = setTimeout(function() {
 		writeAllUsers(function(err) {
 			if (err) {
@@ -62,7 +60,6 @@ function refreshSaveTimeout() {
 			} else {
 				logger.info('User data saved');
 			}
-
 			refreshSaveTimeout();
 		});
 	}, saveInterval);
@@ -90,7 +87,6 @@ function readAllUsers(cb) {
 			})
 			.run(function(err) {
 				releaseLock();
-
 				cb(err);
 			});
 	});
@@ -104,7 +100,6 @@ function initialize(cb) {
 		.add(['@readAllUsers'], function() {
 			users.forEach(function(user) {
 				// TODO: if !user.defaultIdentity, show the welcome/settings screen
-
 				user.servers.forEach(function(server) {
 					// TODO: connect only to the servers that weren't disconnected by the user
 					if (server.host !== null) {
@@ -122,25 +117,22 @@ function initialize(cb) {
 
 function copyWithoutPointers(user) {
 	function cloneExceptFields(src, exceptFields) {
-		var ret = {};
-
+		const exceptFieldsSet = new Set(exceptFields);
+		const ret = {};
 		Object.keys(src).filter(function(k) {
-			return !~exceptFields.indexOf(k);
+			return !exceptFieldsSet.has(k);
 		}).forEach(function(k) {
 			ret[k] = src[k];
 		});
-
 		return ret;
 	}
-
-	var userCopy = cloneExceptFields(user, [
+	const userCopy = cloneExceptFields(user, [
 		'activeWebSockets',
 		'servers',
 		'entities'
 	]);
-
 	userCopy.servers = user.servers.map(function(server) {
-		var serverCopy = cloneExceptFields(server, [
+		const serverCopy = cloneExceptFields(server, [
 			'socket',
 			'user',
 			'server',
@@ -148,48 +140,35 @@ function copyWithoutPointers(user) {
 			'queries',
 			'timeoutPings'
 		]);
-
 		serverCopy.channels = server.channels.map(function(channel) {
-			var channelCopy = cloneExceptFields(channel, [
+			return cloneExceptFields(channel, [
 				'server'
 			]);
-
-			return channelCopy;
 		});
-
 		serverCopy.queries = server.queries.map(function(query) {
-			var queryCopy = cloneExceptFields(query, [
+			return cloneExceptFields(query, [
 				'server'
 			]);
-
-			return queryCopy;
 		});
-
 		return serverCopy;
 	});
-
 	return userCopy;
 }
 
 function copyStateForClient(user) {
-	var userCopy = copyWithoutPointers(user);
-
+	const userCopy = copyWithoutPointers(user);
 	delete userCopy.loggedInSessions;
 	delete userCopy.password;
-
 	return userCopy;
 }
 
 function copyStateForSave(user) {
-	var userCopy = copyWithoutPointers(user);
-
+	const userCopy = copyWithoutPointers(user);
 	delete userCopy.loggedInSessions;
-
 	userCopy.servers.forEach(function(server) {
 		delete server.type;
 		delete server.connected;
 		delete server.currentNickname;
-
 		server.channels.forEach(function(channel) {
 			delete channel.type;
 			delete channel.userlist;
@@ -197,42 +176,33 @@ function copyStateForSave(user) {
 			delete channel.inChannel;
 			delete channel.rejoining;
 		});
-
 		server.queries.forEach(function(query) {
 			delete query.type;
 		});
 	});
-
 	return userCopy;
 }
 
 function parseUserSpec(spec) {
-	var newUser = new User(spec);
-
+	const newUser = new User(spec);
 	if (Array.isArray(spec.servers)) {
 		spec.servers.forEach(function(serverSpec) {
-			var newServer = new Server(serverSpec, newUser.getNextEntityId.bind(newUser));
-
+			const newServer = new Server(serverSpec, newUser.getNextEntityId.bind(newUser));
 			newUser.addServer(newServer);
-
 			if (Array.isArray(serverSpec.channels)) {
 				serverSpec.channels.forEach(function(channelSpec) {
-					var newChannel = new Channel(channelSpec, newUser.getNextEntityId);
-
+					const newChannel = new Channel(channelSpec, newUser.getNextEntityId);
 					newServer.addChannel(newChannel);
 				});
 			}
-
 			if (Array.isArray(serverSpec.queries)) {
 				serverSpec.queries.forEach(function(querySpec) {
-					var newQuery = new Query(querySpec, newUser.getNextEntityId);
-
+					const newQuery = new Query(querySpec, newUser.getNextEntityId);
 					newServer.addQuery(newQuery);
 				});
 			}
 		});
 	}
-
 	return newUser;
 }
 
@@ -240,42 +210,24 @@ function saveAndShutdown() {
 	writeAllUsers(function(err) {
 		if (err) {
 			logger.error('Unable to save user data', err);
-
 			process.exit(1);
 		} else {
 			logger.info('User data save completed');
-
 			process.exit(0);
 		}
 	});
 }
 
 function getUserBySessionId(sessionId) {
-	var user = null;
-
-	users.some(function(currentUser) {
-		// if sessionId is already in user.loggedInSessions
-		if (currentUser.loggedInSessions.indexOf(sessionId) !== -1) {
-			user = currentUser;
-			return true;
-		}
+	return utils.findFirst(users, function(user) {
+		return user.loggedInSessions.indexOf(sessionId) !== -1;
 	});
-
-	return user;
 }
 
 function getUserByCredentials(username, password) {
-	var user = null;
-
-	users.some(function(currentUser) {
-		if (currentUser.username === username && currentUser.password === password) {
-			user = currentUser;
-
-			return true;
-		}
+	return utils.findFirst(users, function(user) {
+		return user.username === username && user.password === password;
 	});
-
-	return user;
 }
 
 module.exports.initialize = initialize;

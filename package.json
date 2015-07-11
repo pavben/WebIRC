@@ -16,7 +16,7 @@
 		"ws": "0.7.*"
 	},
 	"scripts": {
-		"start": "node --harmony_scoping main.js"
+		"start": "node --harmony_scoping --harmony_generators main.js"
 	},
 	"engines": {
 		"node": ">= 0.10"

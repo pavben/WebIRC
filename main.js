@@ -3,32 +3,32 @@
 require('./data.js').install();
 require('./utils.js').installGlobals();
 
-let assert = require('assert');
-let connect = require('connect');
-let cookie = require('cookie');
-let cookieParser = require('cookie-parser');
-let crypto = require('crypto');
-let express = require('express');
-let expressSession = require('express-session');
-let fs = require('fs-extra');
-let http = require('http');
-let https = require('https');
-let logger = require('./logger.js');
-let async = require('./async.js')
-let irc = require('./irc.js');
-let users = require('./users.js');
-let utils = require('./utils.js');
-let wss = require('ws');
+const assert = require('assert');
+const connect = require('connect');
+const cookie = require('cookie');
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
+const express = require('express');
+const expressSession = require('express-session');
+const fs = require('fs-extra');
+const http = require('http');
+const https = require('https');
+const logger = require('./logger.js');
+const async = require('./async.js')
+const irc = require('./irc.js');
+const users = require('./users.js');
+const utils = require('./utils.js');
+const wss = require('ws');
 
-let sessionKey = 'sid';
+const sessionKey = 'sid';
 // Randomize the session secret at startup
-let sessionSecret = crypto.randomBytes(32).toString('base64');
+const sessionSecret = crypto.randomBytes(32).toString('base64');
 
 async()
 	.add('config', function(cb) {
 		utils.readJsonFile('config.json', cb);
 	})
-	.add('initLogger', ['config'], function(config) {
+	.add('initLogger', ['config'], function(config){
 		logger.init(config.logLevels.console, config.logLevels.file);
 	})
 	.add(['config', '@initLogger'], function(config, cb) {
@@ -40,7 +40,7 @@ async()
 				return new expressSession.MemoryStore();
 			})
 			.add('expressApp', ['sessionStore'], function(sessionStore) {
-				let app = express();
+				const app = express();
 
 				app.use(cookieParser());
 				app.use(expressSession({
@@ -56,20 +56,17 @@ async()
 				return app;
 			})
 			.add('startWebListeners', ['expressApp', 'sessionStore', '@usersInitialized'], function(expressApp, sessionStore, cb) {
-				let a = async();
-
+				const a = async();
 				if (config.http && config.http.port) {
 					a.add(function(cb) {
 						createWebServer(config.http, expressApp, config, sessionStore, cb);
 					});
 				}
-
 				if (config.https && config.https.port) {
 					a.add(function(cb) {
 						createWebServer(config.https, expressApp, config, sessionStore, cb);
 					});
 				}
-
 				a.run(cb);
 			})
 			.add(['@usersInitialized', '@startWebListeners'], function() {
@@ -90,18 +87,16 @@ async()
 				},
 				function() {
 					logger.info('WebIRC started');
-
 					cb();
 				}
 			));
 	})
-	.run(check(
-		function(err) {
+	.run(function(err) {
+		if (err) {
 			console.error('Failed to start WebIRC', err);
 			process.exit(1);
-		},
-		function() {}
-	));
+		}
+	});
 
 function createWebServer(spec, expressApp, config, sessionStore, cb) {
 	let server;
@@ -121,14 +116,14 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 	server.listen(spec.port, function() {
 		logger.info('WebIRC is listening for', serverProtocol, 'connections on port', spec.port);
 
-		let wsServer = new wss.Server({
+		const wsServer = new wss.Server({
 			server: server
 		});
 
 		wsServer.on('connection', function(socket) {
-			let headers = socket.upgradeReq.headers;
+			const headers = socket.upgradeReq.headers;
 			if (typeof headers == 'object' && 'cookie' in headers) {
-				let parsedCookies = cookieParser.signedCookies(cookie.parse(headers.cookie), sessionSecret);
+				const parsedCookies = cookieParser.signedCookies(cookie.parse(headers.cookie), sessionSecret);
 
 				if (sessionKey in parsedCookies) {
 					sessionStore.get(parsedCookies[sessionKey], function(err, session) {
@@ -161,7 +156,6 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 
 function processNewConnectionWithSessionId(socket, sessionId) {
 	logger.info('WebSocket connection established: %s', sessionId);
-
 	// TODO: Abstract this
 	socket.sendMessage = function(msgId, data) {
 		socket.send(JSON.stringify({
@@ -169,9 +163,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 			data: data
 		}));
 	}
-
 	let user = users.getUserBySessionId(sessionId);
-
 	socket.on('message', function(rawMessage, flags) {
 		let message;
 		try {
@@ -180,8 +172,8 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 			logger.warn('Failed to parse raw message from client: ' + rawMessage);
 			return;
 		}
-		let msgId = message.msgId;
-		let data = message.data;
+		const msgId = message.msgId;
+		const data = message.data;
 		if (typeof data !== 'object') {
 			logger.warn('Got a message with an invalid data field: ' + data);
 			return;
@@ -194,7 +186,6 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 				if (user !== null) {
 					// add sessionId to loggedInSessions for user
 					user.loggedInSessions.push(sessionId);
-
 					handleSuccessfulLogin(user, socket, sessionId);
 				} else {
 					socket.sendMessage('LoginFailed', {});
@@ -216,7 +207,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 					break;
 				}
 				case 'AddServer': {
-					let newServer = new Server({}, user.getNextEntityId.bind(user));
+					const newServer = new Server({}, user.getNextEntityId.bind(user));
 					user.addServer(newServer);
 					newServer.showInfo('To connect: /server [host] [port] [password]');
 					user.setActiveEntity(newServer.entityId);
@@ -224,7 +215,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 				}
 				case 'CloseWindow': {
 					if ('targetEntityId' in data) {
-						let targetEntity = user.getEntityById(data.targetEntityId);
+						const targetEntity = user.getEntityById(data.targetEntityId);
 
 						if (targetEntity !== null) {
 							targetEntity.removeEntity();
@@ -237,7 +228,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 				case 'JoinChannelOnServer': {
 					if ('serverEntityId' in data && typeof data.serverEntityId === 'number' &&
 						'channelName' in data && typeof data.channelName === 'string') {
-						let server = user.getEntityById(data.serverEntityId);
+						const server = user.getEntityById(data.serverEntityId);
 
 						if (server !== null) {
 							server.withChannel(data.channelName, check(
@@ -258,8 +249,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 				}
 				case 'OpenServerOptions': {
 					if ('serverEntityId' in data && typeof data.serverEntityId === 'number') {
-						let server = user.getEntityById(data.serverEntityId);
-
+						const server = user.getEntityById(data.serverEntityId);
 						if (server !== null) {
 							server.showInfo('Server options aren\'t quite ready yet :)');
 						} else {
@@ -269,9 +259,8 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 					break;
 				}
 				case 'SetActiveEntity': {
-					if ('targetEntityId' in data) {
-						let targetEntity = user.getEntityById(data.targetEntityId);
-
+					if ('targetEntityId' in data && typeof data.targetEntityId === 'number') {
+						const targetEntity = user.getEntityById(data.targetEntityId);
 						if (targetEntity !== null) {
 							user.setActiveEntity(targetEntity.entityId);
 						} else {
@@ -283,7 +272,6 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 			}
 		}
 	});
-
 	socket.on('close', function() {
 		// TODO LOW: support connection timeouts
 		logger.info('WebSocket disconnected');
@@ -294,7 +282,6 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 			user.removeActiveWebSocket(socket);
 		}
 	});
-
 	// see if this socket belongs to a user who is already logged in
 	if (user !== null) {
 		handleSuccessfulLogin(user, socket, sessionId);
@@ -307,7 +294,7 @@ function handleSuccessfulLogin(user, socket, sessionId) {
 	// TODO: combine activeWebSockets with loggedInSessions
 	user.activeWebSockets.push(socket);
 
-	let userCopy = users.copyStateForClient(user);
+	const userCopy = users.copyStateForClient(user);
 
 	socket.sendMessage('CurrentState', userCopy);
 }

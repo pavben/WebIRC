@@ -1,5 +1,7 @@
 "use strict";
 
+require('./utils.js').installGlobals();
+
 function runTest(master, testId) {
 	if (testId === '1') {
 		if (master.activeEntity.type === 'channel') {
@@ -13,7 +15,7 @@ function runTest(master, testId) {
 		}
 	} else if (testId === '2') {
 		if (master.activeEntity.type === 'channel') {
-			for (var i = 0; i < 1000; i++) {
+			for (let i of indices(1000)) {
 				master.user.applyStateChange('Join', master.activeEntity.entityId, {
 					nick: 'u' + i,
 					user: 'user',
@@ -45,10 +47,8 @@ function runTest(master, testId) {
 		}
 	} else if (testId === 'userdupes') {
 		if (master.activeEntity.type === 'channel') {
-			var channel = master.activeEntity;
-
-			var userlist = channel.userlist.slice(0);
-
+			const channel = master.activeEntity;
+			const userlist = channel.userlist.slice(0);
 			userlist.sort(function(a, b) {
 				if (a.nick < b.nick) {
 					return -1;
@@ -58,20 +58,15 @@ function runTest(master, testId) {
 					return 0;
 				}
 			});
-
-			var last = null;
-			var numDupes = 0;
-
+			let last = null;
+			let numDupes = 0;
 			userlist.forEach(function(entry) {
 				if (last != null && last == entry.nick) {
 					master.user.showInfo('Duplicate nick: ' + entry.nick);
-
 					numDupes++;
 				}
-
 				last = entry.nick;
 			});
-
 			master.user.showInfo('Dupes: ' + numDupes);
 		} else {
 			master.user.showError('Must be used in a channel');
