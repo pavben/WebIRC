@@ -90,7 +90,7 @@ function withParsedTarget(targetName, cb) {
 		maybeTarget instanceof ClientTarget) {
 		cb(null, maybeTarget);
 	} else {
-		cb(new Error('Failed to parse as a channel or client target: ' + targetName));
+		cb(new Error(`Failed to parse as a channel or client target: ${targetName}`));
 	}
 }
 
@@ -125,7 +125,7 @@ function readJsonFile(filePath, cb) {
 function ensureRequiredFields(obj, fields) {
 	fields.forEach(function(field) {
 		if (!(field in obj)) {
-			throw new Error('Missing required field: ' + field)
+			throw new Error(`Missing required field: ${field}`)
 		}
 	});
 }

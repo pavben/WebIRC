@@ -55,7 +55,7 @@ function handleLogout(all) {
 				numSessions++;
 			}
 		});
-		this.user.showInfo(numSessions + ' session(s) have been logged out. Feel free to close your browser.');
+		this.user.showInfo(`${numSessions} session(s) have been logged out. Feel free to close your browser.`);
 	} else {
 		if (this.user.removeLoggedInSession(this.sessionId)) {
 			this.user.showInfo('Your current browser session is now logged out. Feel free to close your browser.');
@@ -70,7 +70,7 @@ function handleMe(text) {
 		this.server.requireConnected(() => {
 			let channelOrQuery = this.activeEntity;
 			this.user.applyStateChange('MyActionMessage', this.activeEntity.entityId, text);
-			this.server.send('PRIVMSG ' + channelOrQuery.name + ' :' + utils.toCtcp('ACTION', text));
+			this.server.send(`PRIVMSG ${channelOrQuery.name} :${utils.toCtcp('ACTION', text)}`);
 		});
 	} else {
 		this.user.showError('Can\'t /me in this window');
@@ -108,8 +108,8 @@ function handleMsg(targetName, text) {
 
 function handleNotice(targetName, text) {
 	this.server.requireConnected(() => {
-		this.user.showInfo('Notice to ' + targetName + ': ' + text);
-		this.server.send('NOTICE ' + targetName + ' :' + text);
+		this.user.showInfo(`Notice to ${targetName} :${text}`);
+		this.server.send(`NOTICE ${targetName} :${text}`);
 	});
 }
 
@@ -122,7 +122,7 @@ function handleRaw(cmd) {
 function handleQuit(msg) {
 	this.server.requireConnected(() => {
 		msg = msg || ''; // empty if not provided
-		this.server.send('QUIT :' + msg);
+		this.server.send(`QUIT :${msg}`);
 		this.server.disconnect(true);
 	}, {
 		allowUnregistered: true
@@ -165,7 +165,7 @@ function handleSessions() {
 	if (this.user.loggedInSessions.length > 0) {
 		this.user.showInfo('Logged-in sessions:');
 		this.user.loggedInSessions.forEach((sessionId, i) => {
-			this.user.showInfo((i + 1) + ' - ' + sessionId + (sessionId == this.sessionId ? ' (current)' : ''));
+			this.user.showInfo(`${(i + 1)} - ${sessionId}${(sessionId == this.sessionId ? ' (current)' : '')}`);
 		});
 	} else {
 		this.user.showInfo('No logged-in sessions.');
@@ -179,16 +179,16 @@ function handleTest(testId) {
 function handleTopic(channel, text) {
 	this.server.requireConnected(() => {
 		if (this.numArgs == 1) {
-			this.server.send('TOPIC ' + channel);
+			this.server.send(`TOPIC ${channel}`);
 		} else if (this.numArgs == 2) {
-			this.server.send('TOPIC ' + channel + ' :' + text);
+			this.server.send(`TOPIC ${channel} :${text}`);
 		}
 	});
 }
 
 function handleWhois(targetName) {
 	this.server.requireConnected(() => {
-		this.server.send('WHOIS ' + targetName);
+		this.server.send(`WHOIS ${targetName}`);
 	});
 }
 
@@ -211,7 +211,7 @@ function handleClientCommand(activeEntity, command, args, sessionId) {
 		}
 	} else {
 		activeEntity.server.requireConnected(function() {
-			activeEntity.server.send(command + ' ' + args);
+			activeEntity.server.send(`${command} ${args}`);
 		});
 	}
 }
@@ -245,4 +245,3 @@ function parseArgs(numPossibleArgs, str) {
 }
 
 module.exports.handleClientCommand = handleClientCommand;
-

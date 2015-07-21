@@ -72,7 +72,7 @@ async()
 			.add(['@usersInitialized', '@startWebListeners'], function() {
 				function getShutdownSignalHandler(sig) {
 					return function() {
-						logger.info('Received ' + sig + ' -- saving users and exiting');
+						logger.info(`Received ${sig} -- saving users and exiting`);
 
 						users.saveAndShutdown();
 					};
@@ -114,7 +114,7 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 	}
 
 	server.listen(spec.port, function() {
-		logger.info('WebIRC is listening for', serverProtocol, 'connections on port', spec.port);
+		logger.info(`WebIRC is listening for ${serverProtocol} connections on port ${spec.port}`);
 
 		const wsServer = new wss.Server({
 			server: server
@@ -155,8 +155,7 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 }
 
 function processNewConnectionWithSessionId(socket, sessionId) {
-	logger.info('WebSocket connection established: %s', sessionId);
-	// TODO: Abstract this
+	logger.info(`WebSocket connection established: ${sessionId}`);
 	socket.sendMessage = function(msgId, data) {
 		socket.send(JSON.stringify({
 			msgId: msgId,
@@ -169,13 +168,13 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 		try {
 			message = JSON.parse(rawMessage);
 		} catch (e) {
-			logger.warn('Failed to parse raw message from client: ' + rawMessage);
+			logger.warn(`Failed to parse raw message from client: ${rawMessage}`);
 			return;
 		}
 		const msgId = message.msgId;
 		const data = message.data;
 		if (typeof data !== 'object') {
-			logger.warn('Got a message with an invalid data field: ' + data);
+			logger.warn(`Got a message with an invalid data field: ${data}`);
 			return;
 		}
 		// TODO: Clean up/standardize all of the parameter validations below
@@ -191,7 +190,7 @@ function processNewConnectionWithSessionId(socket, sessionId) {
 					socket.sendMessage('LoginFailed', {});
 				}
 			} else {
-				logger.warn('Unrecognized message type from an unidentified client: ' + msgId);
+				logger.warn(`Unrecognized message type from an unidentified client: ${msgId}`);
 			}
 		} else {
 			switch (msgId) {

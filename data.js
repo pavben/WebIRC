@@ -129,7 +129,7 @@ Server.prototype = {
 			this.socket = null;
 			this.endPings();
 			this.user.applyStateChange('Disconnect', this.entityId);
-			logger.info('Disconnected from server: %s:%d', this.host, this.port);
+			logger.info(`Disconnected from server: ${this.host}:${this.port}`);
 		}
 	},
 	getActiveIdentity: function() {
@@ -147,7 +147,7 @@ Server.prototype = {
 					inChannel: true
 				}, server.user.getNextEntityId.bind(server.user));
 				server.addChannel(channel);
-				server.user.applyStateChange('Info', channel.entityId, 'Joined channel ' + channel.name);
+				server.user.applyStateChange('Info', channel.entityId, `Joined channel ${channel.name}`);
 				server.user.setActiveEntity(channel.entityId);
 			},
 			function(channel) {

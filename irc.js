@@ -77,7 +77,7 @@ function handleCommandRequireArgs(requiredNumArgs, handler) {
 			return handler.apply(null, allArgs);
 		} else {
 			// invalid number of arguments
-			logger.error('Error: Invalid number of arguments in command handler: %s (got %d)', handler.toString(), numArgs);
+			logger.error(`Error: Invalid number of arguments in command handler: ${handler.toString()} (got ${numArgs})`);
 			return false;
 		}
 	};
@@ -88,7 +88,7 @@ function showInfoLast(user, server, origin) {
 		const text = arguments[arguments.length - 1];
 		server.showInfo(text);
 	} else {
-		logger.error('showInfoLast called with arguments.length = ' + arguments.length);
+		logger.error(`showInfoLast called with arguments.length = ${arguments.length}`);
 	}
 }
 
@@ -96,7 +96,7 @@ function showInfoLast2(user, server, origin) {
 	if (arguments.length >= 6) {
 		server.showInfo(Array.prototype.slice.call(arguments, -2).join(' '));
 	} else {
-		logger.error('showInfoLast2 called with arguments.length = ' + arguments.length);
+		logger.error(`showInfoLast2 called with arguments.length = ${arguments.length}`);
 	}
 }
 
@@ -118,9 +118,9 @@ function handle001(user, server, origin, myNickname, text) {
 }
 
 function handle004(user, server, origin, myNickname, serverName, serverVersion, userModes, channelModes) {
-	server.showInfo('Server ' + serverName + ' running ' + serverVersion);
-	server.showInfo('Supported user modes: ' + userModes);
-	server.showInfo('Supported channel modes: ' + channelModes);
+	server.showInfo(`Server ${serverName} running ${serverVersion}`);
+	server.showInfo(`Supported user modes: ${userModes}`);
+	server.showInfo(`Supported channel modes: ${channelModes}`);
 }
 
 function handle005(user, server, origin) {
@@ -135,34 +135,34 @@ function handle005(user, server, origin) {
 			}
 		}
 	});
-	server.showInfo('Server settings: ' + keyValueStrings.join(' '));
+	server.showInfo(`Server settings: ${keyValueStrings.join(' ')}`);
 }
 
 function handle311(user, server, origin, myNickname, nick, username, host, star, realName) {
-	server.showWhois(nick + ' is ' + username + '@' + host + ' (' + realName + ')');
+	server.showWhois(`${nick} is ${username}@${host} (${realName})`);
 }
 
 function handle312(user, server, origin, myNickname, nick, serverName, serverDesc) {
-	server.showWhois(nick + ' is connected to ' + serverName + ' (' + serverDesc + ')');
+	server.showWhois(`${nick} is connected to ${serverName} (${serverDesc})`);
 }
 
 function handle317(user, server, origin, myNickname, nick, secondsIdle, signonTime) {
 	const signonDate = new Date(signonTime * 1000);
-	server.showWhois(nick + ' has been idle for ' + moment().add('seconds', secondsIdle).fromNow(true) + ' (signed on ' + moment(signonDate).fromNow() + ')');
+	server.showWhois(`${nick} has been idle for ${moment().add('seconds', secondsIdle).fromNow(true)} (signed on ${moment(signonDate).fromNow()})`);
 }
 
 function handle319(user, server, origin, myNickname, nick, channels) {
-	server.showWhois(nick + ' is on ' + channels);
+	server.showWhois(`${nick} is on ${channels}`);
 }
 
 function handle328(user, server, origin, myNickname, channelName, channelUrl) {
 	server.withChannel(channelName, silentFail(function(channel) {
-		user.applyStateChange('Info', channel.entityId, 'URL: ' + channelUrl);
+		user.applyStateChange('Info', channel.entityId, `URL: ${channelUrl}`);
 	}));
 }
 
 function handle330(user, server, origin, myNickname, nick, authName, text) {
-	server.showWhois(nick + ' ' + text + ' ' + authName);
+	server.showWhois(`${nick} ${text} ${authName}`);
 }
 
 function handle331(user, server, origin, myNickname, channelName, text) {
@@ -171,14 +171,14 @@ function handle331(user, server, origin, myNickname, channelName, text) {
 
 function handle332(user, server, origin, myNickname, channelName, topicText) {
 	server.withChannel(channelName, silentFail(function(channel) {
-		user.applyStateChange('Info', channel.entityId, 'Topic is: ' + topicText);
+		user.applyStateChange('Info', channel.entityId, `Topic is: ${topicText}`);
 	}));
 }
 
 function handle333(user, server, origin, myNickname, channelName, setByNick, topicTime) {
 	server.withChannel(channelName, silentFail(function(channel) {
 		const topicDate = new Date(topicTime * 1000);
-		user.applyStateChange('Info', channel.entityId, 'Set by ' + setByNick + ' (' + moment(topicDate).fromNow() + ')');
+		user.applyStateChange('Info', channel.entityId, `Set by ${setByNick} (${moment(topicDate).fromNow()})`);
 	}));
 }
 
@@ -197,7 +197,7 @@ function handle353(user, server, origin, myNickname, channelType, channelName, n
 }
 
 function handle378(user, server, origin, myNickname, nick, text) {
-	server.showWhois(nick + ' ' + text);
+	server.showWhois(`${nick} ${text}`);
 }
 
 // ~owner, &admin, @op, %halfop, +voice, regular
@@ -238,22 +238,22 @@ function handle366(user, server, origin, myNickname, channelName) {
 }
 
 function handle401(user, server, origin, myNickname, targetName) {
-	user.showError('No such nick/channel: ' + targetName);
+	user.showError(`No such nick/channel: ${targetName}`);
 }
 
 function handle421(user, server, origin, myNickname, commandName, text) {
-	user.showError('Unknown command: ' + commandName);
+	user.showError(`Unknown command: ${commandName}`);
 }
 
 function handle432(user, server, origin, myNickname, targetName) {
-	server.showError('Invalid nickname: ' + targetName, false);
+	server.showError(`Invalid nickname: ${targetName}`, false);
 	if (!server.isRegistered()) {
 		tryAnotherNickname(server, targetName);
 	}
 }
 
 function handle433(user, server, origin, myNickname, targetName) {
-	server.showError('Nickname already in use: ' + targetName, false);
+	server.showError(`Nickname already in use: ${targetName}`, false);
 	if (!server.isRegistered()) {
 		tryAnotherNickname(server, targetName);
 	}
@@ -262,18 +262,18 @@ function handle433(user, server, origin, myNickname, targetName) {
 function tryAnotherNickname(server, lastNickname) {
 	const nextNickname = server.getActiveIdentity().nextNickname(lastNickname);
 	if (nextNickname !== null) {
-		server.send('NICK :' + nextNickname);
+		server.send(`NICK ${nextNickname}`);
 	} else {
 		server.disconnect();
 	}
 }
 
 function handle671(user, server, origin, myNickname, nick, text) {
-	server.showWhois(nick + ' ' + text);
+	server.showWhois(`${nick} ${text}`);
 }
 
 function handlePing(user, server, origin, arg) {
-	server.send('PONG :' + arg);
+	server.send(`PONG :${arg}`);
 }
 
 function handlePong(user, server, origin, arg) {
@@ -465,7 +465,7 @@ function handleCtcp(server, origin, target, ctcpMessage) {
 
 function reconnectServer(server) {
 	server.disconnect(); // noop if not connected
-	server.showInfo('Connecting to ' + server.host + ':' + server.port);
+	server.showInfo(`Connecting to ${server.host}:${server.port}`);
 	const connectOptions = {
 		host: server.host,
 		port: server.port
@@ -475,25 +475,25 @@ function reconnectServer(server) {
 	}
 	const netOrTls = server.ssl ? tls : net;
 	const serverSocket = netOrTls.connect(connectOptions, function() {
-		logger.info('Connected to server %s:%d', server.host, server.port);
+		logger.info(`Connected to server ${server.host}:${server.port}`);
 		server.user.applyStateChange('EditServer', server.entityId, {
 			connected: true
 		});
 		if (server.password) {
-			server.send('PASS ' + server.password);
+			server.send(`PASS ${server.password}`);
 		}
 		const activeIdentity = server.getActiveIdentity();
-		server.send('NICK ' + activeIdentity.nextNickname());
-		server.send('USER ' + activeIdentity.username + ' ' + activeIdentity.username + ' ' + server.host + ' :' + activeIdentity.realName);
+		server.send(`NICK ${activeIdentity.nextNickname()}`);
+		server.send(`USER ${activeIdentity.username} ${activeIdentity.username} ${server.host} :${activeIdentity.realName}`);
 	});
 	server.socket = serverSocket;
 	serverSocket.on('error', function(err) {
 		logger.warn('Connection to server closed due to error:', err);
-		const errorString = err.syscall + ': ' + ((err.code in errno.code) ? errno.code[err.code].description : err.code);
+		const errorString = `${err.syscall}: ${((err.code in errno.code) ? errno.code[err.code].description : err.code)}`;
 		if (server.connected) {
-			server.showError('Connection closed (' + errorString + ')');
+			server.showError(`Connection closed (${errorString})`);
 		} else {
-			server.showError('Unable to connect (' + errorString + ')');
+			server.showError(`Unable to connect (${errorString})`);
 		}
 	});
 	let readBuffer = '';
@@ -515,7 +515,7 @@ function reconnectServer(server) {
 }
 
 function processLineFromServer(line, server) {
-	logger.data('Line: ' + line);
+	logger.data(`Line: ${line}`);
 	const parseResult = parseLine(line);
 	if (parseResult !== null) {
 		if (parseResult.command in serverCommandHandlers) {
@@ -530,13 +530,13 @@ function processLineFromServer(line, server) {
 					].concat(parseResult.args)
 				);
 			} else {
-				server.user.applyStateChange('Error', server.entityId, 'Server protocol violation: Received ' + parseResult.command + ' before registration.');
+				server.user.applyStateChange('Error', server.entityId, `Server protocol violation: Received ${parseResult.command} before registration.`);
 			}
 		} else {
-			server.user.applyStateChange('Text', server.entityId, parseResult.command + ' ' + parseResult.args.join(' '));
+			server.user.applyStateChange('Text', server.entityId, `${parseResult.command} ${parseResult.args.join(' ')}`);
 		}
 	} else {
-		logger.error('Invalid line from server: ' + line);
+		logger.error(`Invalid line from server: ${line}`);
 	}
 }
 
@@ -618,13 +618,13 @@ function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId
 					server.requireConnected(function() {
 						const channel = activeEntity;
 						user.applyStateChange('MyChatMessage', channel.entityId, rest);
-						server.send('PRIVMSG ' + channel.name + ' :' + rest);
+						server.send(`PRIVMSG ${channel.name} :${rest}`);
 					});
 				} else if (activeEntity.type === 'query') {
 					server.requireConnected(function() {
 						const query = activeEntity;
 						user.applyStateChange('MyChatMessage', query.entityId, rest);
-						server.send('PRIVMSG ' + query.name + ' :' + rest);
+						server.send(`PRIVMSG ${query.name} :${rest}`);
 					});
 				} else {
 					server.showError('Only commands are processed in this window', true);
