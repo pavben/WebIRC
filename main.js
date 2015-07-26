@@ -112,8 +112,9 @@ function createWebServer(spec, expressApp, config, sessionStore, cb) {
 		server = http.createServer(expressApp);
 		serverProtocol = 'http';
 	}
+	let serverHost = spec.host || '0.0.0.0';
 
-	server.listen(spec.port, function() {
+	server.listen(spec.port, serverHost, function() {
 		logger.info(`WebIRC is listening for ${serverProtocol} connections on port ${spec.port}`);
 
 		const wsServer = new wss.Server({
