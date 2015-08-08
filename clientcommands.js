@@ -130,7 +130,7 @@ function handleQuit(msg) {
 }
 
 function handleServer(host, port, password) {
-	function trySetPort(portStr) {
+	function trySetPort(serverChanges, portStr) {
 		let portNum = parseInt(portStr);
 		if (!isNaN(portNum)) {
 			serverChanges.port = portNum;
@@ -147,10 +147,10 @@ function handleServer(host, port, password) {
 		serverChanges.password = null;
 		if (this.numArgs >= 2) { // if port provided
 			if (port.substring(0, 1) === '+') {
-				trySetPort(port.substring(1));
+				trySetPort(serverChanges, port.substring(1));
 				serverChanges.ssl = true;
 			} else {
-				trySetPort(port);
+				trySetPort(serverChanges, port);
 			}
 			if (this.numArgs >= 3) { // if password provided
 				serverChanges.password = password;
