@@ -238,6 +238,24 @@ Server.prototype = {
 			this.user.showError('Not connected');
 		}
 	},
+	sendWrapped: function(prefix, text) {
+		// TODO: How does the 512 limit work with unicode characters?
+		const textChunkLen = 512 - prefix.length;
+		const chunks = [];
+		if (textChunkLen >= 1) {
+			for (let i = 0; i < text.length; i += textChunkLen) {
+				const chunk = text.substr(i, textChunkLen);
+				chunks.push(chunk);
+				this.send(prefix + chunk);
+			}
+		} else {
+			this.user.showError('Command prefix is too long for message wrapping.');
+		}
+		return chunks;
+	},
+	sendWrappedPrivmsg: function(target, text) {
+		return this.sendWrapped(`PRIVMSG ${target} :`, text);
+	},
 	removeEntity: function() {
 		// only allow closing the server window if it's not the only one
 		if (this.user.servers.length > 1) {

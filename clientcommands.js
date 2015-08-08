@@ -82,34 +82,41 @@ function handleMsg(targetName, text) {
 		this.user.showError('Invalid target');
 	}, target => {
 		this.server.requireConnected(() => {
+			// send the message to the unparsed target name
+			const chunks = this.server.sendWrappedPrivmsg(targetName, text);
 			let displayed = false;
 			if (target instanceof ClientTarget) {
 				// /msg nick@server will not open the query window
 				if (target.server === null) {
-					let query = this.server.ensureQuery(target.toString());
-					this.user.applyStateChange('MyChatMessage', query.entityId, text);
+					const query = this.server.ensureQuery(target.toString());
+					for (const chunk of chunks) {
+						this.user.applyStateChange('MyChatMessage', query.entityId, chunk);
+					}
 					this.user.setActiveEntity(query.entityId);
 					displayed = true;
 				}
 			} else if (target instanceof ChannelTarget) {
 				this.server.withChannel(target.name, silentFail(channel => {
-					this.user.applyStateChange('MyChatMessage', channel.entityId, text);
+					for (const chunk of chunks) {
+						this.user.applyStateChange('MyChatMessage', channel.entityId, chunk);
+					}
 					displayed = true;
 				}));
 			}
 			if (!displayed) {
-				this.user.showInfo('To ' + targetName + ': ' + text);
+				for (const chunk of chunks) {
+					this.user.showInfo(`To ${targetName}: ${chunk}`);
+				}
 			}
-			// send the message to the unparsed target name
-			this.server.send('PRIVMSG ' + targetName + ' :' + text);
 		});
 	}));
 }
 
 function handleNotice(targetName, text) {
 	this.server.requireConnected(() => {
-		this.user.showInfo(`Notice to ${targetName} :${text}`);
-		this.server.send(`NOTICE ${targetName} :${text}`);
+		for (const chunk of this.server.sendWrapped(`NOTICE ${targetName} :`, text)) {
+			this.user.showInfo(`Notice to ${targetName}: ${chunk}`);
+		}
 	});
 }
 

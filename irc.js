@@ -615,16 +615,18 @@ function processChatboxLine(user, activeEntityId, line, parseCommands, sessionId
 				clientcommands.handleClientCommand(activeEntity, command, rest, sessionId);
 			} else {
 				if (activeEntity.type === 'channel') {
-					server.requireConnected(function() {
+					server.requireConnected(() => {
 						const channel = activeEntity;
-						user.applyStateChange('MyChatMessage', channel.entityId, rest);
-						server.send(`PRIVMSG ${channel.name} :${rest}`);
+						for (const chunk of server.sendWrappedPrivmsg(channel.name, rest)) {
+							user.applyStateChange('MyChatMessage', channel.entityId, chunk);
+						}
 					});
 				} else if (activeEntity.type === 'query') {
-					server.requireConnected(function() {
+					server.requireConnected(() => {
 						const query = activeEntity;
-						user.applyStateChange('MyChatMessage', query.entityId, rest);
-						server.send(`PRIVMSG ${query.name} :${rest}`);
+						for (const chunk of server.sendWrappedPrivmsg(query.name, rest)) {
+							user.applyStateChange('MyChatMessage', query.entityId, chunk);
+						}
 					});
 				} else {
 					server.showError('Only commands are processed in this window', true);
